@@ -99,7 +99,7 @@ public class SchedulingConfig {
     }
 
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 5000)
     public void loopResellers() {
 //        Reseller reseller = resellerRepo.findById(UUID.fromString("d9221e5a-f7d2-4be9-b29f-0fa85dbe30e4")).orElse(null);
         List<Reseller> resellerList = resellerRepo.findAll();
@@ -110,7 +110,6 @@ public class SchedulingConfig {
             resendToWeiser(reseller.getRsId(), "Exception sending");
             resendToWeiser(reseller.getRsId(), "ERROR");
             resendToWeiser(reseller.getRsId(), "ERRORR");
-            resendToWeiser(reseller.getRsId(), "DeliveryImpossible");
 
         }
 

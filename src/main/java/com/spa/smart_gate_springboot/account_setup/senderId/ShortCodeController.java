@@ -30,7 +30,7 @@ public class ShortCodeController {
         StandardJsonResponse resp = new StandardJsonResponse();
         var auth = userService.getCurrentUser(request);
 
-        //            delete before saving
+        //            delete before saving :- do not remove this here
         msgShortcodeSetupService.deleteAssignedShortCodes(accId);
 
         String shIds1 = shIds.getShIds();
@@ -41,7 +41,7 @@ public class ShortCodeController {
         String[] shIdArray = shIds1.split(",");
 
         for (String code : shIdArray) {
-            shortCodeService.assignAccountToSetUp(accId, auth, code);
+            shortCodeService.assignAccountToSetUp(accId, auth, code.replaceAll("[\\n\\r]+", ""));
         }
 
 

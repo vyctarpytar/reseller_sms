@@ -180,7 +180,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
               msg_status_code = :msgStatusCode,
                           msg_Status_desc = :msgResponse
               where msg_code in (:msgCode)
-                          and msg_status = 'PENDING'
+                          and msg_status = 'PENDING_PROCESSING'
             """)
     void updateInitialReceiveNote(@Param("msgStatus") String msgStatus, @Param("msgStatusCode") int msgStatusCode, @Param("msgCode") List<String> msgCode,
                                   @Param("msgResponse") String msgResponse);

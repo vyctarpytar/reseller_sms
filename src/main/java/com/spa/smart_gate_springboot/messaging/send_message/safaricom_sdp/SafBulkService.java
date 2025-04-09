@@ -66,10 +66,7 @@ public class SafBulkService {
     public void sendBulkToSaf(SendBulkSafReq sendBulkSafReq) throws Exception {
 
         sendBulkSafReq.setTimeStamp(String.valueOf(System.currentTimeMillis()));
-//        sendBulkSafReq.getDataSet().get(0).setOa("Hakibet-OTP");
-
         ResponseModel body;
-
 
         String accessToken = safAuthService.getAccessToken();
         if (TextUtils.isEmpty(accessToken)) {

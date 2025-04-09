@@ -66,28 +66,16 @@ public class MessageController {
     @PreAuthorize("hasAnyRole('CAMPAIGN_ADMIN','ADMIN')")
     public StandardJsonResponse sendSMStoMultipleGroup(HttpServletRequest request, @RequestBody @Valid GroupMessageDto grpMessageDto) {
         grpMessageDto.setSourceIpAdd(queueMsgService.getDomainOrIp(request));
-        if (TextUtils.isEmpty(grpMessageDto.getGrpMessage())) {
-            StandardJsonResponse jsonResponse = new StandardJsonResponse();
-            jsonResponse.setMessage("message", "No Message", jsonResponse);
-            jsonResponse.setSuccess(false);
-            return jsonResponse;
-        }
-
-        if (TextUtils.isEmpty(grpMessageDto.getSenderId())) {
-            StandardJsonResponse jsonResponse = new StandardJsonResponse();
-            jsonResponse.setMessage("message", "No Sender Id", jsonResponse);
-            jsonResponse.setSuccess(false);
-            return jsonResponse;
-        }
-
 
         User user = userService.getCurrentUser(request);
+
         String[] grpIds = grpMessageDto.getGrpIds().split(",");
         for (String grpId : grpIds) {
             if (!TextUtils.isEmpty(grpMessageDto.getGrpSendAt())) {
                 scheduleService.scheduleGroupMessage(UUID.fromString(grpId), grpMessageDto, user);
+            }else {
+                queueMsgService.sendSmsToGroup(UUID.fromString(grpId), grpMessageDto, user);
             }
-            queueMsgService.sendSmsToGroup(UUID.fromString(grpId), grpMessageDto, user);
         }
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setMessage("message", "Messages Sent to All Groups Successfully", resp);

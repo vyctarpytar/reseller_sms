@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.Base64;
 public class UniqueCodeGenerator {
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final int CODE_LENGTH = 6;
+    private static final int CODE_LENGTH = 24;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Set<String> GENERATED_CODES = new HashSet<>();
 

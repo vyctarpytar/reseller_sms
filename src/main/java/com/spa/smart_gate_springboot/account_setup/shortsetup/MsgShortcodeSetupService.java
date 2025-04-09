@@ -133,23 +133,6 @@ public class MsgShortcodeSetupService {
     }
 
 
-//    @PostConstruct
-    public void cleanInvalidStatus() {
-        List<MsgShortcodeSetup> list = msgShortcodeSetupRepository.findByShStatusIsNull();
-        for (MsgShortcodeSetup setup : list) {
-            setup.setShStatus(ShStatus.PENDING_MAPPING);
-            msgShortcodeSetupRepository.saveAndFlush(setup);
-        }
-    }
-
-//    @PostConstruct
-    public void cleanInvalidReselledIds() {
-        List<MsgShortcodeSetup> list = msgShortcodeSetupRepository.findByShResellerIdIsNull();
-        for (MsgShortcodeSetup setup : list) {
-            setup.setShResellerId(UUID.fromString("d9221e5a-f7d2-4be9-b29f-0fa85dbe30e4"));
-            msgShortcodeSetupRepository.saveAndFlush(setup);
-        }
-    }
 
     public void assignShortCodeToAccount(User auth, UUID accId, ShortCode shortCode) {
         try {
