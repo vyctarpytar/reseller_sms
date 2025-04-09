@@ -112,7 +112,7 @@ public class SafBulkService {
 
     private void updateMessageStatus(boolean success, List<SafBulkDataSet> dataSet, int code, String safResponse) {
         List<String> msgCodesList = dataSet.stream().map(SafBulkDataSet::getUniqueId).toList();
-        msgMessageQueueArcRepository.updateInitialReceiveNote(success ? "SAF_ACCEPTED_SENT" : "SAF_RECEIVE_FAILED", code, msgCodesList, safResponse);
+        msgMessageQueueArcRepository.updateInitialReceiveNote(success ? "PENDING_DELIVERY" : "ERROR", code, msgCodesList, safResponse);
     }
 
 
