@@ -2,9 +2,9 @@ package com.spa.smart_gate_springboot.user;
 
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
-import com.spa.smart_gate_springboot.auth.AuthenticationService;
 import com.spa.smart_gate_springboot.config.JwtService;
 import com.spa.smart_gate_springboot.dto.Layers;
+import com.spa.smart_gate_springboot.mailjet.JavaEmailService;
 import com.spa.smart_gate_springboot.user.token.Token;
 import com.spa.smart_gate_springboot.user.token.TokenRepository;
 import com.spa.smart_gate_springboot.utils.*;
@@ -185,7 +185,7 @@ public class UserService {
         String xPlainCode = ug.getUniqueCode();
         String xMessage = "Your verification code is " + xPlainCode;
         String xEmail = usr.getEmail();
-        String xSubject = "SMART-GATE EMAIL OTP";
+        String xSubject = "EMAIL OTP";
 
         log.error("---{}---{}", xEmail, xMessage);
 

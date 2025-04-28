@@ -185,7 +185,7 @@ public class MQReceiverSynq {
                 }
                 msgMessageQueueArc.setMsgSenderLevel("WEISER");
                 UniqueCodeGenerator ug = new UniqueCodeGenerator();
-                msgMessageQueueArc.setMsgCode(ug.getUniqueCode());
+                msgMessageQueueArc.setMsgCode(ug.generateSecureApiKey());
                 msgMessageQueueArcRepository.save(msgMessageQueueArc);
 
                 safBulkService.sendArcSms(msgMessageQueueArc);

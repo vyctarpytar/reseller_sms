@@ -127,12 +127,7 @@
         </dependency>
 
 
-        <!--        send emails-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-        <!--     end    send emails-->
+
 
 
         <!--   poi -->
@@ -214,6 +209,15 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
         </dependency>
+
+
+
+        <dependency>
+            <groupId>com.mailjet</groupId>
+            <artifactId>mailjet-client</artifactId>
+            <version>5.2.6</version>
+        </dependency>
+
 
     </dependencies>
     <build>

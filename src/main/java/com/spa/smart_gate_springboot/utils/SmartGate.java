@@ -72,7 +72,7 @@ public class SmartGate {
         String username = "smartgate_user";
         String password = "I82Y65xLi-FET$viT3NJ-Ljn0FM-zdU8A$@";
         String urlEndpoint = "https://synq.weiserstamm.com/api/PushSMS?mobile=";
-        String shCode = "DoNotReply";
+        String shCode = "SYNQSMS";
 
         String finalMessage = message;
         new Thread(() -> {

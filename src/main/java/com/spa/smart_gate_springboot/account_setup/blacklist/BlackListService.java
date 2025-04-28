@@ -14,6 +14,7 @@ public class BlackListService {
     public void addToBlacklist(String msisdn) {
         if (checkIfMsisdnBlacklisted(msisdn)) {
             log.error("Contact is already blacklisted. Msisdn: {}", msisdn);
+            return;
         }
         log.error("Contact blacklisted. Msisdn: {}", msisdn);
         BlackList blackList = BlackList.builder().bcMsisdn(msisdn).build();

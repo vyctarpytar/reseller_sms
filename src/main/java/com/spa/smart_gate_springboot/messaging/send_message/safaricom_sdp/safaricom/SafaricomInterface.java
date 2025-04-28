@@ -12,7 +12,8 @@ import retrofit2.http.POST;
 public interface SafaricomInterface {
 
     @POST("/api/public/CMS/bulksms")
-    Call<BulkResponse> sendBulkSms(@Header("Content-Type") String contentType, @Header("X-Requested-With") String requestWith,
+    Call<BulkResponse> sendBulkSms(@Header("Content-Type") String contentType,
+                                   @Header("X-Requested-With") String requestWith,
                                    @Header("X-Authorization") String authoraization,
                                    @Body SendBulkSafReq body);
 
