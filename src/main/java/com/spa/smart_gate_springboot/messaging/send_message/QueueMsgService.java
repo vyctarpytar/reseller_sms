@@ -15,11 +15,13 @@ import com.spa.smart_gate_springboot.messaging.send_message.dtos.SingleMessageDt
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -40,14 +42,13 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 @EnableScheduling
 public class QueueMsgService {
+    private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^\\d{10,15}$");
     private final MemberService chMemberService;
     private final RMQPublisher rmqPublisher;
     private final MsgMessageQueueArcRepository arcRepository;
@@ -55,12 +56,22 @@ public class QueueMsgService {
     private final AccountService accountService;
     private final MsgDeliveryRepository msgDeliveryRepository;
 
+    public static boolean isValidPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return false; // Reject null or empty numbers
+        }
+        return PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches();
+    }
+
     public StandardJsonResponse sendSmsToGroup(UUID grpId, GroupMessageDto groupMessageDto, User user) {
         String grpMessage = groupMessageDto.getGrpMessage();
         List<ChMember> membersList = chMemberService.getChMembersByGroupId(grpId);
 //        hello @firstname your balance is @accMsgBal
         //"firstName ", "otherNames ", "mobileNumber ","gender  "dateOfBirth ", "option1 ", "option2 ", "option3 ", "option4 "
-        membersList.forEach(m -> {
+
+        log.info("sending message to members : {}", membersList.size());
+
+        for (ChMember m : membersList) {
             String chTelephone = validateMobileNo(m.getChTelephone());
 
             String message = grpMessage;
@@ -79,7 +90,7 @@ public class QueueMsgService {
             MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(groupMessageDto.getSenderId()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(chTelephone).msgCreatedBy(user.getUsrId()).msgGroupId(grpId).build();
 
             publishNewMessage(msgQueue);
-        });
+        }
 
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setMessage("result", membersList, resp);
@@ -122,7 +133,6 @@ public class QueueMsgService {
         resp.setMessage("message", "Messages Sent Successfully", resp);
         return resp;
     }
-
 
     public StandardJsonResponse sendSingleSmsMultipleNumbers(SingleMessageDto singleMessageDto, User user) {
 
@@ -177,16 +187,6 @@ public class QueueMsgService {
         }
     }
 
-    private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^\\d{10,15}$");
-
-
-    public static boolean isValidPhoneNumber(String phoneNumber) {
-        if (phoneNumber == null || phoneNumber.isBlank()) {
-            return false; // Reject null or empty numbers
-        }
-        return PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches();
-    }
-
     public StandardJsonResponse uploadSmsCsvFile(MultipartFile file, User user) {
         StandardJsonResponse response = new StandardJsonResponse();
         try (InputStream inputStream = file.getInputStream(); Workbook workbook = new XSSFWorkbook(inputStream)) {
@@ -203,13 +203,14 @@ public class QueueMsgService {
                 }
 
                 if (input != null && !TextUtils.isEmpty(input)) {
-                boolean isvalid = isValidPhoneNumber(input);
-                log.error("Mobile : {} Is Valid  : {}", input, isvalid);
-                if(!isvalid) {
-                    response.setMessage("message","Invalid Phone Number: " + input,  response);
-                    response.setSuccess(false);
-                    return response;
-                }}
+                    boolean isvalid = isValidPhoneNumber(input);
+                    log.error("Mobile : {} Is Valid  : {}", input, isvalid);
+                    if (!isvalid) {
+                        response.setMessage("message", "Invalid Phone Number: " + input, response);
+                        response.setSuccess(false);
+                        return response;
+                    }
+                }
 
 
             }
@@ -224,7 +225,6 @@ public class QueueMsgService {
                         continue;
                     }
                 }
-
 
 
                 SingleMessageDto sendSingleSmsDto = SingleMessageDto.builder().mobile(input).message(globalUtils.getCellValue(row.getCell(1))).build();
@@ -246,6 +246,7 @@ public class QueueMsgService {
         if (filterDto.getLimit() == 0) filterDto.setLimit(10);
         filterDto.setSortColumn("msg_created_date");
         Pageable pageable = PageRequest.of(filterDto.getStart(), filterDto.getLimit(), Sort.by(filterDto.getSortColumn()).descending());
+
         if (!TextUtils.isEmpty(filterDto.getMsgSubmobileNo())) {
             filterDto.setMsgSubmobileNo("%" + filterDto.getMsgSubmobileNo() + "%");
         }
@@ -253,7 +254,9 @@ public class QueueMsgService {
             filterDto.setMsgMessage("%" + filterDto.getMsgMessage() + "%");
         }
 
-        Page<MsgMessageQueueArc> list = arcRepository.findByMessagesArcFilters(filterDto.getMsgAccId(), filterDto.getMsgResellerId(), filterDto.getMsgGrpId(), filterDto.getMsgCreatedDate(), filterDto.getMsgStatus(), filterDto.getMsgSubmobileNo(), filterDto.getMsgMessage(), filterDto.getMsgSenderId(), pageable);
+        log.info("msg date from: {} to: {} ", filterDto.getMsgCreatedFrom(), filterDto.getMsgCreatedTo());
+
+        Page<MsgMessageQueueArc> list = arcRepository.findByMessagesArcFilters(filterDto.getMsgAccId(), filterDto.getMsgResellerId(), filterDto.getMsgGrpId(), filterDto.getMsgCreatedDate(), filterDto.getMsgStatus(), filterDto.getMsgSubmobileNo(), filterDto.getMsgMessage(), filterDto.getMsgSenderId(), filterDto.getMsgCreatedFrom(), filterDto.getMsgCreatedTo(), pageable);
 
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setData("result", list.getContent(), resp);
@@ -275,7 +278,8 @@ public class QueueMsgService {
         response.setTotal(msgQueues.size());
         return response;
     }
-@Transactional
+
+    @Transactional
     public void updateArcDnR(MsgDelivery msgDelivery) {
 
         MsgMessageQueueArc msgMessageQueueArc = arcRepository.findById(msgDelivery.getMsgdMsgId()).orElse(null);
@@ -284,8 +288,9 @@ public class QueueMsgService {
             msgMessageQueueArc.setMsgDeliveredDate(new Date());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
-            MsgMessageQueueArc msgMessageQueueArc2 =  arcRepository.save(msgMessageQueueArc);
-           if(msgMessageQueueArc2.getMsgStatus().equalsIgnoreCase(msgDelivery.getMsgdStatus().trim())) msgDeliveryRepository.delete(msgDelivery);
+            MsgMessageQueueArc msgMessageQueueArc2 = arcRepository.save(msgMessageQueueArc);
+            if (msgMessageQueueArc2.getMsgStatus().equalsIgnoreCase(msgDelivery.getMsgdStatus().trim()))
+                msgDeliveryRepository.delete(msgDelivery);
         }
     }
 
@@ -312,73 +317,120 @@ public class QueueMsgService {
 
 
     public byte[] downloadMsgExcell(FilterDto filterDto, User user) {
-//        var usr = user.getEmail();
-        try (Workbook workbook = new XSSFWorkbook()) {
+        // Use SXSSFWorkbook for better memory management with large datasets
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(100)) { // keep 100 rows in memory, exceeding rows will be flushed to disk
             Sheet sheet = workbook.createSheet("Sms_list_Excell");
 
-            if (filterDto.getMsgCreatedDate() == null) {
+            // Set default values
+            if (filterDto.getMsgCreatedDate() == null && filterDto.getMsgCreatedFrom() == null) {
                 filterDto.setMsgCreatedDate(new Date());
             }
-            if (filterDto.getLimit() == 0) filterDto.setLimit(5000);
+            if (filterDto.getLimit() == 0) filterDto.setLimit(5_000_000); // Use underscore for better readability
             filterDto.setSortColumn("msg_created_date");
-            Pageable pageable = PageRequest.of(filterDto.getStart(), filterDto.getLimit(), Sort.by(filterDto.getSortColumn()).descending());
-            if (!TextUtils.isEmpty(filterDto.getMsgSubmobileNo())) {
-                filterDto.setMsgSubmobileNo("%" + filterDto.getMsgSubmobileNo() + "%");
-            }
-            if (!TextUtils.isEmpty(filterDto.getMsgMessage())) {
-                filterDto.setMsgMessage("%" + filterDto.getMsgMessage() + "%");
-            }
 
+            // Optimize query by setting appropriate pagination
+            int pageSize = 10_000; // Process in batches of 10,000
+            int totalProcessed = 0;
+            boolean hasMore = true;
+            int currentRow = 1; // Start from row 1 (0 is header)
 
-            // Create header row and style it
-            Row headerRow = sheet.createRow(0);
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font font = workbook.createFont();
-            font.setBold(true);
-            headerStyle.setFont(font);
-//            headerStyle.setLocked(true);
-
+            // Create header row
             String[] headers = {"Date", "Mobile", "Msg Status", "Client", "Sender Id", "Cost", "Message"};
-            int[] columnWidths = {30, 20, 20, 20, 20, 10, 200}; // Set column widths
+            int[] columnWidths = {30, 20, 20, 20, 20, 10, 200};
+            createHeaderRow(sheet, headers, columnWidths, workbook);
 
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
-                sheet.setColumnWidth(i, columnWidths[i] * 256); // Set column width
+            // Reusable cell styles
+            CellStyle dateCellStyle = workbook.createCellStyle();
+            dateCellStyle.setDataFormat(workbook.createDataFormat().getFormat("yyyy-MM-dd HH:mm:ss"));
+
+            // Process data in batches
+            while (hasMore && totalProcessed < filterDto.getLimit()) {
+                Pageable pageable = PageRequest.of(
+                        totalProcessed / pageSize,
+                        Math.min(pageSize, filterDto.getLimit() - totalProcessed),
+                        Sort.by(filterDto.getSortColumn()).descending()
+                );
+
+                Page<MsgMessageQueueArc> pagedData = arcRepository.findByMessagesArcFilters(
+                        filterDto.getMsgAccId(),
+                        filterDto.getMsgResellerId(),
+                        filterDto.getMsgGrpId(),
+                        filterDto.getMsgCreatedDate(),
+                        filterDto.getMsgStatus(),
+                        filterDto.getMsgSubmobileNo(),
+                        filterDto.getMsgMessage(),
+                        filterDto.getMsgSenderId(),
+                        filterDto.getMsgCreatedFrom(),
+                        filterDto.getMsgCreatedTo(),
+                        pageable
+                );
+
+//                List<MsgMessageQueueArc> batch = pagedData.getContent();
+                List<MsgMessageQueueArc> batch = new ArrayList<>(pagedData.getContent());
+                if (batch.isEmpty()) {
+                    break;
+                }
+
+                // Process current batch
+                for (MsgMessageQueueArc m : batch) {
+                    Row row = sheet.createRow(currentRow++);
+                    addDataRow(row, m, dateCellStyle);
+                }
+
+
+                totalProcessed += batch.size();
+                hasMore = pagedData.hasNext();
+
+                // Clear the batch to free memory
+                batch.clear();
             }
 
-
-            Page<MsgMessageQueueArc> pagedData = arcRepository.findByMessagesArcFilters(filterDto.getMsgAccId(), filterDto.getMsgResellerId(), filterDto.getMsgGrpId(), filterDto.getMsgCreatedDate(), filterDto.getMsgStatus(), filterDto.getMsgSubmobileNo(), filterDto.getMsgMessage(), filterDto.getMsgSenderId(), pageable);
-            List<MsgMessageQueueArc> list = pagedData.getContent();
-
-            if (!list.isEmpty()) {
-                for (int i = 0; i < list.size(); i++) {
-                    // Adding a sample row of data
-                    MsgMessageQueueArc m = list.get(i);
-                    Row row = sheet.createRow(i + 1); // Start from the second row
-                    row.createCell(0).setCellValue(m.getMsgCreatedDate().toString());
-                    row.createCell(1).setCellValue(m.getMsgSubMobileNo());
-                    row.createCell(2).setCellValue(m.getMsgStatus());
-                    row.createCell(3).setCellValue(m.getMsgAccName());
-                    row.createCell(4).setCellValue(m.getMsgSenderIdName());
-                    row.createCell(5).setCellValue(m.getMsgCostId().doubleValue());
-                    row.createCell(6).setCellValue(m.getMsgMessage());
-
-                }
-            } else {
-                Row sampleRow = sheet.createRow(1);
-                for (int i = 0; i < headers.length; i++) {
-                    sampleRow.createCell(i).setCellValue("N/A");
-                }
+            if (totalProcessed == 0) {
+                createEmptyDataRow(sheet, headers.length);
             }
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (Exception e) {
-            log.error(e.getMessage());
-            return null;
+            log.error("Error generating Excel file", e);
+            throw new RuntimeException("Failed to generate Excel file", e);
+        }
+    }
+
+    private void createHeaderRow(Sheet sheet, String[] headers, int[] columnWidths, Workbook workbook) {
+        Row headerRow = sheet.createRow(0);
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setBold(true);
+        headerStyle.setFont(font);
+
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, columnWidths[i] * 256);
+        }
+    }
+
+    private void addDataRow(Row row, MsgMessageQueueArc message, CellStyle dateCellStyle) {
+        int col = 0;
+        Cell dateCell = row.createCell(col++);
+        dateCell.setCellValue(message.getMsgCreatedDate());
+        dateCell.setCellStyle(dateCellStyle);
+
+        row.createCell(col++).setCellValue(message.getMsgSubMobileNo());
+        row.createCell(col++).setCellValue(message.getMsgStatus());
+        row.createCell(col++).setCellValue(message.getMsgAccName());
+        row.createCell(col++).setCellValue(message.getMsgSenderIdName());
+        row.createCell(col++).setCellValue(message.getMsgCostId().doubleValue());
+        row.createCell(col).setCellValue(message.getMsgMessage());
+    }
+
+    private void createEmptyDataRow(Sheet sheet, int columns) {
+        Row row = sheet.createRow(1);
+        for (int i = 0; i < columns; i++) {
+            row.createCell(i).setCellValue("N/A");
         }
     }
 

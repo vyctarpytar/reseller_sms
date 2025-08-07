@@ -17,8 +17,6 @@ public class ChGroupController {
     private final UserService userService;
     private final ChGroupService chGroupService;
 
-
-
     @GetMapping("/{id}")
     public StandardJsonResponse getGroupById(@PathVariable UUID id) {
         return chGroupService.findById(id);

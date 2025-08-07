@@ -1,6 +1,8 @@
-package com.spa.smart_gate_springboot.messaging.send_message.dtos;
+package com.spa.smart_gate_springboot.dashboad.reports.models;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.Date;
 import java.util.UUID;
@@ -9,15 +11,15 @@ import java.util.UUID;
 @Builder
 @Data
 @AllArgsConstructor
-public class FilterDto {
+public class FilterRptDto {
     private String  msgStatus;
     private UUID msgCreatedBy;
     private UUID msgAccId;
     private String msgSenderId;
     private UUID msgGrpId;
     private Date msgCreatedDate;
-    private Date msgCreatedFrom;
-    private Date msgCreatedTo;
+    private Date msgDateFrom;
+    private Date msgDateTo;
     private String msgSubmobileNo;
     private String msgMessage;
     private UUID msgSaleUserId;

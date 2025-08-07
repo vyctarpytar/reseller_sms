@@ -10,6 +10,8 @@ import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.util.TextUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -18,19 +20,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MenuService {
     private final MenuRepo menuRepo;
     private final UserService userService;
 
-    public StandardJsonResponse findMenuByLayer(HttpServletRequest request) {
-        var resp = new StandardJsonResponse();
-        User usr = userService.getCurrentUser(request);
-        List<Menu> menuList = getMenuTree(usr);
-        resp.setData("result", menuList, resp);
-        resp.setMessage("bla", "Ok", resp);
-        resp.setTotal(menuList.size());
-        return resp;
-    }
+
 
 //    @PostConstruct
     private void init() {
@@ -102,13 +97,13 @@ public class MenuService {
     }
 
 
-    public List<Menu> getMenuTree(User usr) {
+    public List<Menu> getMenuTree(String layer,Role role ) {
         // todo come and order
-        String layer = usr.getLayer().name();
+
         List<Menu> flatMenuList = menuRepo.findMenuTreeByOwner(layer);
 
         // if not SPA REMOVE Link account-admin
-        if (!usr.getRole().equals(Role.ACCOUNTANT)) {
+        if ( role != null && !role.equals(Role.ACCOUNTANT)) {
             flatMenuList = flatMenuList.stream().filter(menu ->!( menu.getMnLink().equalsIgnoreCase("billing"))).collect(Collectors.toList());
         }
 
@@ -136,4 +131,27 @@ public class MenuService {
         return rootMenus;
     }
 
+    public StandardJsonResponse findMenuByLayer(HttpServletRequest request, String resellerId, String accountId) {
+        var resp = new StandardJsonResponse();
+
+        String layer = userService.getCurrentUser(request).getLayer().name();
+        Role role = userService.getCurrentUser(request).getRole();
+
+        if(!TextUtils.isEmpty(resellerId)) {
+            layer = Layers.RESELLER.name();
+            role = null;
+        }
+        if(!TextUtils.isEmpty(accountId)) {
+            layer = Layers.ACCOUNT.name();
+            role = null;
+        }
+
+        log.info("Fetch Menu for Layer : {}  and Role : {}", layer, role);
+
+        List<Menu> menuList = getMenuTree(layer, role);
+        resp.setData("result", menuList, resp);
+        resp.setMessage("bla", "Ok", resp);
+        resp.setTotal(menuList.size());
+        return resp;
+    }
 }

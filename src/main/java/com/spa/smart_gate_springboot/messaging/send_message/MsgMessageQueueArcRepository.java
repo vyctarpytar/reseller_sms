@@ -20,6 +20,8 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
              WHERE 1=1 and (case when   cast(:msgAccId as UUID) is not null then  msg_acc_id =  cast(:msgAccId as UUID)  else 1=1 end )
                    AND (case when cast ( :msgGrpId as UUID) IS not NULL then   msg_group_id = cast ( :msgGrpId as UUID)  else 1=1 end)
              AND ( case when   cast ( :msgCreatedDate as DATE)   is not null then cast(msg_created_date as date) = cast(  :msgCreatedDate as Date) else 1=1 end )
+             AND ( case when   cast ( :msgDateFrom as DATE)   is not null and  cast ( :msgDateTo as DATE)   is not null  
+                             then cast(msg_created_date as date) >= cast(  :msgDateFrom as Date) and  cast(msg_created_date as date) <= cast(  :msgDateTo as Date)  else 1=1 end )
             AND (case when :msgStatus IS not  NULL then  msg_status = :msgStatus else 1=1 end )
             AND (case when :msgMessage IS not  NULL then  msg_message ilike :msgMessage else 1=1 end )
             AND (case when :msgSubmobileNo IS not  NULL then  msg_sub_mobile_no ilike :msgSubmobileNo else 1=1 end )
@@ -27,7 +29,13 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
               and (case when cast(:msgResellerId as uuid) is not null then
                   exists(select 1 from js_core.reseller where  msg_reseller_id = rs_id and ( rs_id =:msgResellerId or rs_created_by =:msgResellerId )) else 1=1 end )
             """, nativeQuery = true)
-    Page<MsgMessageQueueArc> findByMessagesArcFilters(@Param("msgAccId") UUID msgAccId, @Param("msgResellerId") UUID msgResellerId, @Param("msgGrpId") UUID msgGrpId, @Param("msgCreatedDate") Date msgCreatedDate, @Param("msgStatus") String msgStatus, @Param("msgSubmobileNo") String msgSubmobileNo, @Param("msgMessage") String msgMessage, @Param("msgSenderName") String msgSenderName, Pageable pageable);
+    Page<MsgMessageQueueArc> findByMessagesArcFilters(@Param("msgAccId") UUID msgAccId, @Param("msgResellerId") UUID msgResellerId, @Param("msgGrpId") UUID msgGrpId,
+                                                      @Param("msgCreatedDate") Date msgCreatedDate,
+                                                      @Param("msgStatus") String msgStatus, @Param("msgSubmobileNo") String msgSubmobileNo, @Param("msgMessage") String msgMessage,
+                                                      @Param("msgSenderName") String msgSenderName,
+                                                      @Param("msgDateFrom") Date msgDateFrom,
+                                                      @Param("msgDateTo") Date msgDateTo,
+                                                      Pageable pageable);
 
 
     @Query(value = """
@@ -46,7 +54,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
             SELECT  TO_CHAR(msg_created_date, 'HH24:MI') as  msg_created_date,msg_status, cast( count(*) as int ) as msg_count
                         FROM msg.message_queue_arc
                         WHERE 1=1 and (case when cast(:msgAccId as UUID) is not null then  msg_acc_id = :msgAccId else 1=1 end )
-                      
+            
                           and  ( case when   cast ( :msgCreatedFromDate as DATE)   is not null then
                               cast(msg_created_date as date) between cast(  :msgCreatedFromDate as Date) and  cast(  :msgCreatedToDate as Date)
                                  else  cast(msg_created_date as date) = cast(  :msgCreatedDate as Date) end )
@@ -150,8 +158,6 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
     Page<MsgMessageQueueArc> resendSentStatusAfter4hrsMurangaMarch(Pageable pageable);
 
 
-
-
     List<MsgMessageQueueArc> findAllByMsgExternalIdAndMsgAccIdAndMsgSubMobileNo(String msgExternalId, UUID msgAccId, String msgSubMobileNo);
 
     Optional<MsgMessageQueueArc> findByMsgCode(String msgCode);
@@ -166,10 +172,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
                     msg_retry_count = :counter
                 WHERE msg_id = :msgId
             """)
-    void updateMessageDeliveryToFailed(@Param("msgId") UUID msgId,
-            @Param("message") String message,
-            @Param("counter") int counter);
-
+    void updateMessageDeliveryToFailed(@Param("msgId") UUID msgId, @Param("message") String message, @Param("counter") int counter);
 
 
     @Modifying
@@ -182,9 +185,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
               where msg_code in (:msgCode)
                           and msg_status = 'PENDING_PROCESSING'
             """)
-    void updateInitialReceiveNote(@Param("msgStatus") String msgStatus, @Param("msgStatusCode") int msgStatusCode, @Param("msgCode") List<String> msgCode,
-                                  @Param("msgResponse") String msgResponse);
-
+    void updateInitialReceiveNote(@Param("msgStatus") String msgStatus, @Param("msgStatusCode") int msgStatusCode, @Param("msgCode") List<String> msgCode, @Param("msgResponse") String msgResponse);
 
 
     @Modifying
@@ -198,7 +199,6 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
               and msg_sub_mobile_no =:msisdn
             """)
     void updateDeliverNote(@Param("msgStatus") String msgStatus, @Param("msgRequestId") String msgRequestId, @Param("msisdn") String msisdn, @Param("msgCode") String msgCode);
-
 
 
 }

@@ -104,7 +104,7 @@ public class ResellerService {
     public StandardJsonResponse getAllReseller(User user) {
         StandardJsonResponse resp = new StandardJsonResponse();
         if (user.getLayer().equals(Layers.TOP)) {
-            List<Reseller> list = resellerRepo.findByRsCreatedBy(user.getUsrId());
+            List<Reseller> list = resellerRepo.findAll();
             resp.setData("result", list, resp);
         }
 

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.account_setup.blacklist.BlackListService;
+import com.spa.smart_gate_springboot.messaging.send_message.dtos.SmsDlr;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.dto.Datum;
-import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.dto.SmsResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
@@ -16,6 +16,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.RejectedExecutionException;
 
 
@@ -43,13 +44,16 @@ public class SafDlrService {
     }
 
     private void consumerAction(Channel channel, Message message) {
-
+        try {
         byte[] payload = message.getBody();
         long tag = message.getMessageProperties().getDeliveryTag();
 
-        SmsResponse res = null;
+        String body = new String(payload, StandardCharsets.UTF_8);
+        log.info("Safaricom response: {}", body);
+
+            SmsDlr res = null;
         try {
-            res = objectMapper.readValue(payload, SmsResponse.class);
+            res = objectMapper.readValue(payload, SmsDlr.class);
         } catch (IOException exc) {
             throw new RuntimeException(exc);
         }
@@ -59,7 +63,14 @@ public class SafDlrService {
         String msgStatus = null;
         String msgmsisdn = null;
 
-        for (Datum data : res.getRequestParam().data) {
+        log.info("safaricom res: {} ", res);
+
+        if( res == null || TextUtils.isEmpty(res.getRequestId())){
+            if(channel.isOpen()) channel.basicAck(tag, false);
+            return;
+        }
+
+        for (Datum data : res.getRequestParam().getData()) {
             if (data.getName().equalsIgnoreCase("correlatorId")) {
                 msgCode = data.getValue();
 
@@ -74,11 +85,12 @@ public class SafDlrService {
 
         if (TextUtils.isEmpty(msgCode) && TextUtils.isEmpty(msgStatus)) {
             log.error("CorrelatorId and Description are empty");
+            if(channel.isOpen()) channel.basicAck(tag, false);
             return;
         }
 
 
-        try {
+
 
             updateDeliveryNote(msgStatus,res.getRequestId(),msgmsisdn,msgCode);
 

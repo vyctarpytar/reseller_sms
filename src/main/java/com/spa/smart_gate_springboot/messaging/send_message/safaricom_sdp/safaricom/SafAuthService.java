@@ -20,9 +20,9 @@ import java.io.IOException;
 @EnableScheduling
 public class SafAuthService {
 
-    public static final String SMS_GATEWAY_SAF_TOKEN = "SMS_GATEWAY_SAF_TOKEN";
-    private final SafaricomProperties safaricomProperties;
+    private static String SMS_GATEWAY_SAF_TOKEN;
 
+    private final SafaricomProperties safaricomProperties;
     private final SafaricomInterface safaricomInterface;
 
     public String getTokenFromSafaricom() throws IOException {
@@ -30,58 +30,46 @@ public class SafAuthService {
 
         SafAuthReq safAuthReq = SafAuthReq.builder().password(safaricomProperties.getSafPassword()).username(safaricomProperties.getSafApiUserName()).build();
 
-//        String json = AppFunctions.convertToStringJson(safAuthReq);
-
         Call<SafTokenResponse> call = safaricomInterface.getToken(String.valueOf(MediaType.APPLICATION_JSON), "XMLHttpRequest", safAuthReq);
 
         Response<SafTokenResponse> res = call.execute();
 
         if (res.isSuccessful()) {
             assert res.body() != null;
-            logTokenToRedis(res.body().getToken());
-            return res.body().getToken();
 
+            SMS_GATEWAY_SAF_TOKEN = res.body().getToken();
+
+            return SMS_GATEWAY_SAF_TOKEN;
 
         }
-       throw new RuntimeException("Safaricom Error : could not obtain token");
+        throw new RuntimeException("Safaricom Error : could not obtain token");
 
-    }
-
-    private void logTokenToRedis(String token) {
-
-        try {
-            int tokenExpiresInMinutes = 50 ; // minutes
-
-            log.info("Token will expire in {} seconds.", tokenExpiresInMinutes);
-
-
-        } catch (Exception e) {
-            System.err.println("Error Caching token: " + e.getMessage());
-        }
     }
 
 
     public String getAccessToken() throws IOException {
-        String token = getTokenfromRedis() == null ? getTokenFromSafaricom() : getTokenfromRedis();
+        String token = getTokenFromRedis() == null ? getTokenFromSafaricom() : getTokenFromRedis();
         log.warn(token);
         return token;
     }
 
 
-    public String getTokenfromRedis() {
-//        String redisToken = redisManagerService.getValueByKey(SMS_GATEWAY_SAF_TOKEN, SMS_GATEWAY_SAF_TOKEN);
-        String redisToken = null;
+    public String getTokenFromRedis() {
+        String redisToken = SMS_GATEWAY_SAF_TOKEN;
         log.info("token from redis found : {}", !TextUtils.isEmpty(redisToken));
         return redisToken;
     }
 
 
-    @Scheduled(fixedRate = 20 * 60 * 1000)  // run ever 20 minutes
-    public void init() {
+    @Scheduled(cron = "0 */50 * * * *")
+    public void refreshToken() {
+        log.info("refreshing  token  from Safaricom");
         try {
-//            redisManagerService.deleteValueByKey(SMS_GATEWAY_SAF_TOKEN,SMS_GATEWAY_SAF_TOKEN);
+            SMS_GATEWAY_SAF_TOKEN = null;
             getTokenFromSafaricom();
+
         } catch (Exception e) {
+            SMS_GATEWAY_SAF_TOKEN = null;
             log.error("Error getting access token", e);
         }
     }

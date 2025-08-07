@@ -66,7 +66,6 @@ public class SafBulkService {
     public void sendBulkToSaf(SendBulkSafReq sendBulkSafReq) throws Exception {
 
         sendBulkSafReq.setTimeStamp(String.valueOf(System.currentTimeMillis()));
-        ResponseModel body;
 
         String accessToken = safAuthService.getAccessToken();
         if (TextUtils.isEmpty(accessToken)) {
@@ -89,12 +88,10 @@ public class SafBulkService {
 
             if (res.body().getStatusCode().equalsIgnoreCase(AppUtils.BULK_SMS_SEND_SUCCESS_STATUS_CODE)) {
 
-                body = ResponseModel.builder().status("00").message("success").data(res.body()).success(true).batchSize(sendBulkSafReq.getDataSet().size()).build();
                 updateMessageStatus(true, sendBulkSafReq.getDataSet(), res.code(), res.body().getStatusCode());
             } else {
                 log.info("[SEND BULK RESPONSE MEANS WAS SENT FAILED WITH STATUS CODE {} ]", res.body().getStatusCode());
 
-                body = ResponseModel.builder().status("00").message(res.body().getStatus()).data(res.body()).build();
                 updateMessageStatus(false, sendBulkSafReq.getDataSet(), res.code(), res.body().getStatusCode());
             }
 
@@ -102,7 +99,6 @@ public class SafBulkService {
         } else {
 
             BulkResponse ob = parseError(res.errorBody());
-            body = ResponseModel.builder().status("01").message("Failed to send message").data(ob).build();
             log.error("[SAF SEND BULK ERROR RES {} ]", ob);
             updateMessageStatus(false, sendBulkSafReq.getDataSet(), res.code(), ob.getMessage());
         }
@@ -112,7 +108,7 @@ public class SafBulkService {
 
     private void updateMessageStatus(boolean success, List<SafBulkDataSet> dataSet, int code, String safResponse) {
         List<String> msgCodesList = dataSet.stream().map(SafBulkDataSet::getUniqueId).toList();
-        msgMessageQueueArcRepository.updateInitialReceiveNote(success ? "PENDING_DELIVERY" : "ERROR", code, msgCodesList, safResponse);
+        msgMessageQueueArcRepository.updateInitialReceiveNote(success ? "SENT" : "ERROR", code, msgCodesList, safResponse);
     }
 
 

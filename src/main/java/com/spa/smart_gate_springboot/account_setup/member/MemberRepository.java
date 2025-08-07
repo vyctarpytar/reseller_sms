@@ -7,8 +7,9 @@ import java.util.List;
 import java.util.UUID;
 @Repository
 public interface MemberRepository extends JpaRepository<ChMember, UUID> {
-//    List<ChMember> findBychGroupId(UUID grpId);
+
     List<ChMember> findByChGroupIdOrderByChIdDesc(UUID grpId);
 
     List<ChMember> findByChAccIdOrderByChIdDesc(UUID accId);
+
 }

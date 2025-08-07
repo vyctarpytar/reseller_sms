@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
 public class MQConfig {
 
     public static final String QUEUE = "SMART_GATE_V2_RECEIVE";
-    public static final String OUT_OF_CREDIT_QUEUE = "SMART_GATE_V2_OUT_OF_CREDIT_SPA";
     public static final String OUT_OF_CREDIT_QUEUE_SYNQ = "SMART_GATE_V2_OUT_OF_CREDIT_SYNQ";
     public static final String BALANCE_UPDATE = "smart.gate.v2.update.account.balance";
     public static final String SYNQ_QUEUE = "SMART_GATE_V2_RECEIVE_SYNQ";
@@ -45,10 +44,6 @@ public class MQConfig {
         return new Queue(AIRTEL_DNR, true, false, false);
     }
 
-    @Bean
-    public Queue outOfCreditQueue() {
-        return new Queue(OUT_OF_CREDIT_QUEUE, true, false, false);
-    }
 
     @Bean
     public Queue balanceUpdate() {
@@ -64,7 +59,8 @@ public class MQConfig {
     public Queue synqReceiveQueue() {
         return new Queue(SYNQ_QUEUE, true, false, false);
     }
- @Bean
+
+    @Bean
     public Queue deliverNotes() {
         return new Queue(INCOMING_SMS_DLR, true, false, false);
     }

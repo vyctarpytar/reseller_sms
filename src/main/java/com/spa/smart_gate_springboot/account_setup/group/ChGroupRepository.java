@@ -8,5 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface ChGroupRepository extends JpaRepository<ChGroup, UUID> {
-    List<ChGroup> findByGroupAccId(UUID accId);
+    List<ChGroup> findByGroupAccIdOrderByGroupCreationDateDesc(UUID groupAccId);
 }

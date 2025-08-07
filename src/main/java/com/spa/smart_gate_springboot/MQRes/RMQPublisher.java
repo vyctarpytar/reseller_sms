@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 public class RMQPublisher {
 
     private final RabbitAdmin rabbitAdmin;
-    private final GlobalUtils globalUtils;
+//    private final GlobalUtils globalUtils;
     @Value("${rabbitmq.exchange.name}")
     private String XEXCHANGE;
     @Value("${rabbitmq.exchange.name}")

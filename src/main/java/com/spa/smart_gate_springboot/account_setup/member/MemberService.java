@@ -101,8 +101,8 @@ public class MemberService {
                 }
 
 
-                for(int i = 0; i<10; i++) {
-                    log.info("row number  {} index  : {}   with value : {}" , row.getRowNum(), i, globalUtils.getCellValueAsString(row.getCell(i)));
+                for (int i = 0; i < 10; i++) {
+                    log.info("row number  {} index  : {}   with value : {}", row.getRowNum(), i, globalUtils.getCellValueAsString(row.getCell(i)));
                 }
 
 
@@ -208,7 +208,7 @@ public class MemberService {
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error creating template : {}", e.getLocalizedMessage() , e);
             return null;
         }
     }
@@ -227,7 +227,7 @@ public class MemberService {
             var groupMembers = getChMembersByGroupId(id);
             memberRepository.deleteAllInBatch(groupMembers);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error deleting group : {}", e.getMessage());
         }
     }
 }

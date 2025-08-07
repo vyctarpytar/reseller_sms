@@ -168,7 +168,5 @@ public class MessageController {
         headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
         return ResponseEntity.ok().headers(headers).body(excelBytes);
     }
-
-
 }
 

@@ -24,8 +24,8 @@ public class DashBoardService {
         UUID msgSalesUserId = filterDto.getMsgSaleUserId();
         UUID msgResellerId = filterDto.getMsgResellerId();
         Date msgDate = filterDto.getMsgCreatedDate();
-        Date msgDateFrom = filterDto.getMsgDateFrom();
-        Date msgDateTo = filterDto.getMsgDateTo();
+        Date msgDateFrom = filterDto.getMsgCreatedFrom();
+        Date msgDateTo = filterDto.getMsgCreatedTo();
         if (msgDate == null) msgDate = new Date();
 
         if (msgDateTo == null) msgDateTo = new Date();

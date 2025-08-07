@@ -22,11 +22,13 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.DuplicateFormatFlagsException;
 import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -186,9 +188,14 @@ public class MQReceiverSynq {
                 msgMessageQueueArc.setMsgSenderLevel("WEISER");
                 UniqueCodeGenerator ug = new UniqueCodeGenerator();
                 msgMessageQueueArc.setMsgCode(ug.generateSecureApiKey());
-                msgMessageQueueArcRepository.save(msgMessageQueueArc);
-
-                safBulkService.sendArcSms(msgMessageQueueArc);
+                try {
+                    msgMessageQueueArcRepository.save(msgMessageQueueArc);
+                    safBulkService.sendArcSms(msgMessageQueueArc);
+                } catch (DataIntegrityViolationException die) {
+                    log.error("Dublicate violation : {}",die.getLocalizedMessage());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
 
             }
 

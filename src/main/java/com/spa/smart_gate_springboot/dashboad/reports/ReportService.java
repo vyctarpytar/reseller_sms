@@ -1,10 +1,6 @@
 package com.spa.smart_gate_springboot.dashboad.reports;
 
-import com.spa.smart_gate_springboot.dashboad.reports.models.AccountDonought;
-import com.spa.smart_gate_springboot.dashboad.reports.models.DailyMessageSumDto;
-import com.spa.smart_gate_springboot.dashboad.reports.models.MsgAccStat;
-import com.spa.smart_gate_springboot.dashboad.reports.models.StatusSummaryDto;
-import com.spa.smart_gate_springboot.messaging.send_message.dtos.FilterDto;
+import com.spa.smart_gate_springboot.dashboad.reports.models.*;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +31,7 @@ public class ReportService {
         row.createCell(2).setCellValue(Double.parseDouble(m[2] + ""));
     }
 
-    public StandardJsonResponse getSmsSummaryPerAccount(FilterDto filterDto) {
+    public StandardJsonResponse getSmsSummaryPerAccount(FilterRptDto filterDto) {
         UUID msgAccId = filterDto.getMsgAccId();
         UUID msgSalesUserId = filterDto.getMsgSaleUserId();
         UUID msgResellerId = filterDto.getMsgResellerId();
@@ -63,7 +59,7 @@ public class ReportService {
         return rawResults.stream().map(result -> MsgAccStat.builder().msgAccName((String) result[0]).msgCount((Integer) result[1]).path("sent-sms").msgPerCent(((Integer) result[1] * 100) / totalSms).build()).collect(Collectors.toList());
     }
 
-    public StandardJsonResponse getDailySmsUsage(FilterDto filterDto) {
+    public StandardJsonResponse getDailySmsUsage(FilterRptDto filterDto) {
         if (filterDto.getLimit() == 0) filterDto.setLimit(10);
         UUID msgAccId = filterDto.getMsgAccId();
         UUID msgSaleId = filterDto.getMsgSaleUserId();
@@ -87,7 +83,7 @@ public class ReportService {
         return response;
     }
 
-    public StandardJsonResponse getStatusSmsUsage(FilterDto filterDto) {
+    public StandardJsonResponse getStatusSmsUsage(FilterRptDto filterDto) {
         if (filterDto.getLimit() == 0) filterDto.setLimit(30);
         UUID msgAccId = filterDto.getMsgAccId();
         UUID msgSaleId = filterDto.getMsgSaleUserId();
@@ -110,7 +106,7 @@ public class ReportService {
         return response;
     }
 
-    public byte[] getDailySmsUsageDownloadExcell(FilterDto filterDto) {
+    public byte[] getDailySmsUsageDownloadExcell(FilterRptDto filterDto) {
 
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Sms_Daily_Usage");
@@ -173,7 +169,7 @@ public class ReportService {
         }
     }
 
-    public byte[] getStatusSmsUsageDownloadExcell(FilterDto filterDto) {
+    public byte[] getStatusSmsUsageDownloadExcell(FilterRptDto filterDto) {
 
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Sms_Daily_Usage");

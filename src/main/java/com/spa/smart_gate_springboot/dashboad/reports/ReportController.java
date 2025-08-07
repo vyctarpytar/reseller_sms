@@ -1,7 +1,7 @@
 package com.spa.smart_gate_springboot.dashboad.reports;
 
+import com.spa.smart_gate_springboot.dashboad.reports.models.FilterRptDto;
 import com.spa.smart_gate_springboot.dto.Layers;
-import com.spa.smart_gate_springboot.messaging.send_message.dtos.FilterDto;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
@@ -25,7 +25,7 @@ public class ReportController {
     private final ReportService reportService;
     private final UserService userService;
 
-    private static void setFilters(FilterDto filterDto, User user) {
+    private static void setFilters(FilterRptDto filterDto, User user) {
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             filterDto.setMsgAccId(user.getUsrAccId());
         } else if (user.getRole().equals(Role.SALE)) {
@@ -41,28 +41,28 @@ public class ReportController {
     }
 
     @PostMapping("account-donut")
-    public StandardJsonResponse getSmsSummaryPerAccount(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public StandardJsonResponse getSmsSummaryPerAccount(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
         return reportService.getSmsSummaryPerAccount(filterDto);
     }
 
     @PostMapping("daily-sms-usage")
-    public StandardJsonResponse getDailySmsUsage(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public StandardJsonResponse getDailySmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
         return reportService.getDailySmsUsage(filterDto);
     }
 
     @PostMapping("status-sms-usage")
-    public StandardJsonResponse getStatusSmsUsage(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public StandardJsonResponse getStatusSmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
         return reportService.getStatusSmsUsage(filterDto);
     }
 
     @PostMapping("/daily-sms-usage-download-excel")
-    public ResponseEntity<byte[]> dailySMSUsageSummary(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public ResponseEntity<byte[]> dailySMSUsageSummary(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
 
@@ -77,7 +77,7 @@ public class ReportController {
     }
 
     @PostMapping("/status-sms-summary-download-excel")
-    public ResponseEntity<byte[]> statusSmsSummary(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public ResponseEntity<byte[]> statusSmsSummary(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
 

@@ -4,8 +4,9 @@ import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safari
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class RequestParam {
-    public ArrayList<Datum> data;
+    private List<Datum> data;
 }

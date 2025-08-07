@@ -5,26 +5,19 @@ import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.webjars.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ChGroupService {
 
-
     private final ChGroupRepository chGroupRepository;
     private final MemberService memberService;
-
-    public List<ChGroup> findAll() {
-        return chGroupRepository.findAll();
-    }
 
     public StandardJsonResponse findById(UUID id) {
         StandardJsonResponse response = new StandardJsonResponse();
@@ -49,14 +42,14 @@ public class ChGroupService {
             chGroupRepository.deleteById(id);
         }
 
-        response.setMessage("message", "Group deleted successfully", response);
+        response.setMessage("message", "Group and Its Members deleted successfully", response);
         return response;
 
     }
 
     public StandardJsonResponse findByAccountId(@NotNull UUID accId) {
         StandardJsonResponse response = new StandardJsonResponse();
-        List<ChGroup> list = chGroupRepository.findByGroupAccId(accId);
+        List<ChGroup> list = chGroupRepository.findByGroupAccIdOrderByGroupCreationDateDesc(accId);
         response.setData("result", list, response);
         response.setTotal(list.size());
         response.setMessage("message", "Ok", response);

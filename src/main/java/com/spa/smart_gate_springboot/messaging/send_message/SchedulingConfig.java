@@ -34,38 +34,7 @@ public class SchedulingConfig {
     private final AccountService accountService;
     private final QueueMsgService queueMsgService;
     private final ResellerRepo resellerRepo;
-    private final ObjectMapper objectMapper;
-    private final MsgDeliveryService msgDeliveryService;
 
-
-
-
-
-
-
-
-    public void resendToWeiser(UUID rsId, String msgStatus) {
-        Set<UUID> accountList = accountService.findAccountByResellerId(rsId).stream().map(Account::getAccId).collect(Collectors.toSet());
-        PageRequest pageRequest = PageRequest.of(0, 1000);
-        Page<MsgMessageQueueArc> pageData = arcRepository.resendSmsPagable(accountList, msgStatus, pageRequest);
-        List<MsgMessageQueueArc> pdRsCredit = pageData.getContent();
-        pdRsCredit.forEach(m -> {
-            try {
-                MsgQueue msgQueue = new MsgQueue();
-                BeanUtils.copyProperties(m, msgQueue);
-                arcRepository.deleteById(m.getMsgId());
-                if (!TextUtils.isEmpty(m.getMsgErrorCode()) && m.getMsgErrorCode().equalsIgnoreCase("200")) {
-                    // refund the customer
-                    accountService.refundCostCharged(msgQueue.getMsgAccId(), msgQueue.getMsgCostId());
-                }
-                msgQueue.setMsgSentRetried(true);
-                msgQueue.setMsgCreatedDate(new Date());
-                queueMsgService.publishNewMessage(msgQueue);
-            } catch (Exception e) {
-                log.error("ResendToWeiser error {}", e.getMessage(), e);
-            }
-        });
-    }
 
     public void resendToSynq(UUID rsId, String msgStatus) {
         Set<UUID> accountList = accountService.findAccountByResellerId(rsId).stream().map(Account::getAccId).collect(Collectors.toSet());
@@ -107,9 +76,9 @@ public class SchedulingConfig {
         for (Reseller reseller : resellerList) {
 //            log.error("resending message {}------({})", reseller.getRsCompanyName(), reseller.getRsId());
 
-            resendToWeiser(reseller.getRsId(), "Exception sending");
-            resendToWeiser(reseller.getRsId(), "ERROR");
-            resendToWeiser(reseller.getRsId(), "ERRORR");
+            resendToSynq(reseller.getRsId(), "Exception sending");
+            resendToSynq(reseller.getRsId(), "ERROR");
+            resendToSynq(reseller.getRsId(), "ERRORR");
 
         }
 
@@ -143,16 +112,6 @@ public class SchedulingConfig {
     }
 
 
-
-    @Scheduled(fixedRate = 1000*5)
-    public void reconDeliveryNotes() {
-
-        List<MsgDelivery> deliveries = msgDeliveryService.reconDeliveryNotes();
-        deliveries.forEach(m->{
-            queueMsgService.updateArcDnR(m);
-            log.info("Delivery Notes Recons: {} ", m);
-        });
-    }
 
     @Scheduled(fixedRate = 1000*60*5)
     public void health() {
