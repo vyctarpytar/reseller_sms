@@ -13,8 +13,8 @@ import java.util.TimeZone;
 public class Smart_gate_spring_boot {
     public static void main(String[] args) {
         TimeZone.setDefault(TimeZone.getTimeZone("Africa/Nairobi"));
-        log.info("----XXXXX-------Application started");
         SpringApplication.run(Smart_gate_spring_boot.class, args);
+        log.info("----XXXXX-------Application started");
     }
 
 }

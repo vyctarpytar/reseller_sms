@@ -115,7 +115,7 @@ public class SchedulingConfig {
 
     @Scheduled(fixedRate = 1000*60*5)
     public void health() {
-        log.info("Health Check Cron:   {}", new Date());
+        log.info("Health Check Cron sms-app:   {}", new Date());
     }
 
 
