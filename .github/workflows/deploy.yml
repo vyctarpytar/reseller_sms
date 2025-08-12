@@ -28,8 +28,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "target/smart_gate_springboot-0.0.1-SNAPSHOT.jar"
-          target: "/home/deploycicd/app/smart_gate_springboot-0.0.1-SNAPSHOT.jar"
+          source: "target/*.jar"
+          target: "/home/deploycicd/app/"
+
 
       - name: Restart App on EC2
         uses: appleboy/ssh-action@v0.1.10
@@ -38,4 +39,14 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo systemctl restart smart_gate
+            sudo systemctl restart sms_app
+            
+
+      - name: Show last 20 lines of app logs
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}ß
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo journalctl -u sms_app -n 20 --no-pager
