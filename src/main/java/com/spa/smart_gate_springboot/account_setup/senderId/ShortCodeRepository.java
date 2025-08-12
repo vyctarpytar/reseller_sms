@@ -14,7 +14,7 @@ import java.util.UUID;
 @Repository
 public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
 
-    Optional<ShortCode> findByShCode(String shortCode);
+    Optional<ShortCode> findByShCodeAndShResellerId(String shortCode, UUID resellerId);
 
     @Query(value = """
             SELECT DISTINCT m.sh_code FROM msg.shortcode m

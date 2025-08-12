@@ -79,7 +79,7 @@ public class ShortCodeService {
 
     public StandardJsonResponse assignAccountToSetUp(UUID accId, User auth, String shCode) {
         StandardJsonResponse resp = new StandardJsonResponse();
-        ShortCode shortCode = shortCodeRepository.findByShCode(shCode).orElseThrow(() -> new IllegalArgumentException("No short code found for shCode: " + shCode));
+        ShortCode shortCode = shortCodeRepository.findByShCodeAndShResellerId(shCode,auth.getUsrResellerId()).orElseThrow(() -> new IllegalArgumentException("No short code found for shCode: " + shCode));
         msgShortcodeSetupService.assignShortCodeToAccount(auth, accId, shortCode);
 
 
@@ -110,7 +110,7 @@ public class ShortCodeService {
 
     public StandardJsonResponse registerSenderId(ShortCodeDto shortCodeDto, User auth) {
 
-        ShortCode shortCode = shortCodeRepository.findByShCode(shortCodeDto.getShCode()).orElse(new ShortCode());
+        ShortCode shortCode = shortCodeRepository.findByShCodeAndShResellerId(shortCodeDto.getShCode(), auth.getUsrResellerId()).orElse(new ShortCode());
 
         StandardJsonResponse response = new StandardJsonResponse();
         if (!TextUtils.isEmpty(shortCode.getShCode())) {
