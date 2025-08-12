@@ -42,7 +42,7 @@ jobs:
             sudo systemctl restart sms-app
             
 
-      - name: Show last 20 lines of app logs
+      - name: Show last 30 lines of app logs
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}ß
