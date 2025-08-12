@@ -146,7 +146,7 @@ public class MenuService {
             role = null;
         }
 
-        log.info("Fetch Menu for Layer : {}  and Role : {}", layer, role);
+        log.info("User Fetch Menu for Layer : {}  and Role : {}", layer, role);
 
         List<Menu> menuList = getMenuTree(layer, role);
         resp.setData("result", menuList, resp);
