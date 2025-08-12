@@ -42,11 +42,11 @@ jobs:
             sudo systemctl restart sms-app
             
 
-      - name: Show last 30 lines of app logs
+      - name: Show last 25 lines of app logs
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo journalctl -u sms-app -n 30 --no-pager
+            sudo journalctl -u sms-app -n 25 --no-pager
