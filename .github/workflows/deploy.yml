@@ -49,4 +49,4 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo journalctl -u sms-app -n 20 --no-pager
+            sudo journalctl -u sms-app -n 30 --no-pager
