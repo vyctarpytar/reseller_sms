@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-             systemctl restart sms-app
+            sudo systemctl restart sms-app
             
 
       - name: Show last 20 lines of app logs
@@ -49,4 +49,4 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-             journalctl -u sms-app -n 30 --no-pager
+            sudo journalctl -u sms-app -n 30 --no-pager
