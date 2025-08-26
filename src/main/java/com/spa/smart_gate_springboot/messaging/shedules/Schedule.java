@@ -41,5 +41,9 @@ public class Schedule {
     @Builder.Default
     @Column(nullable = false)
     private String schStatus = "PENDING";
+
+    private UUID schUpdatedById;
+    private String schUpdatedByName;
+    private  LocalDateTime schUpdatedOn;
 }
 

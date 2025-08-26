@@ -135,4 +135,26 @@ public class ScheduleService {
     }
 
 
+    public StandardJsonResponse updateSchedule(Schedule schedule, User user) {
+        schedule.setSchUpdatedOn(LocalDateTime.now());
+        schedule.setSchUpdatedById(user.getUsrId());
+        schedule.setSchUpdatedByName(user.getEmail());
+        StandardJsonResponse resp = new StandardJsonResponse();
+        resp.setMessage("result", scheduleRepository.save(schedule), resp);
+        resp.setMessage("message", "Messages Schedule Updated Successfully", resp);
+        return resp;
+    }
+
+    public StandardJsonResponse disaleSchedule(UUID scheduleId, User user) {
+        Schedule schedule = scheduleRepository.findById(scheduleId).orElse(null);
+        if (schedule == null) throw new RuntimeException("Schedule Not Found");
+        schedule.setSchStatus("DISABLED");
+        schedule.setSchUpdatedOn(LocalDateTime.now());
+        schedule.setSchUpdatedById(user.getUsrId());
+        schedule.setSchUpdatedByName(user.getEmail());
+        StandardJsonResponse resp = new StandardJsonResponse();
+        resp.setMessage("result", scheduleRepository.save(schedule), resp);
+        resp.setMessage("message", "Messages Schedule Disabled Successfully", resp);
+        return resp;
+    }
 }

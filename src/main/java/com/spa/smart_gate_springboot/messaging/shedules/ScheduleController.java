@@ -6,9 +6,9 @@ import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v2/schedule")
@@ -25,5 +25,17 @@ public class ScheduleController{
         filterDto.setSchUsrId(user.getUsrId());
         filterDto.setSchAccId(user.getUsrAccId());
          return scheduleService.getFilteredSchedules(filterDto,user);
+    }
+
+    @PostMapping("/update")
+    public StandardJsonResponse updateSchedule(HttpServletRequest request, Schedule schedule) {
+        var user = userService.getCurrentUser(request);
+        return scheduleService.updateSchedule(schedule,user);
+    }
+    @DeleteMapping("/delete/{scheduleId}")
+    public StandardJsonResponse deleteSchedule(HttpServletRequest request, @PathVariable UUID scheduleId) {
+        var user = userService.getCurrentUser(request);
+
+        return scheduleService.disaleSchedule(scheduleId,user);
     }
 }
