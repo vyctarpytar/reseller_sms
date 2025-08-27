@@ -17,6 +17,7 @@ public class AnnualReportDto {
     private String accountName;
     private String resellerName;
     private UUID resellerId;
+    private Long validityPeriod;
     
     // Monthly breakdown
     private MonthlyData month1;

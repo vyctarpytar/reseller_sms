@@ -47,8 +47,8 @@ public class AnnualReportController {
             List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(year, quarter, accountId, resellerId);
             
             StandardJsonResponse response = new StandardJsonResponse();
-            response.setData("reports", reports, response);
-            response.setData("totalCount", reports.size(), response);
+            response.setData("result", reports, response);
+            response.setTotal(reports.size());
             response.setMessage("Quarterly reports retrieved successfully", "success", response);
             
             return ResponseEntity.ok(response);

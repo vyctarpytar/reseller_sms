@@ -424,7 +424,7 @@ public class AnnualReportService {
             percentStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00%"));
             // Create headers
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Account Name", "Reseller", "Year", "Quarter", "Month 1", "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
+            String[] headers = {"Account Name", "Reseller","Validity Periiod", "Year", "Quarter", "Month 1", "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
 
                     "M2 Delivered", "M2 Failed", "M2 Delivery Rate", "Month 3", "M3 Messages", "M3 Revenue", "M3 Delivered", "M3 Failed", "M3 Delivery Rate", "Quarter Total Messages",
 
@@ -447,9 +447,8 @@ public class AnnualReportService {
                 // Basic info
                 row.createCell(colNum++).setCellValue(report.getAccountName() != null ? report.getAccountName() : "");
                 row.createCell(colNum++).setCellValue(report.getResellerName() != null ? report.getResellerName() : "");
-                row.createCell(colNum++).
-
-                        setCellValue(report.getYear() != null ? report.getYear() : 0);
+                row.createCell(colNum++).setCellValue(report.getValidityPeriod() != null ? report.getValidityPeriod() : 0);
+                row.createCell(colNum++).setCellValue(report.getYear() != null ? report.getYear() : 0);
                 row.createCell(colNum++).setCellValue(report.getQuarter() != null ? report.getQuarter() : 0);
 
                 // Month 1 data
