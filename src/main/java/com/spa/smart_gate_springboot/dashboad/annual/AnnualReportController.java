@@ -217,7 +217,7 @@ public class AnnualReportController {
             map.put("overallDeliveryRate", String.format("%.2f%%", overallDeliveryRate));
 
             StandardJsonResponse response = new StandardJsonResponse();
-            response.setData(map);
+            response.setData("result",map, response);
             response.setMessage("Quarterly summary retrieved successfully", "success", response);
             
             return ResponseEntity.ok(response);
