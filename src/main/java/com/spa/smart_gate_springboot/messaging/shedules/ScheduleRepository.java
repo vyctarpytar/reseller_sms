@@ -11,6 +11,6 @@ import java.util.UUID;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, UUID> {
     List<Schedule> findAllBySchReleaseTimeEqualsAndSchStatus(String schReleaseTime,String schStatus);
-    List<Schedule> findAllBySchAccIdOrderBySchCreatedOn(UUID id);
+    List<Schedule> findAllBySchAccIdOrderBySchCreatedOnDesc(UUID id);
 }
 

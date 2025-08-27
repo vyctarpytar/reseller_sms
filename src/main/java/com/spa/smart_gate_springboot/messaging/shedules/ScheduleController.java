@@ -28,9 +28,9 @@ public class ScheduleController{
     }
 
     @PostMapping("/update")
-    public StandardJsonResponse updateSchedule(HttpServletRequest request, @RequestBody Schedule schedule) {
+    public StandardJsonResponse updateSchedule(HttpServletRequest request, @RequestBody ScheduleDto scheduledto) {
         var user = userService.getCurrentUser(request);
-        return scheduleService.updateSchedule(schedule,user);
+        return scheduleService.updateSchedule(scheduledto,user);
     }
     @DeleteMapping("/delete/{scheduleId}")
     public StandardJsonResponse deleteSchedule(HttpServletRequest request, @PathVariable UUID scheduleId) {

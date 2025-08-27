@@ -107,7 +107,7 @@ public class ScheduleService {
 
 
         if (user.getLayer().equals(Layers.ACCOUNT)) {
-            List<Schedule> all = scheduleRepository.findAllBySchAccIdOrderBySchCreatedOn(filterDto.getSchAccId());
+            List<Schedule> all = scheduleRepository.findAllBySchAccIdOrderBySchCreatedOnDesc(filterDto.getSchAccId());
             resp.setData("result", all, resp);
             resp.setTotal(all.size());
         }
@@ -140,7 +140,11 @@ public class ScheduleService {
     }
 
 
-    public StandardJsonResponse updateSchedule(Schedule schedule, User user) {
+    public StandardJsonResponse updateSchedule(ScheduleDto scheduleDto, User user) {
+
+        Schedule schedule = scheduleRepository.findById(scheduleDto.getSchId()).orElseThrow(() -> new RuntimeException("Schedule Not Found"));
+        schedule.setSchMessage(scheduleDto.getSchMessage());
+        schedule.setSchReleaseTime(scheduleDto.getSchReleaseTime());
         schedule.setSchUpdatedOn(LocalDateTime.now());
         schedule.setSchUpdatedById(user.getUsrId());
         schedule.setSchUpdatedByName(user.getEmail());
@@ -153,6 +157,9 @@ public class ScheduleService {
     public StandardJsonResponse disaleSchedule(UUID scheduleId, User user) {
         Schedule schedule = scheduleRepository.findById(scheduleId).orElse(null);
         if (schedule == null) throw new RuntimeException("Schedule Not Found");
+
+        if(!schedule.getSchStatus().equalsIgnoreCase("PENDING")) throw new RuntimeException("Schedule Cannot Be Deleted");
+
         schedule.setSchStatus("DISABLED");
         schedule.setSchUpdatedOn(LocalDateTime.now());
         schedule.setSchUpdatedById(user.getUsrId());
