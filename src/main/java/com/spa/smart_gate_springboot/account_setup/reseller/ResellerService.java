@@ -2,6 +2,8 @@ package com.spa.smart_gate_springboot.account_setup.reseller;
 
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
+import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.api.ApiKeyService;
@@ -23,6 +25,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,7 @@ public class ResellerService {
     private final NdovupayService ndovupayService;
     private final ApiKeyService apiKeyService;
     private final GlobalUtils globalUtils;
+    private final AccountService accountService;
 
     public StandardJsonResponse saveReseller(Reseller reseller) {
         StandardJsonResponse resp = new StandardJsonResponse();
@@ -128,7 +133,6 @@ public class ResellerService {
             }
 
         }
-
     }
 
 
@@ -141,4 +145,35 @@ public class ResellerService {
     }
 
 
+    public StandardJsonResponse deleteReseller(UUID rsId, User user, AcDelete acDelete) {
+        List<Account> allAccounts = accountRepository.findByAccResellerId(rsId);
+        
+        // Process account deletions in parallel using CompletableFuture
+        List<CompletableFuture<Void>> deletionFutures = allAccounts.stream()
+                .map(acc -> CompletableFuture.runAsync(() -> {
+                    try {
+                        accountService.deleteAccount(acc.getAccId(), user, acDelete);
+                    } catch (Exception e) {
+                        log.error("Error deleting account with ID: {}", acc.getAccId(), e);
+                        throw new RuntimeException("Failed to delete account: " + acc.getAccId(), e);
+                    }
+                }))
+                .collect(Collectors.toList());
+        
+        // Wait for all deletions to complete
+        CompletableFuture<Void> allDeletions = CompletableFuture.allOf(
+                deletionFutures.toArray(new CompletableFuture[0])
+        );
+        
+        try {
+            allDeletions.join(); // Wait for all parallel operations to complete
+        } catch (Exception e) {
+            log.error("Error during parallel account deletion for reseller: {}", rsId, e);
+            throw new RuntimeException("Failed to delete some accounts for reseller: " + rsId, e);
+        }
+        
+        StandardJsonResponse resp = new StandardJsonResponse();
+        resp.setMessage("Reseller and Account Data will be deleted after 30 days", "ok", resp);
+        return resp;
+    }
 }

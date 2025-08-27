@@ -1,6 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.reseller;
 
 
+import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -71,5 +72,12 @@ public class ResellerControler{
             throw new RuntimeException("User not allowed to access Top - level Resources");
         }
         return  resellerService.getTopLevelBalance();
+    }
+
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @DeleteMapping("/{rsId}")
+    public StandardJsonResponse deleteAccount( HttpServletRequest request, @PathVariable UUID rsId, @RequestBody AcDelete acDelete) {
+        var user = userService.getCurrentUser(request);
+        return resellerService.deleteReseller(rsId, user, acDelete);
     }
 }

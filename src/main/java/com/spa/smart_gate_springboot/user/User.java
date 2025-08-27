@@ -84,6 +84,11 @@ public class User implements UserDetails {
 
     private Boolean usrChangePassword;
 
+    private UUID usrDeletedBy;
+    private String usrDeletedByName;
+    private LocalDateTime usrDeletedDate;
+    private String usrDeletedReason;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = permissions.stream().map(permission -> new SimpleGrantedAuthority(permission.getPermission())).collect(Collectors.toSet());

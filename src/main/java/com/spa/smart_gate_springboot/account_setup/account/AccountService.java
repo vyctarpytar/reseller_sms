@@ -14,6 +14,7 @@ import com.spa.smart_gate_springboot.messaging.send_message.api.ApiKeyService;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
+import com.spa.smart_gate_springboot.user.UsrStatus;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.transaction.Transactional;
@@ -198,8 +199,9 @@ public class AccountService {
         save(account);
 
         // delete users
+        user.setUsrDeletedReason(acDelete.getAcDeleteReason());
+        userService.deleteUserByAccId(accId, user);
 
-//        User
 
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setMessage("message", "Account Data will be deleted after 30 days", resp);

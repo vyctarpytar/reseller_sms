@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +49,7 @@ public class UserService {
     private String coreGatewayUrl;
 
     public User save(@Valid User usr) {
-        return userRepository.saveAndFlush(usr);
+        return userRepository.save(usr);
     }
 
     public User getCurrentUser(HttpServletRequest request) {
@@ -346,4 +347,42 @@ public class UserService {
         });
         tokenRepository.saveAll(validUserTokens);
     }
+
+    public List<User> findByUsrAccId(UUID accId) {
+        return userRepository.findAllByUsrAccId(accId);
+    }
+
+    public void deleteUserByAccId(UUID accId, User user) {
+        List<User> users = findByUsrAccId(accId);
+        
+        // Process user deletions in parallel using CompletableFuture
+        List<CompletableFuture<Void>> deletionFutures = users.stream()
+                .map(u -> CompletableFuture.runAsync(() -> {
+                    try {
+                        u.setUsrStatus(UsrStatus.DELETED);
+                        u.setUsrDeletedBy(user.getUsrId());
+                        u.setUsrDeletedDate(LocalDateTime.now());
+                        u.setUsrDeletedReason(user.getUsrDeletedReason());
+                        u.setUsrDeletedByName(user.getEmail());
+                        save(u);
+                    } catch (Exception e) {
+                        log.error("Error deleting user with ID: {}", u.getUsrId(), e);
+                        throw new RuntimeException("Failed to delete user: " + u.getUsrId(), e);
+                    }
+                }))
+                .toList();
+        
+        // Wait for all deletions to complete
+        CompletableFuture<Void> allDeletions = CompletableFuture.allOf(
+                deletionFutures.toArray(new CompletableFuture[0])
+        );
+        
+        try {
+            allDeletions.join(); // Wait for all parallel operations to complete
+        } catch (Exception e) {
+            log.error("Error during parallel user deletion for account: {}", accId, e);
+            throw new RuntimeException("Failed to delete some users for account: " + accId, e);
+        }
+    }
+
 }
