@@ -45,5 +45,7 @@ public class Schedule {
     private UUID schUpdatedById;
     private String schUpdatedByName;
     private  LocalDateTime schUpdatedOn;
+
+    private String schGroupName;
 }
 

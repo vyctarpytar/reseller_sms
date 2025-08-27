@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.shedules;
 
+import com.spa.smart_gate_springboot.account_setup.group.ChGroup;
+import com.spa.smart_gate_springboot.account_setup.group.ChGroupService;
 import com.spa.smart_gate_springboot.account_setup.member.ChMember;
 import com.spa.smart_gate_springboot.account_setup.member.MemberService;
 import com.spa.smart_gate_springboot.dto.Layers;
@@ -28,12 +30,15 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final QueueMsgService queueMsgService;
     private final MemberService memberService;
+    private final ChGroupService chGroupService;
 
 
 
 
     public StandardJsonResponse scheduleGroupMessage(UUID grpId, GroupMessageDto grpMessageDto, User user) {
-        Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schAccId(user.getUsrAccId()).schGrpId(grpId).schCreatedOn(LocalDateTime.now()).schMessage(grpMessageDto.getGrpMessage()).schReleaseTime(grpMessageDto.getGrpSendAt()).schSenderid(grpMessageDto.getSenderId()).build();
+        ChGroup chGroup = chGroupService.getChGroup(grpId);
+        Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schAccId(user.getUsrAccId()).schGrpId(grpId).schCreatedOn(LocalDateTime.now()).schMessage(grpMessageDto.getGrpMessage()).schReleaseTime(grpMessageDto.getGrpSendAt()).schSenderid(grpMessageDto.getSenderId())
+                .schGroupName(chGroup.getGroupName()).build();
         scheduleRepository.saveAndFlush(sche);
 
         SingleMessageDto sendSingleSmsDto = SingleMessageDto.builder().mobile(user.getPhoneNumber()).message(grpMessageDto.getGrpMessage()).senderId(grpMessageDto.getSenderId()).build();

@@ -27,7 +27,7 @@ public class ChGroupService {
         return response;
     }
 
-    private ChGroup getChGroup(UUID id) {
+    public ChGroup getChGroup(UUID id) {
      return chGroupRepository.findById(id).orElseThrow(()-> new NotFoundException("Group not found with id "+ id));
     }
 

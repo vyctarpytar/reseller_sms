@@ -28,7 +28,7 @@ public class ScheduleController{
     }
 
     @PostMapping("/update")
-    public StandardJsonResponse updateSchedule(HttpServletRequest request, Schedule schedule) {
+    public StandardJsonResponse updateSchedule(HttpServletRequest request, @RequestBody Schedule schedule) {
         var user = userService.getCurrentUser(request);
         return scheduleService.updateSchedule(schedule,user);
     }
