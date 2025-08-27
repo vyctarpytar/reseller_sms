@@ -68,6 +68,8 @@ public class AnnualReport {
     private LocalDateTime updatedAt;
     
     private String status; // PROCESSING, COMPLETED, FAILED
+
+    private Long validityPeriod;
     
     @PrePersist
     protected void onCreate() {
