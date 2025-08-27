@@ -4,6 +4,7 @@ import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ public class AnnualReportService {
      * Scheduled method to generate quarterly reports every hour
      */
     @Scheduled(fixedRate = 3600000) // Run every hour (3600000 ms)
+    @PostConstruct
     @Transactional
     public void generateQuarterlyReportsScheduled() {
         log.info("Starting scheduled quarterly report generation at: {}", LocalDateTime.now());

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class AnnualReportController {
     /**
      * Get quarterly reports with optional filtering
      */
-    @GetMapping
+    @PostMapping
     public ResponseEntity<StandardJsonResponse> getQuarterlyReports(
             HttpServletRequest request,
             @RequestParam(required = false) Integer year,
@@ -63,7 +64,7 @@ public class AnnualReportController {
     /**
      * Export quarterly reports to Excel
      */
-    @GetMapping("/export/excel")
+    @PostMapping("/export/excel")
     public ResponseEntity<byte[]> exportToExcel(
             HttpServletRequest request,
             @RequestParam(required = false) Integer year,
@@ -101,7 +102,7 @@ public class AnnualReportController {
     /**
      * Get available years for filtering
      */
-    @GetMapping("/years")
+    @PostMapping("/years")
     public ResponseEntity<StandardJsonResponse> getAvailableYears(HttpServletRequest request) {
         try {
             User currentUser = userService.getCurrentUser(request);
@@ -110,7 +111,7 @@ public class AnnualReportController {
             List<Integer> years = annualReportService.getAvailableYears();
             
             StandardJsonResponse response = new StandardJsonResponse();
-            response.setData("years", years, response);
+            response.setData("result", years, response);
             response.setMessage("Available years retrieved successfully", "success", response);
             
             return ResponseEntity.ok(response);
@@ -146,9 +147,9 @@ public class AnnualReportController {
             
             // Validate year
             int currentYear = LocalDateTime.now().getYear();
-            if (year < 2020 || year > currentYear + 1) {
+            if (year < 2024 || year > currentYear + 1) {
                 StandardJsonResponse response = new StandardJsonResponse();
-                response.setMessage("Invalid year. Must be between 2020 and " + (currentYear + 1), "error", response);
+                response.setMessage("Invalid year. Must be between 2024 and " + (currentYear + 1), "error", response);
                 return ResponseEntity.badRequest().body(response);
             }
             
@@ -169,37 +170,12 @@ public class AnnualReportController {
         }
     }
     
-    /**
-     * Get report by specific ID
-     */
-    @GetMapping("/{reportId}")
-    public ResponseEntity<StandardJsonResponse> getReportById(
-            HttpServletRequest request,
-            @PathVariable UUID reportId) {
-        
-        try {
-            User currentUser = userService.getCurrentUser(request);
-            log.debug("User {} requesting report with ID: {}", currentUser.getEmail(), reportId);
-            
-            // This would require adding a method to the service to get by ID
-            // For now, we'll return a not implemented response
-            StandardJsonResponse response = new StandardJsonResponse();
-            response.setMessage("Get report by ID not yet implemented", "info", response);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("Error retrieving report by ID: {}", reportId, e);
-            StandardJsonResponse response = new StandardJsonResponse();
-            response.setMessage("Error retrieving report: " + e.getMessage(), "error", response);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
+
     
     /**
      * Get quarterly summary statistics
      */
-    @GetMapping("/summary")
+    @PostMapping("/summary")
     public ResponseEntity<StandardJsonResponse> getQuarterlySummary(
             HttpServletRequest request,
             @RequestParam(required = false) Integer year,
@@ -230,14 +206,18 @@ public class AnnualReportController {
                     .sum();
             
             double overallDeliveryRate = totalMessages > 0 ? (double) totalDelivered / totalMessages * 100 : 0.0;
-            
+
+
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("totalAccounts", reports.size());
+            map.put("totalMessages", totalMessages);
+            map.put("totalRevenue", totalRevenue);
+            map.put("totalDelivered", totalDelivered);
+            map.put("totalFailed", totalFailed);
+            map.put("overallDeliveryRate", String.format("%.2f%%", overallDeliveryRate));
+
             StandardJsonResponse response = new StandardJsonResponse();
-            response.setData("totalAccounts", reports.size(), response);
-            response.setData("totalMessages", totalMessages, response);
-            response.setData("totalRevenue", totalRevenue, response);
-            response.setData("totalDelivered", totalDelivered, response);
-            response.setData("totalFailed", totalFailed, response);
-            response.setData("overallDeliveryRate", String.format("%.2f%%", overallDeliveryRate), response);
+            response.setData(map);
             response.setMessage("Quarterly summary retrieved successfully", "success", response);
             
             return ResponseEntity.ok(response);
