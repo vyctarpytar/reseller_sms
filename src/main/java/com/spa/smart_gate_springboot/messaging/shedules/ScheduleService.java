@@ -143,6 +143,9 @@ public class ScheduleService {
     public StandardJsonResponse updateSchedule(ScheduleDto scheduleDto, User user) {
 
         Schedule schedule = scheduleRepository.findById(scheduleDto.getSchId()).orElseThrow(() -> new RuntimeException("Schedule Not Found"));
+
+        if(!schedule.getSchStatus().equalsIgnoreCase("PENDING")) throw new RuntimeException("Schedule Cannot Updated");
+
         schedule.setSchMessage(scheduleDto.getSchMessage());
         schedule.setSchReleaseTime(scheduleDto.getSchReleaseTime());
         schedule.setSchUpdatedOn(LocalDateTime.now());
