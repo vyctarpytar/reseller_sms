@@ -361,18 +361,18 @@ public class AnnualReportService {
 
                 try {
                     String provider = (String) providerQuery.getSingleResult();
-                    report.setSenderIdProvider(provider != null ? provider : "SAFARICOM");
+                    report.setSenderIdProvider(provider);
                 } catch (Exception e) {
                     // If no provider found, use default
-                    report.setSenderIdProvider("SAFARICOM");
+                    report.setSenderIdProvider(null);
                 }
             } else {
-                report.setSenderIdProvider("SAFARICOM");
+                report.setSenderIdProvider(null);
             }
         } catch (Exception e) {
             // If no sender ID found, leave as null and use default provider
             report.setSenderId(null);
-            report.setSenderIdProvider("SAFARICOM");
+            report.setSenderIdProvider(null);
         }
     }
 
