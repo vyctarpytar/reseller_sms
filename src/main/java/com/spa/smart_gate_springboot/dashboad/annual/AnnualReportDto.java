@@ -18,6 +18,8 @@ public class AnnualReportDto {
     private String resellerName;
     private UUID resellerId;
     private Long validityPeriod;
+    private String senderId;
+    private String senderIdProvider;
     
     // Monthly breakdown
     private MonthlyData month1;

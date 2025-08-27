@@ -124,6 +124,9 @@ public class AnnualReportService {
             // Calculate additional metrics
             calculateAdditionalMetrics(report, account.getAccId(), year, quarter);
 
+            // Get sender ID information
+            setSenderIdInformation(report, account.getAccId(), year, getQuarterMonths(quarter));
+
             report.setStatus("COMPLETED");
             annualReportRepository.save(report);
 
@@ -312,6 +315,68 @@ public class AnnualReportService {
     }
 
     /**
+     * Set sender ID information for the report
+     */
+    private void setSenderIdInformation(AnnualReport report, UUID accountId, int year, int[] months) {
+        // Get the most frequently used sender ID for this account during the quarter
+        String sql = """
+                SELECT 
+                    mq.msg_sender_id_name,
+                    COUNT(*) as usage_count
+                FROM msg.message_queue_arc mq
+                WHERE mq.msg_acc_id = ?1 
+                AND EXTRACT(YEAR FROM mq.msg_created_date) = ?2 
+                AND (EXTRACT(MONTH FROM mq.msg_created_date) = ?3 
+                     OR EXTRACT(MONTH FROM mq.msg_created_date) = ?4 
+                     OR EXTRACT(MONTH FROM mq.msg_created_date) = ?5)
+                AND mq.msg_sender_id_name IS NOT NULL
+                GROUP BY mq.msg_sender_id_name
+                ORDER BY usage_count DESC
+                LIMIT 1
+                """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter(1, accountId);
+        query.setParameter(2, year);
+        query.setParameter(3, months[0]);
+        query.setParameter(4, months[1]);
+        query.setParameter(5, months[2]);
+
+        try {
+            Object[] result = (Object[]) query.getSingleResult();
+            String senderId = (String) result[0];
+            report.setSenderId(senderId);
+
+            // Get sender ID provider from shortcode setup
+            if (senderId != null) {
+                String providerSql = """
+                        SELECT scs.sh_channel
+                        FROM msg.shortcode_setup scs
+                        WHERE UPPER(scs.sh_code) = UPPER(?1)
+                        LIMIT 1
+                        """;
+
+                Query providerQuery = entityManager.createNativeQuery(providerSql);
+                providerQuery.setParameter(1, senderId);
+
+                try {
+                    String provider = (String) providerQuery.getSingleResult();
+                    report.setSenderIdProvider(provider != null ? provider : "SAFARICOM");
+                } catch (Exception e) {
+                    // If no provider found, use default
+                    report.setSenderIdProvider("SAFARICOM");
+                }
+            } else {
+                report.setSenderIdProvider("SAFARICOM");
+            }
+        } catch (Exception e) {
+            // If no sender ID found, leave as null and use default provider
+            report.setSenderId(null);
+            report.setSenderIdProvider("SAFARICOM");
+        }
+    }
+
+    /**
      * Calculate unique customers for the entire quarter
      */
     private Long calculateQuarterlyUniqueCustomers(UUID accountId, int year, int quarter) {
@@ -369,6 +434,8 @@ public class AnnualReportService {
 
         return AnnualReportDto.builder().id(report.getId())
                 .validityPeriod(report.getValidityPeriod())
+                .senderId(report.getSenderId())
+                .senderIdProvider(report.getSenderIdProvider())
                 .year(report.getYear()).quarter(report.getQuarter()).accountId(report.getAccountId()).accountName(report.getAccountName()).resellerName(report.getResellerName()).resellerId(report.getResellerId()).month1(AnnualReportDto.MonthlyData.builder().monthName(Month.of(months[0]).name()).messageCount(report.getMonth1MessageCount()).revenue(report.getMonth1Revenue()).deliveredCount(report.getMonth1DeliveredCount()).failedCount(report.getMonth1FailedCount()).deliveryRate(calculateMonthlyDeliveryRate(report.getMonth1DeliveredCount(), report.getMonth1MessageCount())).build()).month2(AnnualReportDto.MonthlyData.builder().monthName(Month.of(months[1]).name()).messageCount(report.getMonth2MessageCount()).revenue(report.getMonth2Revenue()).deliveredCount(report.getMonth2DeliveredCount()).failedCount(report.getMonth2FailedCount()).deliveryRate(calculateMonthlyDeliveryRate(report.getMonth2DeliveredCount(), report.getMonth2MessageCount())).build()).month3(AnnualReportDto.MonthlyData.builder().monthName(Month.of(months[2]).name()).messageCount(report.getMonth3MessageCount()).revenue(report.getMonth3Revenue()).deliveredCount(report.getMonth3DeliveredCount()).failedCount(report.getMonth3FailedCount()).deliveryRate(calculateMonthlyDeliveryRate(report.getMonth3DeliveredCount(), report.getMonth3MessageCount())).build()).quarterTotalMessages(report.getQuarterTotalMessages()).quarterTotalRevenue(report.getQuarterTotalRevenue()).quarterDeliveredCount(report.getQuarterDeliveredCount()).quarterFailedCount(report.getQuarterFailedCount()).quarterDeliveryRate(report.getQuarterDeliveryRate()).averageMessageCost(report.getAverageMessageCost()).uniqueCustomerCount(report.getUniqueCustomerCount()).topPerformingMonth(report.getTopPerformingMonth()).status(report.getStatus()).createdAt(report.getCreatedAt()).updatedAt(report.getUpdatedAt()).build();
     }
 
@@ -421,14 +488,14 @@ public class AnnualReportService {
             currencyStyle.cloneStyleFrom(dataStyle);
             currencyStyle.setDataFormat(
 
-                    workbook.createDataFormat().getFormat("$#,##0.00"));
+                    workbook.createDataFormat().getFormat("KSH #,##0.00"));
 
             CellStyle percentStyle = workbook.createCellStyle();
             percentStyle.cloneStyleFrom(dataStyle);
             percentStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00%"));
             // Create headers
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Account Name", "Reseller","Validity Periiod", "Year", "Quarter", "Month 1", "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
+            String[] headers = {"Account Name", "Reseller","Validity Period", "Sender ID", "Provider", "Year", "Quarter", "Month 1", "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
 
                     "M2 Delivered", "M2 Failed", "M2 Delivery Rate", "Month 3", "M3 Messages", "M3 Revenue", "M3 Delivered", "M3 Failed", "M3 Delivery Rate", "Quarter Total Messages",
 
@@ -452,6 +519,8 @@ public class AnnualReportService {
                 row.createCell(colNum++).setCellValue(report.getAccountName() != null ? report.getAccountName() : "");
                 row.createCell(colNum++).setCellValue(report.getResellerName() != null ? report.getResellerName() : "");
                 row.createCell(colNum++).setCellValue(report.getValidityPeriod() != null ? report.getValidityPeriod() : 0);
+                row.createCell(colNum++).setCellValue(report.getSenderId() != null ? report.getSenderId() : "");
+                row.createCell(colNum++).setCellValue(report.getSenderIdProvider() != null ? report.getSenderIdProvider() : "");
                 row.createCell(colNum++).setCellValue(report.getYear() != null ? report.getYear() : 0);
                 row.createCell(colNum++).setCellValue(report.getQuarter() != null ? report.getQuarter() : 0);
 

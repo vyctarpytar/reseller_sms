@@ -70,7 +70,11 @@ public class AnnualReport {
     private String status; // PROCESSING, COMPLETED, FAILED
 
     private Long validityPeriod;
-    
+
+    private String senderId;
+    @Builder.Default
+    private String senderIdProvider = "SAFARICOM";
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
