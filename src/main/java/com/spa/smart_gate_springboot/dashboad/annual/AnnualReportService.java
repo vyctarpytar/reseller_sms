@@ -143,18 +143,18 @@ public class AnnualReportService {
             String sql = """
                     SELECT 
                         COUNT(*) as message_count,
-                        SUM(CASE WHEN msg_client_delivery_status = 'DELIVERED' THEN 1 ELSE 0 END) as delivered_count,
-                        SUM(CASE WHEN msg_client_delivery_status != 'DELIVERED' THEN 1 ELSE 0 END) as failed_count
+                        SUM(CASE WHEN msg_status in ('DeliveredToTerminal','PENDING_DELIVERY','SENT') THEN 1 ELSE 0 END) as delivered_count,
+                        SUM(CASE WHEN msg_status  not in ('DeliveredToTerminal','PENDING_DELIVERY','SENT') THEN 1 ELSE 0 END) as failed_count
                     FROM msg.message_queue_arc 
-                    WHERE msg_acc_id = :accountId 
-                    AND EXTRACT(YEAR FROM msg_created_date) = :year 
-                    AND EXTRACT(MONTH FROM msg_created_date) = :month
+                    WHERE msg_acc_id = ?1 
+                    AND EXTRACT(YEAR FROM msg_created_date) = ?2 
+                    AND EXTRACT(MONTH FROM msg_created_date) = ?3
                     """;
 
             Query query = entityManager.createNativeQuery(sql);
-            query.setParameter("accountId", accountId);
-            query.setParameter("year", year);
-            query.setParameter("month", month);
+            query.setParameter(1, accountId);
+            query.setParameter(2, year);
+            query.setParameter(3, month);
 
             Object[] result = (Object[]) query.getSingleResult();
 
