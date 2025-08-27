@@ -271,7 +271,13 @@ public class AnnualReportService {
      */
     private int getCurrentQuarter() {
         int currentMonth = LocalDateTime.now().getMonthValue();
-        return (currentMonth - 1) / 3 + 1;
+        return switch (currentMonth) {
+            case 1, 2, 3 -> 3;      // Jan, Feb, Mar = Q3
+            case 4, 5, 6 -> 4;      // Apr, May, Jun = Q4
+            case 7, 8, 9 -> 1;      // Jul, Aug, Sep = Q1
+            case 10, 11, 12 -> 2;   // Oct, Nov, Dec = Q2
+            default -> throw new IllegalArgumentException("Invalid month: " + currentMonth);
+        };
     }
 
     /**
