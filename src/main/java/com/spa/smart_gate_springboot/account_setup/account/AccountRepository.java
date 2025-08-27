@@ -71,4 +71,6 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
             update js_core.jsc_accounts set acc_msg_bal = acc_msg_bal + :msgCostId where acc_id = :msgAccId
             """, nativeQuery = true)
     void refundCostCharged(@Param("msgAccId") UUID msgAccId,@Param("msgCostId") BigDecimal msgCostId);
+
+    List<Account> findAllByAccResellerId(UUID rsId);
 }

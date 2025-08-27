@@ -12,9 +12,7 @@ import com.spa.smart_gate_springboot.user.Permission;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
-import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,18 +24,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ResellerService {
     private final ResellerRepo resellerRepo;
-    private final AccountRepository accountRepository;
     private final UserService userService;
     private final NdovupayService ndovupayService;
     private final ApiKeyService apiKeyService;
-    private final GlobalUtils globalUtils;
     private final AccountService accountService;
 
     public StandardJsonResponse saveReseller(Reseller reseller) {
@@ -68,7 +63,7 @@ public class ResellerService {
                 .accCreatedBy(reseller1.getRsCreatedBy()).accCreatedDate(LocalDateTime.now()).accSmsPrice(reseller1.getRsSmsUnitPrice())
                 .accCity(reseller1.getRaCity()).accCountry(reseller1.getRaCountry()).accOfficeMobile(reseller1.getRsPhoneNumber())
                 .accName(reseller1.getRsCompanyName()).accAdminEmail(reseller1.getRsEmail()).accAdminMobile(reseller1.getRsPhoneNumber()).build();
-        accountRepository.saveAndFlush(acc);
+        accountService.save(acc);
 
 
     }
@@ -123,7 +118,7 @@ public class ResellerService {
     private void createApiKeys() {
         List<Reseller> allResellers = resellerRepo.findAll();
         for (Reseller res : allResellers) {
-            List<Account> allAccounts = accountRepository.findByAccResellerId(res.getRsId());
+            List<Account> allAccounts = accountService.findByAccResellerId(res.getRsId());
             for (Account acc : allAccounts) {
                 try {
                     apiKeyService.createApiKey(acc);
@@ -146,7 +141,7 @@ public class ResellerService {
 
 
     public StandardJsonResponse deleteReseller(UUID rsId, User user, AcDelete acDelete) {
-        List<Account> allAccounts = accountRepository.findByAccResellerId(rsId);
+        List<Account> allAccounts = accountService.findByAccResellerId(rsId);
         
         // Process account deletions in parallel using CompletableFuture
         List<CompletableFuture<Void>> deletionFutures = allAccounts.stream()
@@ -158,7 +153,7 @@ public class ResellerService {
                         throw new RuntimeException("Failed to delete account: " + acc.getAccId(), e);
                     }
                 }))
-                .collect(Collectors.toList());
+                .toList();
         
         // Wait for all deletions to complete
         CompletableFuture<Void> allDeletions = CompletableFuture.allOf(

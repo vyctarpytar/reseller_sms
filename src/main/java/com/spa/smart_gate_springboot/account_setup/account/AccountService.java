@@ -7,6 +7,7 @@ import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcFilterDto;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
+import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.errorhandling.ApplicationExceptionHandler;
@@ -41,8 +42,7 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final UserService userService;
     //    private final SmartGate smartGate;
-    @Lazy
-    private final ResellerService resellerService;
+ private final ResellerRepo resellerRepo;
     private final GlobalUtils gu;
     private final ApiKeyService apiKeyService;
 
@@ -62,7 +62,7 @@ public class AccountService {
         Account account = findByAccId(accId);
         String resellerName = "";
         if (account.getAccResellerId() != null) {
-            resellerName = resellerService.findById(account.getAccResellerId()).getRsCompanyName();
+            resellerName = resellerRepo.findById(account.getAccResellerId()).get().getRsCompanyName();
         }
         if (account.getAccStatus() == null) {
             account.setAccStatus(AcStatus.ACTIVE);
@@ -206,5 +206,9 @@ public class AccountService {
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setMessage("message", "Account Data will be deleted after 30 days", resp);
         return resp;
+    }
+
+    public List<Account> findByAccResellerId(UUID rsId) {
+        return  accountRepository.findAllByAccResellerId(rsId);
     }
 }
