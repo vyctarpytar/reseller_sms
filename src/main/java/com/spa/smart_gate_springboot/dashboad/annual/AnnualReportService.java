@@ -144,8 +144,7 @@ public class AnnualReportService {
                     SELECT 
                         COUNT(*) as message_count,
                         SUM(CASE WHEN msg_client_delivery_status = 'DELIVERED' THEN 1 ELSE 0 END) as delivered_count,
-                        SUM(CASE WHEN msg_client_delivery_status != 'DELIVERED' THEN 1 ELSE 0 END) as failed_count,
-                        COUNT(DISTINCT msg_sub_mobile_no) as unique_customers
+                        SUM(CASE WHEN msg_client_delivery_status != 'DELIVERED' THEN 1 ELSE 0 END) as failed_count
                     FROM msg.message_queue_arc 
                     WHERE msg_acc_id = :accountId 
                     AND EXTRACT(YEAR FROM msg_created_date) = :year 
@@ -159,10 +158,9 @@ public class AnnualReportService {
 
             Object[] result = (Object[]) query.getSingleResult();
 
-            Long messageCount = ((Number) result[0]).longValue();
-            Long deliveredCount = ((Number) result[1]).longValue();
-            Long failedCount = ((Number) result[2]).longValue();
-            Long uniqueCustomers = ((Number) result[3]).longValue();
+            Long messageCount = result[0] != null ? ((Number) result[0]).longValue() : 0L;
+            Long deliveredCount = result[1] != null ? ((Number) result[1]).longValue() : 0L;
+            Long failedCount = result[2] != null ? ((Number) result[2]).longValue() : 0L;
 
             // Calculate revenue (assuming account has SMS price)
             BigDecimal revenue = calculateMonthlyRevenue(accountId, messageCount);
@@ -260,10 +258,10 @@ public class AnnualReportService {
      */
     private int[] getQuarterMonths(int quarter) {
         return switch (quarter) {
-            case 1 -> new int[]{1, 2, 3};    // Jan, Feb, Mar
-            case 2 -> new int[]{4, 5, 6};    // Apr, May, Jun
-            case 3 -> new int[]{7, 8, 9};    // Jul, Aug, Sep
-            case 4 -> new int[]{10, 11, 12}; // Oct, Nov, Dec
+            case 3 -> new int[]{1, 2, 3};    // Jan, Feb, Mar
+            case 4 -> new int[]{4, 5, 6};    // Apr, May, Jun
+            case 1 -> new int[]{7, 8, 9};    // Jul, Aug, Sep
+            case 2 -> new int[]{10, 11, 12}; // Oct, Nov, Dec
             default -> throw new IllegalArgumentException("Invalid quarter: " + quarter);
         };
     }
