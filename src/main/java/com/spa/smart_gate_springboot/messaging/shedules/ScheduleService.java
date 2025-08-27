@@ -74,7 +74,7 @@ public class ScheduleService {
             String formattedDate = now.format(formatter);
 
             List<Schedule> scheduleList = scheduleRepository.findAllBySchReleaseTimeEqualsAndSchStatus(formattedDate, "PENDING");
-
+        log.info("running schedule for time {}    size - {}", formattedDate,scheduleList.size());
             for (Schedule schedule : scheduleList) {
                 log.info("running schedule for time {}", schedule.getSchReleaseTime());
 
