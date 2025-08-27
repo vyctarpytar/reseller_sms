@@ -51,6 +51,10 @@ public class Account {
     private String accPhysicalAddress;
     @Column(nullable = false)
     private BigDecimal accSmsPrice;
+
+    @Column(nullable = false)
+    private Long accLicenceValidity;
+
     private String accDeliveryUrl;
     private String accActivateNonSaf;
     private String accUseAlternativeSender;
@@ -75,7 +79,9 @@ public class Account {
     @OneToMany
     @JoinColumn(name = "sh_acc_id", referencedColumnName = "acc_id", insertable = false, updatable = false)
     private List<MsgShortcodeSetup> senderId;
+
+
+    private LocalDateTime accDeletedDate;
+    private String accDeletedBy;
+    private String accDeletedReason;
 }
-
-
-//SMART_GATE_RESELLER_ID

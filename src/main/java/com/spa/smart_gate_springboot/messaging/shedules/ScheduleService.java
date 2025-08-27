@@ -32,13 +32,32 @@ public class ScheduleService {
     private final MemberService memberService;
     private final ChGroupService chGroupService;
 
+    @NotNull
+    private static String reformatMessage(String message, ChMember m) {
+        if (message.contains("@")) {
+            // Use a mutable map to handle null values safely
+            Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("@firstName", m.getChFirstName() != null ? m.getChFirstName() : "");
+            placeholders.put("@otherNames", m.getChOtherName() != null ? m.getChOtherName().split(" ")[0] : "");
+            placeholders.put("@gender", m.getChGenderCode() != null ? m.getChGenderCode() : "");
+            placeholders.put("@mobileNumber", m.getChTelephone() != null ? m.getChTelephone() : "");
+            placeholders.put("@dateOfBirth", m.getChDob() != null ? String.valueOf(m.getChDob()) : "");
+            placeholders.put("@option1", m.getChOption1() != null ? m.getChOption1() : "");
+            placeholders.put("@option2", m.getChOption2() != null ? m.getChOption2() : "");
+            placeholders.put("@option3", m.getChOption3() != null ? m.getChOption3() : "");
+            placeholders.put("@option4", m.getChOption4() != null ? m.getChOption4() : "");
 
-
+            // Replace placeholders in the message
+            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                message = message.replace(entry.getKey(), entry.getValue());
+            }
+        }
+        return message;
+    }
 
     public StandardJsonResponse scheduleGroupMessage(UUID grpId, GroupMessageDto grpMessageDto, User user) {
         ChGroup chGroup = chGroupService.getChGroup(grpId);
-        Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schAccId(user.getUsrAccId()).schGrpId(grpId).schCreatedOn(LocalDateTime.now()).schMessage(grpMessageDto.getGrpMessage()).schReleaseTime(grpMessageDto.getGrpSendAt()).schSenderid(grpMessageDto.getSenderId())
-                .schGroupName(chGroup.getGroupName()).build();
+        Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schAccId(user.getUsrAccId()).schGrpId(grpId).schCreatedOn(LocalDateTime.now()).schMessage(grpMessageDto.getGrpMessage()).schReleaseTime(grpMessageDto.getGrpSendAt()).schSenderid(grpMessageDto.getSenderId()).schGroupName(chGroup.getGroupName()).build();
         scheduleRepository.saveAndFlush(sche);
 
         SingleMessageDto sendSingleSmsDto = SingleMessageDto.builder().mobile(user.getPhoneNumber()).message(grpMessageDto.getGrpMessage()).senderId(grpMessageDto.getSenderId()).build();
@@ -69,34 +88,33 @@ public class ScheduleService {
     @Scheduled(fixedRate = 5000)
     public void runScheduledMessages() {
 
-            LocalDateTime now = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-            String formattedDate = now.format(formatter);
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        String formattedDate = now.format(formatter);
 
-            List<Schedule> scheduleList = scheduleRepository.findAllBySchReleaseTimeEqualsAndSchStatus(formattedDate, "PENDING");
-        log.info("running schedule for time {}    size - {}", formattedDate,scheduleList.size());
-            for (Schedule schedule : scheduleList) {
-                log.info("running schedule for time {}", schedule.getSchReleaseTime());
+        List<Schedule> scheduleList = scheduleRepository.findAllBySchReleaseTimeEqualsAndSchStatus(formattedDate, "PENDING");
+        for (Schedule schedule : scheduleList) {
+            log.info("running schedule for time {}", schedule.getSchReleaseTime());
 
-                if (schedule.getSchGrpId() != null) {
-                    List<ChMember> memberList = memberService.getChMembersByGroupId(schedule.getSchGrpId());
-                    for (ChMember m : memberList) {
-                        String message = reformatMessage(schedule.getSchMessage(), m);
-                        MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(m.getChTelephone()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
-                        queueMsgService.publishNewMessage(msgQueue);
-                    }
-
-                } else {
-                    // send to one mobile number
-                    String message = schedule.getSchMessage();
-                    MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(schedule.getSchPhoneNumber()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
+            if (schedule.getSchGrpId() != null) {
+                List<ChMember> memberList = memberService.getChMembersByGroupId(schedule.getSchGrpId());
+                for (ChMember m : memberList) {
+                    String message = reformatMessage(schedule.getSchMessage(), m);
+                    MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(m.getChTelephone()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
                     queueMsgService.publishNewMessage(msgQueue);
                 }
-                schedule.setSchStatus("SENT");
-                scheduleRepository.save(schedule);
 
-
+            } else {
+                // send to one mobile number
+                String message = schedule.getSchMessage();
+                MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(schedule.getSchPhoneNumber()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
+                queueMsgService.publishNewMessage(msgQueue);
             }
+            schedule.setSchStatus("SENT");
+            scheduleRepository.save(schedule);
+
+
+        }
 
 
     }
@@ -116,35 +134,11 @@ public class ScheduleService {
         return resp;
     }
 
-    @NotNull
-    private static String reformatMessage(String message, ChMember m) {
-        if (message.contains("@")) {
-            // Use a mutable map to handle null values safely
-            Map<String, String> placeholders = new HashMap<>();
-            placeholders.put("@firstName", m.getChFirstName() != null ? m.getChFirstName() : "");
-            placeholders.put("@otherNames", m.getChOtherName() != null ? m.getChOtherName().split(" ")[0] : "");
-            placeholders.put("@gender", m.getChGenderCode() != null ? m.getChGenderCode() : "");
-            placeholders.put("@mobileNumber", m.getChTelephone() != null ? m.getChTelephone() : "");
-            placeholders.put("@dateOfBirth", m.getChDob() != null ? String.valueOf(m.getChDob()) : "");
-            placeholders.put("@option1", m.getChOption1() != null ? m.getChOption1() : "");
-            placeholders.put("@option2", m.getChOption2() != null ? m.getChOption2() : "");
-            placeholders.put("@option3", m.getChOption3() != null ? m.getChOption3() : "");
-            placeholders.put("@option4", m.getChOption4() != null ? m.getChOption4() : "");
-
-            // Replace placeholders in the message
-            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-                message = message.replace(entry.getKey(), entry.getValue());
-            }
-        }
-        return message;
-    }
-
-
     public StandardJsonResponse updateSchedule(ScheduleDto scheduleDto, User user) {
 
         Schedule schedule = scheduleRepository.findById(scheduleDto.getSchId()).orElseThrow(() -> new RuntimeException("Schedule Not Found"));
 
-        if(!schedule.getSchStatus().equalsIgnoreCase("PENDING")) throw new RuntimeException("Schedule Cannot Updated");
+        if (!schedule.getSchStatus().equalsIgnoreCase("PENDING")) throw new RuntimeException("Schedule Cannot Updated");
 
         schedule.setSchMessage(scheduleDto.getSchMessage());
         schedule.setSchReleaseTime(scheduleDto.getSchReleaseTime());
@@ -161,7 +155,8 @@ public class ScheduleService {
         Schedule schedule = scheduleRepository.findById(scheduleId).orElse(null);
         if (schedule == null) throw new RuntimeException("Schedule Not Found");
 
-        if(!schedule.getSchStatus().equalsIgnoreCase("PENDING")) throw new RuntimeException("Schedule Cannot Be Deleted");
+        if (!schedule.getSchStatus().equalsIgnoreCase("PENDING"))
+            throw new RuntimeException("Schedule Cannot Be Deleted");
 
         schedule.setSchStatus("DISABLED");
         schedule.setSchUpdatedOn(LocalDateTime.now());

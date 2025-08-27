@@ -3,6 +3,7 @@ package com.spa.smart_gate_springboot.account_setup.account;
 
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
+import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcFilterDto;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
@@ -132,13 +133,7 @@ public class AccountService {
         return resp;
     }
 
-    public StandardJsonResponse findAllAccounts() {
-        StandardJsonResponse resp = new StandardJsonResponse();
-        List<Account> accountList = accountRepository.findAll();
-        resp.setData("result", accountList, resp);
-        resp.setTotal(accountList.size());
-        return resp;
-    }
+
 
     @Transactional
     public StandardJsonResponse saveAccount(Account accountdto, User user) {
@@ -192,5 +187,22 @@ public class AccountService {
 
     public void refundCostCharged(UUID msgAccId, BigDecimal msgCostId) {
         accountRepository.refundCostCharged(msgAccId,msgCostId);
+    }
+
+    public StandardJsonResponse deleteAccount(UUID accId, User user, AcDelete acDelete) {
+        Account account = findByAccId(accId);
+        account.setAccStatus(AcStatus.DELETED);
+        account.setAccDeletedBy(user.getEmail());
+        account.setAccDeletedDate(LocalDateTime.now());
+        account.setAccDeletedReason(acDelete.getAcDeleteReason());
+        save(account);
+
+        // delete users
+
+//        User
+
+        StandardJsonResponse resp = new StandardJsonResponse();
+        resp.setMessage("message", "Account Data will be deleted after 30 days", resp);
+        return resp;
     }
 }

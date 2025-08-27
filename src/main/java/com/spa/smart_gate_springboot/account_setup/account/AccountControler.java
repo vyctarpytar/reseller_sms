@@ -1,11 +1,10 @@
 package com.spa.smart_gate_springboot.account_setup.account;
 
 
-import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDisableDto;
+import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDto;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcFilterDto;
 import com.spa.smart_gate_springboot.dto.Layers;
-import com.spa.smart_gate_springboot.messaging.send_message.api.ApiKeyService;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -16,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -27,7 +25,6 @@ import java.util.stream.Collectors;
 public class AccountControler {
     private final UserService userService;
     private final AccountService accountService;
-    private final AccountSPAService accountSPAService;
 //    private final ApiKeyService apiKeyService;
 
     @GetMapping("/reseller/{resellerId}")
@@ -80,20 +77,6 @@ public class AccountControler {
         return accountService.saveAccount(account, user);
     }
 
-    @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN')")
-    @PostMapping("enable/{accId}")
-    public StandardJsonResponse enableAccount(@PathVariable UUID accId, HttpServletRequest request) {
-        var user = userService.getCurrentUser(request);
-        return accountSPAService.enableSmartRevenue(accId, user);
-    }
-
-    @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN')")
-    @PostMapping("disable/{accId}")
-    public StandardJsonResponse disableSmartRevenue(@PathVariable UUID accId, @RequestBody AcDisableDto dto, HttpServletRequest request) {
-        var user = userService.getCurrentUser(request);
-        return accountSPAService.disableSmartRevenue(accId, user, dto.getAccDisableDate(), dto.getAccToDiableTimer());
-    }
-
 
     @GetMapping("distionct-status")
     public StandardJsonResponse getDistinctStatus() {
@@ -102,6 +85,14 @@ public class AccountControler {
         resp.setTotal(acDtos.size());
         resp.setData("result", acDtos, resp);
         return resp;
+    }
+
+
+    @PreAuthorize("hasAnyAuthority('sale:create_customer', 'management:create','admin:create')")
+    @DeleteMapping("/{accId}")
+    public StandardJsonResponse deleteAccount( HttpServletRequest request, @PathVariable UUID accId, @RequestBody AcDelete acDelete) {
+        var user = userService.getCurrentUser(request);
+        return accountService.deleteAccount(accId, user, acDelete);
     }
 }
 

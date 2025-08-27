@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
         ex.printStackTrace();
         StandardJsonResponse response = new StandardJsonResponse();
         response.setSuccess(false);
-        response.setMessage("message",BACKEND_ERROR, response);
+        response.setMessage("message",BACKEND_ERROR + " - " + ex.getMessage(), response);
         response.setStatus(500);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<StandardJsonResponse> handleResourceNotFound(ResourceNotFoundException ex) {
         StandardJsonResponse response = new StandardJsonResponse();
         response.setSuccess(false);
-        response.setMessage("message",BACKEND_ERROR, response);
+        response.setMessage("message",BACKEND_ERROR+ " - " + ex.getMessage(), response);
         response.setStatus(HttpStatus.NOT_FOUND.value());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         ex.printStackTrace();
         StandardJsonResponse response = new StandardJsonResponse();
         response.setSuccess(false);
-        response.setMessage("message",BACKEND_ERROR, response);
+        response.setMessage("message",BACKEND_ERROR+ " - " + ex.getMessage(), response);
         response.setStatus(400);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
         ex.printStackTrace();
         StandardJsonResponse response = new StandardJsonResponse();
         response.setSuccess(false);
-        response.setMessage("message", BACKEND_ERROR,response);
+        response.setMessage("message", BACKEND_ERROR+ " - " + ex.getMessage(),response);
         response.setStatus(400);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
