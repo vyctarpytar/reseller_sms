@@ -38,7 +38,7 @@ public class AccountControler {
 
     }
 
-    @GetMapping()
+    @GetMapping
     public StandardJsonResponse getAccountByResellerId2(HttpServletRequest request) {
         var user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) {

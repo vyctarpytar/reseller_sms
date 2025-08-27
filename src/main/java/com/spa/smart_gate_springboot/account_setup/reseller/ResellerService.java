@@ -1,7 +1,6 @@
 package com.spa.smart_gate_springboot.account_setup.reseller;
 
 import com.spa.smart_gate_springboot.account_setup.account.Account;
-import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
@@ -12,9 +11,11 @@ import com.spa.smart_gate_springboot.user.Permission;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
+import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.webjars.NotFoundException;
 
@@ -34,10 +35,18 @@ public class ResellerService {
     private final NdovupayService ndovupayService;
     private final ApiKeyService apiKeyService;
     private final AccountService accountService;
+    private final GlobalUtils gu;
 
-    public StandardJsonResponse saveReseller(Reseller reseller) {
+    public StandardJsonResponse saveReseller(Reseller resellerDto) {
         StandardJsonResponse resp = new StandardJsonResponse();
-        UUID rdId = reseller.getRsId();
+        UUID rdId = resellerDto.getRsId();
+
+        Reseller reseller = new Reseller();
+        if (rdId != null) {
+            reseller = findById(rdId);
+        }
+        BeanUtils.copyProperties(resellerDto, reseller, gu.getNullPropertyNames(resellerDto));
+
         Reseller reseller1 = save(reseller);
         if (rdId == null) {
             createDefaultAccount(reseller1);
@@ -141,6 +150,16 @@ public class ResellerService {
 
 
     public StandardJsonResponse deleteReseller(UUID rsId, User user, AcDelete acDelete) {
+
+        Reseller reseller = findById(rsId);
+        reseller.setRsStatus("DELETED");
+        reseller.setRsDeletedDate(LocalDateTime.now());
+        reseller.setRsDeletedByName(user.getEmail());
+        reseller.setRsDeletedReason(acDelete.getAcDeleteReason());
+        reseller.setRsDeletedBy(user.getUsrId());
+        resellerRepo.save(reseller);
+
+
         List<Account> allAccounts = accountService.findByAccResellerId(rsId);
         
         // Process account deletions in parallel using CompletableFuture

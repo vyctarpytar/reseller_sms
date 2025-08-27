@@ -72,6 +72,12 @@ public class Reseller {
     @Builder.Default
     private Boolean rsHasNdovuPayAccount = false;
     private BigDecimal rsAllocatableUnit;
+    
+    // Deletion tracking fields
+    private LocalDateTime rsDeletedDate;
+    private String rsDeletedByName;
+    private String rsDeletedReason;
+    private UUID rsDeletedBy;
 
 
 }

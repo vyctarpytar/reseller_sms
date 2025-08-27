@@ -27,7 +27,7 @@ public class MenuService {
 
 
 
-//    @PostConstruct
+    @PostConstruct
     private void init() {
         menuRepo.deleteAll();
         Menu m1 = Menu.builder().mnLink("dashboard").mnName("dashboard").mnOwner(Layers.TOP).build();
@@ -57,7 +57,7 @@ public class MenuService {
         Menu m17 = Menu.builder().mnLink("sender-requests").mnName("Sender Requests").mnOwner(Layers.RESELLER).mnIcons("requestSvg").build();
 
 
-        Menu m18 = Menu.builder().mnLink("report").mnName("reports").mnOwner(Layers.ALL).build();
+        Menu m18 = Menu.builder().mnLink("report").mnName("reports").mnOwner(Layers.ALL).mnIcons("reportSvg").build();
         Menu m19 = Menu.builder().mnLink("dev-sandbox").mnName("Dev SandBox").mnOwner(Layers.ACCOUNT).mnIcons("requestSvg").build();
 
 
@@ -92,8 +92,9 @@ public class MenuService {
 
         Menu m18_a = Menu.builder().mnLink("status-analysis").mnName("Sms By Status Summary").mnOwner(Layers.ALL).mnParentId(m18.getMnId()).build();
         Menu m18_b = Menu.builder().mnLink("date-analysis").mnName("Sms By Date Summary").mnOwner(Layers.ALL).mnParentId(m18.getMnId()).build();
+        Menu m18_c = Menu.builder().mnLink("quartely-Report").mnName("Quartely Report").mnOwner(Layers.TOP).mnParentId(m18.getMnId()).build();
 
-        menuRepo.saveAllAndFlush(List.of(m4c4, m4c2, m4c3,m4c6,m4c5,m4c7, m4c1, m14a,m14c,m14b,m14d,m14e, m17_a, m17_b, m17_c,m18_a,m18_b));
+        menuRepo.saveAllAndFlush(List.of(m4c4, m4c2, m4c3,m4c6,m4c5,m4c7, m4c1, m14a,m14c,m14b,m14d,m14e, m17_a, m17_b, m17_c,m18_a,m18_b,m18_c));
     }
 
 

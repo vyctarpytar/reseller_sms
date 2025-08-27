@@ -6,4 +6,5 @@ import lombok.Data;
 @Data
 public class AcDelete {
     private String acDeleteReason;
+    private String acStatus;
 }
