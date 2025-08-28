@@ -101,7 +101,10 @@ public class UserService {
         if (!TextUtils.isEmpty(filterDto.getUsrNationalId()))
             filterDto.setUsrNationalId("%" + filterDto.getUsrNationalId() + "%");
         Layers layer = user.getLayer();
-        if (layer.equals(Layers.TOP)) filterDto.setLayer("TOP");
+        if (layer.equals(Layers.TOP)) {
+//            filterDto.setLayer("TOP");
+           if(filterDto.getResellerId() != null) filterDto.setResellerId(user.getUsrResellerId());
+        }
         if (layer.equals(Layers.ACCOUNT)) filterDto.setAccId(user.getUsrAccId());
         if (layer.equals(Layers.RESELLER)) filterDto.setResellerId(user.getUsrResellerId());
         String status = null;

@@ -31,7 +31,12 @@ public class CreditController {
 
     //logged in as top level
     @PostMapping("reseller")
-    public StandardJsonResponse getCreditHistoryAsReseller(HttpServletRequest request, @RequestBody CreditFilter creditFilter) {
+    public StandardJsonResponse getCreditHistoryAsReseller(HttpServletRequest request, @RequestBody CreditFilter creditFilter,@RequestParam(required = false) String reseller_id) {
+
+        if (reseller_id != null) {
+            creditFilter.setResellerId(UUID.fromString(reseller_id));
+        }
+
         var user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.TOP)) {
             return creditService.getCreditLoadedToResellers(user, creditFilter);

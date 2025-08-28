@@ -20,8 +20,7 @@ public class DashBoardController {
     private final UserService userService;
 
     @PostMapping
-    public StandardJsonResponse getMainDashBoard(HttpServletRequest request, @RequestBody FilterDto filterDto,
-                                                 @RequestParam(required = false) String reseller_id) {
+    public StandardJsonResponse getMainDashBoard(HttpServletRequest request, @RequestBody FilterDto filterDto, @RequestParam(required = false) String reseller_id) {
         User user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             filterDto.setMsgAccId(user.getUsrAccId());

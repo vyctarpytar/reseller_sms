@@ -116,7 +116,12 @@ public class MessageController {
     }
 
     @PostMapping
-    public StandardJsonResponse getAllSmsForAccount(@RequestBody FilterDto filterDto, HttpServletRequest request) {
+    public StandardJsonResponse getAllSmsForAccount(@RequestBody FilterDto filterDto, HttpServletRequest request,@RequestParam(required = false) String reseller_id) {
+
+        if (reseller_id != null) {
+            filterDto.setMsgResellerId(UUID.fromString(reseller_id));
+        }
+
         User user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             filterDto.setMsgAccId(user.getUsrAccId());
