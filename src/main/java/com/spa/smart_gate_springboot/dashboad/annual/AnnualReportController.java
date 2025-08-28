@@ -195,12 +195,12 @@ public class AnnualReportController {
 
 
 
-            SummaryDto dtoTotalAccounts = SummaryDto.builder().title("totalAccounts").value(String.valueOf(reports.size())).svg("svg53").build();
-            SummaryDto dtoTotalMessages = SummaryDto.builder().title("totalMessages").value(String.valueOf(totalMessages)).svg("svg54").build();
-            SummaryDto dtoTotalRevenue = SummaryDto.builder().title("totalRevenue").value(getFormat(totalRevenue)).svg("svg55").build();
-            SummaryDto dtoTotalDelivered = SummaryDto.builder().title("totalDelivered").value(String.valueOf(totalDelivered)).svg("svg56").build();
-            SummaryDto dtoTotalFailed = SummaryDto.builder().title("totalFailed").value(String.valueOf(totalFailed)).svg("svg57").build();
-            SummaryDto dtoOverallDeliveryRate = SummaryDto.builder().title("overallDeliveryRate").value(String.valueOf(overallDeliveryRate)).svg("svg54").build();
+            SummaryDto dtoTotalAccounts = SummaryDto.builder().title("Accounts").value(getFormat(reports.size())).svg("svg53").build();
+            SummaryDto dtoTotalMessages = SummaryDto.builder().title("Messages").value(getFormat(totalMessages)).svg("svg54").build();
+            SummaryDto dtoTotalRevenue = SummaryDto.builder().title("Revenue").value(getFormat(totalRevenue)).svg("svg55").build();
+            SummaryDto dtoTotalDelivered = SummaryDto.builder().title("Delivered").value(getFormat(totalDelivered)).svg("svg56").build();
+            SummaryDto dtoTotalFailed = SummaryDto.builder().title("Failed").value(String.valueOf(totalFailed)).svg("svg57").build();
+            SummaryDto dtoOverallDeliveryRate = SummaryDto.builder().title("Delivery Rate").value(getFormat(overallDeliveryRate)).svg("svg54").build();
 
             List<SummaryDto> summaryList = List.of(dtoTotalAccounts, dtoTotalMessages, dtoTotalRevenue, dtoTotalDelivered, dtoTotalFailed, dtoOverallDeliveryRate);
 
