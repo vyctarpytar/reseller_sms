@@ -20,8 +20,12 @@ public class UserController {
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping("/get")
-    public StandardJsonResponse getAllUsers(HttpServletRequest request , @RequestBody UserDto userFilter) {
+    public StandardJsonResponse getAllUsers(HttpServletRequest request , @RequestBody UserDto userFilter,
+                                            @RequestParam(required = false) String reseller_id) {
         User user = userService.getCurrentUser(request);
+
+        if(reseller_id != null) userFilter.setResellerId(UUID.fromString(reseller_id));
+
         return userService.getAllUsers(user, userFilter);
     }
 

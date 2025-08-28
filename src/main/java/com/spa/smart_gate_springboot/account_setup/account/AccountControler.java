@@ -39,12 +39,15 @@ public class AccountControler {
     }
 
     @GetMapping
-    public StandardJsonResponse getAccountByResellerId2(HttpServletRequest request) {
+    public StandardJsonResponse getAccountByResellerId2(HttpServletRequest request, @RequestParam(required = false) String reseller_id) {
         var user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             return accountService.getAccountByAccountId(user.getUsrAccId());
         } else if (user.getRole().equals(Role.SALE)) {
             return accountService.getAccountByCreatedById(user.getUsrId());
+        }
+        if (reseller_id != null) {
+            user.setUsrResellerId(UUID.fromString(reseller_id));
         }
         return accountService.getAccountByResellerId(user.getUsrResellerId());
     }
