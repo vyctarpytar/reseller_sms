@@ -5,6 +5,7 @@ import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -36,10 +37,16 @@ public class ChGroupController {
         return chGroupService.createGroup(chGroup,user);
     }
 
-
+    @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN', 'ADMIN')")
     @DeleteMapping("/{id}")
     public StandardJsonResponse deleteGroup(@PathVariable UUID id) {
         return chGroupService.deleteById(id);
+    }
+
+    @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN', 'ADMIN')")
+    @DeleteMapping("/multiple")
+    public StandardJsonResponse deleteGroupByMultipleIds(GroupDeleteDto groupDeleteDto ) {
+        return chGroupService.deleteMultipleGroups( groupDeleteDto.getGroupId());
     }
 }
 

@@ -11,6 +11,8 @@ import org.webjars.NotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +66,25 @@ public class ChGroupService {
         grp.setGroupAccId(user.getUsrAccId());
         response.setData("result", save(grp), response);
         response.setMessage("message", "Group created successfully", response);
+        return response;
+    }
+
+    public StandardJsonResponse deleteMultipleGroups( List<UUID> groupIds) {
+        StandardJsonResponse response = new StandardJsonResponse();
+
+        // Implement CompletableFuture for parallel processing
+        List<CompletableFuture<Void>> deletionTasks = groupIds.parallelStream()
+                .filter(chGroupRepository::existsById)
+                .map(id -> CompletableFuture.runAsync(() -> {
+                    memberService.deleteByGroupidId(id);
+                    chGroupRepository.deleteById(id);
+                }))
+                .toList();
+
+        // Wait for all deletion tasks to complete
+        CompletableFuture.allOf(deletionTasks.toArray(new CompletableFuture[0])).join();
+
+        response.setMessage("message", "Groups and their members deleted successfully", response);
         return response;
     }
 }

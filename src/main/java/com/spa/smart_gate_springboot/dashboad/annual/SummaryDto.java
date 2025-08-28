@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Data
 @Builder
 public class SummaryDto {
-    private String tittle;
+    private String title;
     private String value;
     private String svg;
 }

@@ -6,6 +6,7 @@ import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,9 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -212,14 +214,14 @@ public class AnnualReportController {
 
 
 
-            SummaryDto dtototalAccounts = SummaryDto.builder().tittle("totalAccounts").value(String.valueOf(reports.size())).svg("account").build();
-            SummaryDto dtototalMessages = SummaryDto.builder().tittle("totalMessages").value(String.valueOf(totalMessages)).svg("message").build();
-            SummaryDto dtototalRevenue = SummaryDto.builder().tittle("totalRevenue").value(String.format("%.2f", totalRevenue)).svg("dollar").build();
-            SummaryDto dtototalDelivered = SummaryDto.builder().tittle("totalDelivered").value(String.valueOf(totalDelivered)).svg("delivered").build();
-            SummaryDto dtototalFailed = SummaryDto.builder().tittle("totalFailed").value(String.valueOf(totalFailed)).svg("failed").build();
-            SummaryDto dtooverallDeliveryRate = SummaryDto.builder().tittle("overallDeliveryRate").value(String.valueOf(overallDeliveryRate)).svg("deliveryRate").build();
+            SummaryDto dtoTotalAccounts = SummaryDto.builder().title("totalAccounts").value(String.valueOf(reports.size())).svg("svg53").build();
+            SummaryDto dtoTotalMessages = SummaryDto.builder().title("totalMessages").value(String.valueOf(totalMessages)).svg("svg54").build();
+            SummaryDto dtoTotalRevenue = SummaryDto.builder().title("totalRevenue").value(getFormat(totalRevenue)).svg("svg55").build();
+            SummaryDto dtoTotalDelivered = SummaryDto.builder().title("totalDelivered").value(String.valueOf(totalDelivered)).svg("svg56").build();
+            SummaryDto dtoTotalFailed = SummaryDto.builder().title("totalFailed").value(String.valueOf(totalFailed)).svg("svg57").build();
+            SummaryDto dtoOverallDeliveryRate = SummaryDto.builder().title("overallDeliveryRate").value(String.valueOf(overallDeliveryRate)).svg("svg54").build();
 
-            List<SummaryDto> summaryList = List.of(dtototalAccounts, dtototalMessages, dtototalRevenue, dtototalDelivered, dtototalFailed, dtooverallDeliveryRate);
+            List<SummaryDto> summaryList = List.of(dtoTotalAccounts, dtoTotalMessages, dtoTotalRevenue, dtoTotalDelivered, dtoTotalFailed, dtoOverallDeliveryRate);
 
             StandardJsonResponse response = new StandardJsonResponse();
             response.setData("result",summaryList, response);
@@ -233,5 +235,11 @@ public class AnnualReportController {
             response.setMessage("Error retrieving quarterly summary: " + e.getMessage(), "error", response);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @NotNull
+    private static String getFormat(double totalRevenue) {
+        BigDecimal bd = new BigDecimal(totalRevenue).setScale(2, RoundingMode.HALF_UP);
+      return bd.toString();
     }
 }
