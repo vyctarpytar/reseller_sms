@@ -415,7 +415,6 @@ public class AnnualReportService {
         } else if (year != null && quarter != null) {
             reports = annualReportRepository.findByYearAndQuarter(year, quarter);
         } else if (year != null) {
-
             reports = annualReportRepository.findByYearOrderedByQuarterAndAccount(year);
         } else {
             reports = annualReportRepository.findAll();

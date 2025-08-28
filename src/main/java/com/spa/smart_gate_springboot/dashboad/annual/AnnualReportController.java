@@ -179,14 +179,17 @@ public class AnnualReportController {
     public ResponseEntity<StandardJsonResponse> getQuarterlySummary(
             HttpServletRequest request,
             @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer quarter) {
+            @RequestParam(required = false) Integer quarter,
+            @RequestParam(required = false) UUID accountId,
+            @RequestParam(required = false) UUID resellerId
+    ) {
         
         try {
             User currentUser = userService.getCurrentUser(request);
-            log.debug("User {} requesting quarterly summary for year: {}, quarter: {}", 
-                    currentUser.getEmail(), year, quarter);
+            log.debug("User {} requesting quarterly summary for year: {}, quarter: {} , accountId: {} , resellerId: {}",
+                    currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(year, quarter, null, null);
+            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(year, quarter, accountId, resellerId);
             
             // Calculate summary statistics
             long totalMessages = reports.stream()
