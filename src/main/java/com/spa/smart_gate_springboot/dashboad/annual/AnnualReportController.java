@@ -208,16 +208,18 @@ public class AnnualReportController {
             double overallDeliveryRate = totalMessages > 0 ? (double) totalDelivered / totalMessages * 100 : 0.0;
 
 
-            HashMap<String, Object> map = new HashMap<>();
-            map.put("totalAccounts", reports.size());
-            map.put("totalMessages", totalMessages);
-            map.put("totalRevenue", totalRevenue);
-            map.put("totalDelivered", totalDelivered);
-            map.put("totalFailed", totalFailed);
-            map.put("overallDeliveryRate", String.format("%.2f%%", overallDeliveryRate));
+
+            SummaryDto dtototalAccounts = SummaryDto.builder().tittle("totalAccounts").value(String.valueOf(reports.size())).svg("account").build();
+            SummaryDto dtototalMessages = SummaryDto.builder().tittle("totalMessages").value(String.valueOf(totalMessages)).svg("message").build();
+            SummaryDto dtototalRevenue = SummaryDto.builder().tittle("totalRevenue").value(String.format("%.2f", totalRevenue)).svg("dollar").build();
+            SummaryDto dtototalDelivered = SummaryDto.builder().tittle("totalDelivered").value(String.valueOf(totalDelivered)).svg("delivered").build();
+            SummaryDto dtototalFailed = SummaryDto.builder().tittle("totalFailed").value(String.valueOf(totalFailed)).svg("failed").build();
+            SummaryDto dtooverallDeliveryRate = SummaryDto.builder().tittle("overallDeliveryRate").value(String.valueOf(overallDeliveryRate)).svg("deliveryRate").build();
+
+            List<SummaryDto> summaryList = List.of(dtototalAccounts, dtototalMessages, dtototalRevenue, dtototalDelivered, dtototalFailed, dtooverallDeliveryRate);
 
             StandardJsonResponse response = new StandardJsonResponse();
-            response.setData("result",map, response);
+            response.setData("result",summaryList, response);
             response.setMessage("Quarterly summary retrieved successfully", "success", response);
             
             return ResponseEntity.ok(response);
