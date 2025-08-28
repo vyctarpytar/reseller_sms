@@ -103,7 +103,7 @@ public class UserService {
         Layers layer = user.getLayer();
         if (layer.equals(Layers.TOP)) {
 //            filterDto.setLayer("TOP");
-           if(filterDto.getResellerId() != null) filterDto.setResellerId(user.getUsrResellerId());
+           if(filterDto.getResellerId() != null) filterDto.setResellerId(filterDto.getResellerId());
         }
         if (layer.equals(Layers.ACCOUNT)) filterDto.setAccId(user.getUsrAccId());
         if (layer.equals(Layers.RESELLER)) filterDto.setResellerId(user.getUsrResellerId());
