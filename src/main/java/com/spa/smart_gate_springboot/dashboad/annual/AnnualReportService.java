@@ -105,7 +105,8 @@ public class AnnualReportService {
                 resellerName = reseller.map(Reseller::getRsCompanyName).orElse(null);
             }
 
-            report = AnnualReport.builder().unitPrice(account.getAccSmsPrice())
+            report = AnnualReport.builder()
+                    .unitPrice(account.getAccSmsPrice())
                     .validityPeriod(account.getAccLicenceValidity())
                     .year(year).quarter(quarter).accountId(account.getAccId()).accountName(account.getAccName()).resellerId(account.getAccResellerId()).resellerName(resellerName).status("PROCESSING").build();
             log.debug("Creating new report for account: {}", account.getAccName());
@@ -434,6 +435,7 @@ public class AnnualReportService {
         int[] months = getQuarterMonths(report.getQuarter());
 
         return AnnualReportDto.builder().id(report.getId())
+                .unitPrice(report.getUnitPrice())
                 .validityPeriod(report.getValidityPeriod())
                 .senderId(report.getSenderId())
                 .senderIdProvider(report.getSenderIdProvider())
@@ -467,9 +469,7 @@ public class AnnualReportService {
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
-            headerFont.
-
-                    setFontHeightInPoints((short) 12);
+            headerFont.setFontHeightInPoints((short) 12);
             headerStyle.setFont(headerFont);
             headerStyle.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -487,9 +487,7 @@ public class AnnualReportService {
             // Create currency style
             CellStyle currencyStyle = workbook.createCellStyle();
             currencyStyle.cloneStyleFrom(dataStyle);
-            currencyStyle.setDataFormat(
-
-                    workbook.createDataFormat().getFormat("KSH #,##0.00"));
+            currencyStyle.setDataFormat(workbook.createDataFormat().getFormat("KSH #,##0.00"));
 
             CellStyle percentStyle = workbook.createCellStyle();
             percentStyle.cloneStyleFrom(dataStyle);
