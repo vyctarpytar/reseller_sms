@@ -6,6 +6,7 @@ import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -69,8 +70,8 @@ public class AnnualReportController {
     @PostMapping("/export/excel")
     public ResponseEntity<byte[]> exportToExcel(
             HttpServletRequest request,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer quarter,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String quarter,
             @RequestParam(required = false) UUID accountId,
             @RequestParam(required = false) UUID resellerId) {
         
@@ -79,7 +80,7 @@ public class AnnualReportController {
             log.info("User {} requesting Excel export with filters - year: {}, quarter: {}, accountId: {}, resellerId: {}", 
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            byte[] excelData = annualReportService.generateExcelReport(year, quarter, accountId, resellerId);
+            byte[] excelData = annualReportService.generateExcelReport(StringUtils.isEmpty(year) ? null : Integer.getInteger(year), StringUtils.isEmpty(quarter) ? null : Integer.getInteger(quarter), accountId, resellerId);
             
             // Generate filename with timestamp
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
@@ -180,8 +181,8 @@ public class AnnualReportController {
     @PostMapping("/summary")
     public ResponseEntity<StandardJsonResponse> getQuarterlySummary(
             HttpServletRequest request,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer quarter,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String quarter,
             @RequestParam(required = false) UUID accountId,
             @RequestParam(required = false) UUID resellerId
     ) {
@@ -191,7 +192,7 @@ public class AnnualReportController {
             log.debug("User {} requesting quarterly summary for year: {}, quarter: {} , accountId: {} , resellerId: {}",
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(year, quarter, accountId, resellerId);
+            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(StringUtils.isEmpty(year) ? null : Integer.parseInt(year), StringUtils.isEmpty(quarter) ? null : Integer.parseInt(quarter), accountId, resellerId);
             
             // Calculate summary statistics
             long totalMessages = reports.stream()
