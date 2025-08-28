@@ -32,6 +32,10 @@ public class GlobalUtils {
             if (myString.trim().isEmpty()) {
                 return null;
             }
+            if (myString.trim().equalsIgnoreCase("null")) {
+                return null;
+            }
+
             return myString;
         }
         return null;

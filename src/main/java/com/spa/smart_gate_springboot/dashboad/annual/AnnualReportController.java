@@ -2,6 +2,7 @@ package com.spa.smart_gate_springboot.dashboad.annual;
 
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
+import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class AnnualReportController {
     
     private final AnnualReportService annualReportService;
     private final UserService userService;
+    private final GlobalUtils globalUtils;
     
     /**
      * Get quarterly reports with optional filtering
@@ -43,6 +45,11 @@ public class AnnualReportController {
             @RequestParam(required = false) String resellerId) {
         
         try {
+            year = GlobalUtils.CheckNullValues(year);
+            quarter = GlobalUtils.CheckNullValues(quarter);
+            accountId = GlobalUtils.CheckNullValues(accountId);
+            resellerId = GlobalUtils.CheckNullValues(resellerId);
+
             User currentUser = userService.getCurrentUser(request);
             log.info("User {} requesting quarterly reports with filters - year: {}, quarter: {}, accountId: {}, resellerId: {}", 
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
@@ -79,6 +86,11 @@ public class AnnualReportController {
             @RequestParam(required = false) String resellerId) {
         
         try {
+            year = GlobalUtils.CheckNullValues(year);
+            quarter = GlobalUtils.CheckNullValues(quarter);
+            accountId = GlobalUtils.CheckNullValues(accountId);
+            resellerId = GlobalUtils.CheckNullValues(resellerId);
+
             User currentUser = userService.getCurrentUser(request);
             log.info("User {} requesting Excel export with filters - year: {}, quarter: {}, accountId: {}, resellerId: {}", 
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
@@ -148,10 +160,17 @@ public class AnnualReportController {
     ) {
         
         try {
+            year = GlobalUtils.CheckNullValues(year);
+            quarter = GlobalUtils.CheckNullValues(quarter);
+            accountId = GlobalUtils.CheckNullValues(accountId);
+            resellerId = GlobalUtils.CheckNullValues(resellerId);
+
+
             User currentUser = userService.getCurrentUser(request);
-            log.debug("User {} requesting quarterly summary for year: {}, quarter: {} , accountId: {} , resellerId: {}",
+            log.info("User {} requesting quarterly summary for year: {}, quarter: {} , accountId: {} , resellerId: {}",
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
-            
+
+
             List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(StringUtils.isEmpty(year) ? null : Integer.parseInt(year), StringUtils.isEmpty(quarter) ? null : Integer.parseInt(quarter),
                     StringUtils.isEmpty(accountId) ? null: UUID.fromString(accountId), StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
