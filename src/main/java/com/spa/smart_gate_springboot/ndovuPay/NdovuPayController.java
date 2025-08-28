@@ -24,7 +24,7 @@ public class NdovuPayController {
     public StandardJsonResponse ndovuPayBalance(HttpServletRequest request) throws Exception {
         var user = userService.getCurrentUser(request);
 
-        UUID usrResellerId = null;
+        UUID usrResellerId ;
         if (user.getLayer().equals(Layers.RESELLER)) {
             usrResellerId = user.getUsrResellerId();
         } else if (user.getLayer().equals(Layers.TOP)) {
@@ -58,7 +58,10 @@ public class NdovuPayController {
 
     @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN','ADMIN')")
     @PostMapping("withdrawals")
-    public StandardJsonResponse fetchWithdrawRequest(HttpServletRequest request, @RequestBody WithDrawFilter withDrawFilter)  {
+    public StandardJsonResponse fetchWithdrawRequest(HttpServletRequest request, @RequestBody WithDrawFilter withDrawFilter,  @RequestParam(required = false) String reseller_id)  {
+        if (reseller_id != null) {
+            withDrawFilter.setWithDrawResellerId(UUID.fromString(reseller_id));
+        }
         var user = userService.getCurrentUser(request);
         if(user.getLayer().equals(Layers.RESELLER)){
             withDrawFilter.setWithDrawResellerId(user.getUsrResellerId());

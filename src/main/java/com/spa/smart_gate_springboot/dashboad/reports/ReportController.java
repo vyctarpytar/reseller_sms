@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -48,14 +45,20 @@ public class ReportController {
     }
 
     @PostMapping("daily-sms-usage")
-    public StandardJsonResponse getDailySmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
+    public StandardJsonResponse getDailySmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto,@RequestParam(required = false) String reseller_id) {
+        if (reseller_id != null) {
+            filterDto.setMsgResellerId(UUID.fromString(reseller_id));
+        }
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
         return reportService.getDailySmsUsage(filterDto);
     }
 
     @PostMapping("status-sms-usage")
-    public StandardJsonResponse getStatusSmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
+    public StandardJsonResponse getStatusSmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto,@RequestParam(required = false) String reseller_id) {
+        if (reseller_id != null) {
+            filterDto.setMsgResellerId(UUID.fromString(reseller_id));
+        }
         User user = userService.getCurrentUser(request);
         setFilters(filterDto, user);
         return reportService.getStatusSmsUsage(filterDto);

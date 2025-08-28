@@ -42,9 +42,16 @@ public class AnnualReportController {
             @RequestParam(required = false) String year,
             @RequestParam(required = false) String quarter,
             @RequestParam(required = false) String accountId,
-            @RequestParam(required = false) String resellerId) {
+            @RequestParam(required = false) String resellerId,
+            @RequestParam(required = false) String reseller_id
+    ) {
         
         try {
+
+            if (reseller_id != null) {
+                resellerId = reseller_id;
+            }
+
             year = GlobalUtils.CheckNullValues(year);
             quarter = GlobalUtils.CheckNullValues(quarter);
             accountId = GlobalUtils.CheckNullValues(accountId);
@@ -83,9 +90,16 @@ public class AnnualReportController {
             @RequestParam(required = false) String year,
             @RequestParam(required = false) String quarter,
             @RequestParam(required = false) String accountId,
-            @RequestParam(required = false) String resellerId) {
+            @RequestParam(required = false) String resellerId,
+            @RequestParam(required = false) String reseller_id)
+    {
         
         try {
+
+            if (reseller_id != null) {
+                resellerId = reseller_id;
+            }
+
             year = GlobalUtils.CheckNullValues(year);
             quarter = GlobalUtils.CheckNullValues(quarter);
             accountId = GlobalUtils.CheckNullValues(accountId);
@@ -156,10 +170,16 @@ public class AnnualReportController {
             @RequestParam(required = false) String year,
             @RequestParam(required = false) String quarter,
             @RequestParam(required = false) String accountId,
-            @RequestParam(required = false) String resellerId
+            @RequestParam(required = false) String resellerId,
+            @RequestParam(required = false) String reseller_id
     ) {
         
         try {
+
+            if (reseller_id != null) {
+                resellerId = reseller_id;
+            }
+
             year = GlobalUtils.CheckNullValues(year);
             quarter = GlobalUtils.CheckNullValues(quarter);
             accountId = GlobalUtils.CheckNullValues(accountId);
