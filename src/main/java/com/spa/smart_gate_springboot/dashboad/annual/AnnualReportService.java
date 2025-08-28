@@ -105,7 +105,7 @@ public class AnnualReportService {
                 resellerName = reseller.map(Reseller::getRsCompanyName).orElse(null);
             }
 
-            report = AnnualReport.builder()
+            report = AnnualReport.builder().unitPrice(account.getAccSmsPrice())
                     .validityPeriod(account.getAccLicenceValidity())
                     .year(year).quarter(quarter).accountId(account.getAccId()).accountName(account.getAccName()).resellerId(account.getAccResellerId()).resellerName(resellerName).status("PROCESSING").build();
             log.debug("Creating new report for account: {}", account.getAccName());
