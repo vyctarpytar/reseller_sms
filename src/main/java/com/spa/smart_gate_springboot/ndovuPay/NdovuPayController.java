@@ -21,14 +21,14 @@ public class NdovuPayController {
 
     @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN','ADMIN')")
     @GetMapping("balance")
-    public StandardJsonResponse ndovuPayBalance(HttpServletRequest request) throws Exception {
+    public StandardJsonResponse ndovuPayBalance(HttpServletRequest request, @RequestParam(required = false) String reseller_id) throws Exception {
         var user = userService.getCurrentUser(request);
 
         UUID usrResellerId ;
         if (user.getLayer().equals(Layers.RESELLER)) {
             usrResellerId = user.getUsrResellerId();
         } else if (user.getLayer().equals(Layers.TOP)) {
-            usrResellerId = user.getUsrId();
+            usrResellerId = UUID.fromString(reseller_id);
         } else {
             throw new RuntimeException("Only resellers / TOP  can use withdraw operation");
         }
