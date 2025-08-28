@@ -20,6 +20,7 @@ public class AnnualReportDto {
     private Long validityPeriod;
     private String senderId;
     private String senderIdProvider;
+    private BigDecimal unitPrice;
     
     // Monthly breakdown
     private MonthlyData month1;

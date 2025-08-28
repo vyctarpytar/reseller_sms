@@ -149,7 +149,8 @@ public class AnnualReportService {
                     SELECT 
                         COUNT(*) as message_count,
                         SUM(CASE WHEN msg_status in ('DeliveredToTerminal','PENDING_DELIVERY','SENT') THEN 1 ELSE 0 END) as delivered_count,
-                        SUM(CASE WHEN msg_status  not in ('DeliveredToTerminal','PENDING_DELIVERY','SENT') THEN 1 ELSE 0 END) as failed_count
+                        SUM(CASE WHEN msg_status  not in ('DeliveredToTerminal','PENDING_DELIVERY','SENT') THEN 1 ELSE 0 END) as failed_count,
+                        SUM(COALESCE(msg_Page, 1)) as total_pages
                     FROM msg.message_queue_arc 
                     WHERE msg_acc_id = ?1 
                     AND EXTRACT(YEAR FROM msg_created_date) = ?2 
@@ -166,9 +167,10 @@ public class AnnualReportService {
             Long messageCount = result[0] != null ? ((Number) result[0]).longValue() : 0L;
             Long deliveredCount = result[1] != null ? ((Number) result[1]).longValue() : 0L;
             Long failedCount = result[2] != null ? ((Number) result[2]).longValue() : 0L;
+            Long totalPages = result[3] != null ? ((Number) result[3]).longValue() : 0L;
 
-            // Calculate revenue (assuming account has SMS price)
-            BigDecimal revenue = calculateMonthlyRevenue(accountId, messageCount);
+            // Calculate revenue using total pages (multiply by number of pages in SMS)
+            BigDecimal revenue = calculateMonthlyRevenue(accountId, totalPages);
 
             // Set monthly data based on position in quarter
             switch (i) {
@@ -243,16 +245,16 @@ public class AnnualReportService {
     }
 
     /**
-     * Calculate monthly revenue based on account's SMS price
+     * Calculate monthly revenue based on account's SMS price multiplied by total pages
      */
-    private BigDecimal calculateMonthlyRevenue(UUID accountId, Long messageCount) {
-        if (messageCount == null || messageCount == 0) {
+    private BigDecimal calculateMonthlyRevenue(UUID accountId, Long totalPages) {
+        if (totalPages == null || totalPages == 0) {
             return BigDecimal.ZERO;
         }
 
         Optional<Account> account = accountRepository.findById(accountId);
         if (account.isPresent() && account.get().getAccSmsPrice() != null) {
-            return account.get().getAccSmsPrice().multiply(BigDecimal.valueOf(messageCount));
+            return account.get().getAccSmsPrice().multiply(BigDecimal.valueOf(totalPages));
         }
 
         return BigDecimal.ZERO;
@@ -494,7 +496,7 @@ public class AnnualReportService {
             percentStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00%"));
             // Create headers
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Account Name", "Reseller","Validity Period", "Sender ID", "Provider", "Year", "Quarter", "Month 1", "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
+            String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter", "Month 1", "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
 
                     "M2 Delivered", "M2 Failed", "M2 Delivery Rate", "Month 3", "M3 Messages", "M3 Revenue", "M3 Delivered", "M3 Failed", "M3 Delivery Rate", "Quarter Total Messages",
 
@@ -517,6 +519,7 @@ public class AnnualReportService {
                 // Basic info
                 row.createCell(colNum++).setCellValue(report.getAccountName() != null ? report.getAccountName() : "");
                 row.createCell(colNum++).setCellValue(report.getResellerName() != null ? report.getResellerName() : "");
+                row.createCell(colNum++).setCellValue(String.valueOf(report.getUnitPrice() != null ? report.getUnitPrice() : ""));
                 row.createCell(colNum++).setCellValue(report.getValidityPeriod() != null ? report.getValidityPeriod() : 0);
                 row.createCell(colNum++).setCellValue(report.getSenderId() != null ? report.getSenderId() : "");
                 row.createCell(colNum++).setCellValue(report.getSenderIdProvider() != null ? report.getSenderIdProvider() : "");

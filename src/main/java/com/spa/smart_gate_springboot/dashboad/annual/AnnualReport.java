@@ -70,8 +70,9 @@ public class AnnualReport {
     private String status; // PROCESSING, COMPLETED, FAILED
 
     private Long validityPeriod;
-
+private BigDecimal unitPrice;
     private String senderId;
+
     @Builder.Default
     private String senderIdProvider = "SAFARICOM";
 
