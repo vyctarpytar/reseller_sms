@@ -45,7 +45,7 @@ public class ChGroupController {
 
     @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN', 'ADMIN')")
     @DeleteMapping("/multiple")
-    public StandardJsonResponse deleteGroupByMultipleIds(GroupDeleteDto groupDeleteDto ) {
+    public StandardJsonResponse deleteGroupByMultipleIds(@RequestBody GroupDeleteDto groupDeleteDto ) {
         return chGroupService.deleteMultipleGroups( groupDeleteDto.getGroupId());
     }
 }
