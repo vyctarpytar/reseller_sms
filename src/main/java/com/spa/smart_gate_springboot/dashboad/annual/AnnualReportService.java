@@ -563,12 +563,8 @@ public class AnnualReportService {
                     m2RevenueCell.setCellStyle(currencyStyle);
                 }
 
-                row.
-
-                        createCell(colNum++).setCellValue(report.getMonth2().getDeliveredCount() != null ? report.getMonth2().getDeliveredCount() : 0);
-                row.createCell(colNum++).setCellValue(report.getMonth2().getFailedCount() != null ? report.getMonth2().
-
-                        getFailedCount() : 0);
+                row. createCell(colNum++).setCellValue(report.getMonth2().getDeliveredCount() != null ? report.getMonth2().getDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getMonth2().getFailedCount() != null ? report.getMonth2().getFailedCount() : 0);
 
                 Cell m2DeliveryRateCell = row.createCell(colNum++);
                 if (report.getMonth2().getDeliveryRate() != null) {
@@ -578,9 +574,7 @@ public class AnnualReportService {
 
                 // Month 3 data
                 row.createCell(colNum++).setCellValue(report.getMonth3().getMonthName());
-                row.createCell(colNum++).setCellValue(report.getMonth3().
-
-                        getMessageCount() != null ? report.getMonth3().getMessageCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getMonth3().getMessageCount() != null ? report.getMonth3().getMessageCount() : 0);
 
                 Cell m3RevenueCell = row.createCell(colNum++);
                 if (report.getMonth3().getRevenue() != null) {
@@ -589,9 +583,7 @@ public class AnnualReportService {
                     m3RevenueCell.setCellStyle(currencyStyle);
                 }
 
-                row.createCell(colNum++).setCellValue(report.getMonth3().getDeliveredCount() !=
-
-                        null ? report.getMonth3().getDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getMonth3().getDeliveredCount() !=null ? report.getMonth3().getDeliveredCount() : 0);
                 row.createCell(colNum++).setCellValue(report.getMonth3().getFailedCount() != null ? report.getMonth3().getFailedCount() : 0);
 
                 Cell m3DeliveryRateCell = row.createCell(colNum++);
@@ -612,16 +604,12 @@ public class AnnualReportService {
                     quarterRevenueCell.setCellStyle(currencyStyle);
                 }
 
-                row.createCell(colNum++).setCellValue(report.getQuarterDeliveredCount() != null ? report.
-
-                        getQuarterDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getQuarterDeliveredCount() != null ? report. getQuarterDeliveredCount() : 0);
                 row.createCell(colNum++).setCellValue(report.getQuarterFailedCount() != null ? report.getQuarterFailedCount() : 0);
 
                 Cell quarterDeliveryRateCell = row.createCell(colNum++);
                 if (report.getQuarterDeliveryRate() != null) {
-                    quarterDeliveryRateCell.setCellValue(report.
-
-                            getQuarterDeliveryRate().doubleValue() / 100);
+                    quarterDeliveryRateCell.setCellValue(report.getQuarterDeliveryRate().doubleValue() / 100);
                     quarterDeliveryRateCell.setCellStyle(percentStyle);
                 }
 
