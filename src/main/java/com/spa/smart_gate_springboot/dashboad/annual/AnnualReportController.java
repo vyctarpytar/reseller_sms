@@ -37,17 +37,20 @@ public class AnnualReportController {
     @PostMapping
     public ResponseEntity<StandardJsonResponse> getQuarterlyReports(
             HttpServletRequest request,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer quarter,
-            @RequestParam(required = false) UUID accountId,
-            @RequestParam(required = false) UUID resellerId) {
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String quarter,
+            @RequestParam(required = false) String accountId,
+            @RequestParam(required = false) String resellerId) {
         
         try {
             User currentUser = userService.getCurrentUser(request);
             log.info("User {} requesting quarterly reports with filters - year: {}, quarter: {}, accountId: {}, resellerId: {}", 
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(year, quarter, accountId, resellerId);
+            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(  StringUtils.isEmpty(year) ? null : Integer.getInteger(year),
+                    StringUtils.isEmpty(quarter) ? null : Integer.getInteger(quarter),
+                    StringUtils.isEmpty(accountId) ? null: UUID.fromString(accountId),
+                    StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
             StandardJsonResponse response = new StandardJsonResponse();
             response.setData("result", reports, response);
@@ -72,15 +75,19 @@ public class AnnualReportController {
             HttpServletRequest request,
             @RequestParam(required = false) String year,
             @RequestParam(required = false) String quarter,
-            @RequestParam(required = false) UUID accountId,
-            @RequestParam(required = false) UUID resellerId) {
+            @RequestParam(required = false) String accountId,
+            @RequestParam(required = false) String resellerId) {
         
         try {
             User currentUser = userService.getCurrentUser(request);
             log.info("User {} requesting Excel export with filters - year: {}, quarter: {}, accountId: {}, resellerId: {}", 
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            byte[] excelData = annualReportService.generateExcelReport(StringUtils.isEmpty(year) ? null : Integer.getInteger(year), StringUtils.isEmpty(quarter) ? null : Integer.getInteger(quarter), accountId, resellerId);
+            byte[] excelData = annualReportService.generateExcelReport(
+                    StringUtils.isEmpty(year) ? null : Integer.getInteger(year),
+                    StringUtils.isEmpty(quarter) ? null : Integer.getInteger(quarter),
+                    StringUtils.isEmpty(accountId) ? null: UUID.fromString(accountId),
+                    StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
             // Generate filename with timestamp
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
@@ -127,54 +134,7 @@ public class AnnualReportController {
         }
     }
     
-    /**
-     * Manually trigger report generation for specific year and quarter
-     */
-    @PostMapping("/generate")
-    public ResponseEntity<StandardJsonResponse> generateReports(
-            HttpServletRequest request,
-            @RequestParam Integer year,
-            @RequestParam Integer quarter) {
-        
-        try {
-            User currentUser = userService.getCurrentUser(request);
-            log.info("User {} manually triggering report generation for Q{} {}", 
-                    currentUser.getEmail(), quarter, year);
-            
-            // Validate quarter
-            if (quarter < 1 || quarter > 4) {
-                StandardJsonResponse response = new StandardJsonResponse();
-                response.setMessage("Invalid quarter. Must be between 1 and 4", "error", response);
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            // Validate year
-            int currentYear = LocalDateTime.now().getYear();
-            if (year < 2024 || year > currentYear + 1) {
-                StandardJsonResponse response = new StandardJsonResponse();
-                response.setMessage("Invalid year. Must be between 2024 and " + (currentYear + 1), "error", response);
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            annualReportService.generateReportsManually(year, quarter);
-            
-            StandardJsonResponse response = new StandardJsonResponse();
-            response.setMessage(String.format("Report generation initiated for Q%d %d", quarter, year), "success", response);
-            response.setData("year", year, response);
-            response.setData("quarter", quarter, response);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("Error manually generating reports for Q{} {}", quarter, year, e);
-            StandardJsonResponse response = new StandardJsonResponse();
-            response.setMessage("Error generating reports: " + e.getMessage(), "error", response);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
-    
 
-    
     /**
      * Get quarterly summary statistics
      */
@@ -183,8 +143,8 @@ public class AnnualReportController {
             HttpServletRequest request,
             @RequestParam(required = false) String year,
             @RequestParam(required = false) String quarter,
-            @RequestParam(required = false) UUID accountId,
-            @RequestParam(required = false) UUID resellerId
+            @RequestParam(required = false) String accountId,
+            @RequestParam(required = false) String resellerId
     ) {
         
         try {
@@ -192,7 +152,8 @@ public class AnnualReportController {
             log.debug("User {} requesting quarterly summary for year: {}, quarter: {} , accountId: {} , resellerId: {}",
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(StringUtils.isEmpty(year) ? null : Integer.parseInt(year), StringUtils.isEmpty(quarter) ? null : Integer.parseInt(quarter), accountId, resellerId);
+            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(StringUtils.isEmpty(year) ? null : Integer.parseInt(year), StringUtils.isEmpty(quarter) ? null : Integer.parseInt(quarter),
+                    StringUtils.isEmpty(accountId) ? null: UUID.fromString(accountId), StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
             // Calculate summary statistics
             long totalMessages = reports.stream()
