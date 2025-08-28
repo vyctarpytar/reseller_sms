@@ -8,10 +8,7 @@ import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -23,7 +20,8 @@ public class DashBoardController {
     private final UserService userService;
 
     @PostMapping
-    public StandardJsonResponse getMainDashBoard(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public StandardJsonResponse getMainDashBoard(HttpServletRequest request, @RequestBody FilterDto filterDto,
+                                                 @RequestParam(required = false) String reseller_id) {
         User user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             filterDto.setMsgAccId(user.getUsrAccId());
@@ -35,8 +33,8 @@ public class DashBoardController {
         }
 
         if (user.getLayer().equals(Layers.TOP)) {
-            if (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a"))) { // top synq-Africa
-                filterDto.setMsgResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // show synq tel
+            if (reseller_id != null) {
+                filterDto.setMsgResellerId(UUID.fromString(reseller_id));
             }
         }
         return dashBoardService.getMainDashboard(filterDto);

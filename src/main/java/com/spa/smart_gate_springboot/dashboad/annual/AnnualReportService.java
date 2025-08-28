@@ -614,7 +614,6 @@ public class AnnualReportService {
                 Cell avgCostCell = row.createCell(colNum++);
                 if (report.getAverageMessageCost() != null) {
                     avgCostCell.setCellValue(report.getAverageMessageCost().doubleValue());
-
                     avgCostCell.setCellStyle(currencyStyle);
                 }
 
@@ -638,13 +637,5 @@ public class AnnualReportService {
      */
     public List<Integer> getAvailableYears() {
         return annualReportRepository.findDistinctYears();
-    }
-
-    /**
-     * Manually trigger report generation for specific year and quarter
-     */
-    public void generateReportsManually(int year, int quarter) {
-        log.info("Manually triggering report generation for Q{} {}", quarter, year);
-        generateQuarterlyReports(year, quarter);
     }
 }
