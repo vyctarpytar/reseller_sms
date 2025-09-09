@@ -152,7 +152,7 @@ public class InvoiceService {
             paymentService.save(payment);
 
             Credit credit = Credit.builder().smsAccId(invoice.getInvoAccId()).smsPayAmount(payment.getTransAmount()).smsResellerId(invoice.getInvoResellerId())
-                    .smsPaymentRef(paymentDto.getTransID()).smsPaymentId(payment.getId()).build();
+                    .smsPaymentRef(paymentDto.getTransId()).smsPaymentId(payment.getId()).build();
 
 
             if (invoice.getInvoCreatedByEmail().equalsIgnoreCase("MAJIBYTE_LOGGED_IN_USER")) {

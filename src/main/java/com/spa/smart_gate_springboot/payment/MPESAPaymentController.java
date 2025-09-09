@@ -33,6 +33,7 @@ public class MPESAPaymentController {
             response.put("ResultCode", "0");
             response.put("ResultDesc", "Accepted");
         }catch (Exception e){
+            log.error("Failed to receive payment : {}", e.getMessage());
             response.put("ResultCode", "C2B00016");
             response.put("ResultDesc", "Rejected");
         }

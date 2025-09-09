@@ -20,10 +20,10 @@ import java.util.UUID;
 public class PaymentDto {
 
     @JsonProperty("TransactionType")
-    private String transactionType;
+    private String transType;
     
     @JsonProperty("TransID")
-    private String transID;
+    private String transId;
     
     @JsonProperty("TransTime")
     private String transTime;
@@ -46,7 +46,7 @@ public class PaymentDto {
     private String orgAccountBalance;
     
     @JsonProperty("ThirdPartyTransID")
-    private String thirdPartyTransID;
+    private String thirdPartyTransId;
     
     @JsonProperty("MSISDN")
     private String msisdn;

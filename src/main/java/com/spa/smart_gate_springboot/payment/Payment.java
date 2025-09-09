@@ -21,6 +21,7 @@ public class Payment {
     @GeneratedValue
     private UUID id;
     private String transType;
+    @NotNull(message = "field cannot be null")
     private String transId;
     private String transTime;
     private LocalDateTime transDateTime;
@@ -31,8 +32,13 @@ public class Payment {
     private String billRefNumber;
     private String invoiceNumber;
     private String msisdn;
+    private String thirdPartyTransId;
+    private String orgAccountBalance;
     private String kycName;
     private String kycValue;
+    private String firstName;
+    private String middleName;
+    private String lastName;
     private Integer resultCode;
     private String resultDesc;
     private String thirdPartyTransid;
