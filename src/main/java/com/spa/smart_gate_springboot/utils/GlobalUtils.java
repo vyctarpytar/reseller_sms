@@ -95,12 +95,12 @@ public class GlobalUtils {
             String jsonString = objectMapper.writeValueAsString(obj);
 
             if (type.equals("success")) {
-                log.info("see  >> " + jsonString);
+                log.info("see  >> {} " , jsonString);
             } else if (type.equalsIgnoreCase("error")) {
-                log.error("warn  >> " + jsonString);
+                log.error("error  >>  {}" , jsonString);
             }
         } catch (Exception e) {
-            log.error("warn  >> " + e.getMessage());
+            log.error("warn  >>  {}" , e.getMessage());
         }
     }
 

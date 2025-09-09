@@ -19,6 +19,13 @@ public class MPESAPaymentController {
     private  final RMQPublisher rmqPublisher;
     private final ObjectMapper objectMapper;
 
+    private  final InvoiceService invoiceService;
+
+    @PostMapping
+    public ThirdPartyResponse receivePayment (@RequestBody PaymentDto payment){
+        return invoiceService.receivePayment(payment);
+    }
+
     @PostMapping("/validate")
     public ThirdPartyResponse receivePaymentValidate (@RequestBody  Object obj){
         log.info("receive Validate payment request : {}", obj);
