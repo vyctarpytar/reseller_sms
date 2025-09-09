@@ -6,6 +6,9 @@ import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -19,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@EnableScheduling
 public class PushSDKConfigService {
     final private PushSDKConfigRepository pushSDKConfigRepository;
     private final GlobalUtils gu;
@@ -42,7 +46,7 @@ public class PushSDKConfigService {
         PushSDKConfig pushSDKConfig = PushSDKConfig.builder()
                 .mpCallbackUrl("https://backend.synqafrica.co.ke:8443/api/v2/payment")
 //                .mpUrl("http://smartgate.pickpay.co.ke:8484/")
-                .mpPassKey("bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
+                .mpPassKey("807d4b8aa4dc929a51f6a2247e268e50a636355052687d02c2f5fc2c27de23fd")
                 .mpShortCode("4037171")
                 .mpConsumerKey("is2CrKOqs5ioNFLUpsyAFCYBHR1uMq0g5tYfxrWElJSbcMnr")
                 .mpConsumerSecret("qdDhYwrrdhnsxtNxhiwBrupZqersV8Dta8yPCxtzXBDK230PV23CZRGdarmgwFtL")
@@ -70,7 +74,7 @@ public class PushSDKConfigService {
     }
 
 
-    @PostConstruct
+    @Scheduled(fixedRate = 5000)
     private void testResp() {
         try {
             popSDkMpesa("254716177880","1.00","test");
