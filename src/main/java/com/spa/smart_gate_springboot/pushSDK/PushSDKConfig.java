@@ -25,5 +25,5 @@ public class PushSDKConfig {
     private String mpConsumerKey;
     private String mpConsumerSecret;
     private String mpStatus;
-    private String mpUrl;
+//    private String mpUrl;
 }

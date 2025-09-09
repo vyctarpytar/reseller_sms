@@ -164,6 +164,10 @@ public class GlobalUtils {
         }
         return divide;
     }
+
+    public String convertToJson(Object obj) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(obj);
+    }
 }
 
 
