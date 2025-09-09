@@ -32,7 +32,6 @@ public class Payment {
     private String billRefNumber;
     private String invoiceNumber;
     private String msisdn;
-    private String thirdPartyTransId;
     private String orgAccountBalance;
     private String kycName;
     private String kycValue;
