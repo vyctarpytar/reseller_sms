@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceService;
+import com.spa.smart_gate_springboot.utils.GlobalUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +26,17 @@ public class MPESAPaymentController {
     private final ObjectMapper objectMapper;
 
     private  final InvoiceService invoiceService;
+    private final GlobalUtils gu;
 
     @PostMapping
-    public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment){
+    public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment, HttpServletRequest request){
         Map<String,String> response = new HashMap<>();
         try{
+        log.info("receive request 1  : {}  \n\n", request);
+        gu.printToJson(request);
+        log.info("\n\nreceive request 2 : {} \n\n", request.getParameter("TransID"));
+
+
             invoiceService.receivePayment(payment);
             response.put("ResultCode", "0");
             response.put("ResultDesc", "Accepted");
