@@ -2,16 +2,13 @@ package com.spa.smart_gate_springboot.account_setup.invoice;
 
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
-import com.spa.smart_gate_springboot.account_setup.credit.CrStatus;
 import com.spa.smart_gate_springboot.account_setup.credit.Credit;
 import com.spa.smart_gate_springboot.account_setup.credit.CreditService;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
-import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.ndovuPay.NdovupayService;
 import com.spa.smart_gate_springboot.payment.Payment;
 import com.spa.smart_gate_springboot.payment.PaymentDto;
 import com.spa.smart_gate_springboot.payment.PaymentService;
-import com.spa.smart_gate_springboot.payment.ThirdPartyResponse;
 import com.spa.smart_gate_springboot.pushSDK.PushSDKConfigService;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
@@ -63,7 +60,7 @@ public class InvoiceService {
         boolean canBuySms = checkIfResellerHasAvailableUnits(user.getUsrResellerId(),unitsToBuy);
         StandardJsonResponse response = new StandardJsonResponse();
         if (!canBuySms) {
-            log.info("Failed !! Reseller toload allocatable Units for " + user.getUsrResellerId());
+            log.info("Failed !! Reseller toload allocatable Units for {}", user.getUsrResellerId());
             response.setMessage("message", "Failed !! Contact Service Provider to Load Credit", response);
             response.setStatus(HttpStatus.SC_EXPECTATION_FAILED);
             response.setSuccess(false);
@@ -141,7 +138,7 @@ public class InvoiceService {
 
     }
 
-    public ThirdPartyResponse receivePayment(PaymentDto paymentDto) {
+    public void receivePayment(PaymentDto paymentDto) {
 
         try {
             Payment payment = new Payment();
@@ -166,11 +163,9 @@ public class InvoiceService {
 //            user.setLayer(Layers.ACCOUNT);
                 creditService.saveCredit(credit, user);
             }
-            return ThirdPartyResponse.builder().resultCode(String.valueOf(HttpStatus.SC_OK)).resultDesc("Payment Received").build();
         } catch (Exception e) {
-            e.printStackTrace();
-            return ThirdPartyResponse.builder().resultCode(String.valueOf(HttpStatus.SC_INTERNAL_SERVER_ERROR)).resultDesc("Failed!!!! Backend Error").build();
-        }
+            throw new GlobalExceptionHandler.ResourceNotFoundException("Failed to receive payment : " + e.getMessage());
+         }
 
     }
 
@@ -220,7 +215,7 @@ public class InvoiceService {
         StandardJsonResponse response = new StandardJsonResponse();
         List<Object[]> objectList = invoiceRepository.getResellerInvoicesPerYearSummary(rsId);
         List<InvoiceResellerSummary> list = objectList.stream().map(result -> {
-            log.info("see result = : " + Arrays.toString(result));
+            log.info("see result = : {}", Arrays.toString(result));
             gu.printToJson(result, "success");
             return InvoiceResellerSummary.builder().amount((BigDecimal) result[0]).
                     monthName(result[1] + "").monthId((result[2] == null ? 0 : (int) result[2])).build();

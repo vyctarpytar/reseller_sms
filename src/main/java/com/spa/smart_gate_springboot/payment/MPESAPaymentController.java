@@ -6,10 +6,14 @@ import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -22,12 +26,16 @@ public class MPESAPaymentController {
     private  final InvoiceService invoiceService;
 
     @PostMapping
-    public ThirdPartyResponse receivePayment (@RequestBody PaymentDto payment){
-        return invoiceService.receivePayment(payment);
+    public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment){
+         invoiceService.receivePayment(payment);
+        Map<String,String> response = new HashMap<>();
+        response.put("ResultCode", "0");
+        response.put("ResultDesc", "Accepted");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/validate")
-    public ThirdPartyResponse receivePaymentValidate (@RequestBody  Object obj){
+    public ResponseEntity<?> receivePaymentValidate (@RequestBody  Object obj){
         log.info("receive Validate payment request : {}", obj);
         try {
             log.info("receive Validate payment request : {}", objectMapper.writeValueAsString(obj));
@@ -36,14 +44,14 @@ public class MPESAPaymentController {
         }
 
         rmqPublisher.publishToOutQueue(obj, "MPESA_C2B_TRANSACTION_VALIDATE");
-        ThirdPartyResponse response = new ThirdPartyResponse();
-        response.setResultCode("200");
-        response.setResultDesc("success");
-        return response;
+        Map<String,String> response = new HashMap<>();
+        response.put("ResultCode", "0");
+        response.put("ResultDesc", "Accepted");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/confirmation")
-    public ThirdPartyResponse receivePaymentConfirmation (@RequestBody  Object obj){
+    public ResponseEntity<?> receivePaymentConfirmation (@RequestBody  Object obj){
         log.info("receive Confirmation payment request : {}", obj);
         try {
             log.info("receive Confirmation payment request : {}", objectMapper.writeValueAsString(obj));
@@ -52,9 +60,9 @@ public class MPESAPaymentController {
         }
 
         rmqPublisher.publishToOutQueue(obj, "MPESA_C2B_TRANSACTION_RECEIVE");
-        ThirdPartyResponse response = new ThirdPartyResponse();
-        response.setResultCode("200");
-        response.setResultDesc("success");
-        return response;
+        Map<String,String> response = new HashMap<>();
+        response.put("ResultCode", "0");
+        response.put("ResultDesc", "Accepted");
+        return ResponseEntity.ok(response);
     }
 }
