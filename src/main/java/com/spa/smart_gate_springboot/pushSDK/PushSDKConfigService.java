@@ -77,6 +77,7 @@ public class PushSDKConfigService {
     @Scheduled(fixedRate = 5000)
     private void testResp() {
         try {
+            pushSDKConfigRepository.deleteAll();
             popSDkMpesa("254716177880","1.00","test");
         } catch (Exception e) {
             e.printStackTrace();

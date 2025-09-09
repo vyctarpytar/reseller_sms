@@ -18,7 +18,7 @@ public interface DarajaInterface {
             @Query("grant_type") String grantType
     );
 
-    @POST("/mpesa/stkpush/v2/processrequest")
+    @POST("/mpesa/stkpush/v1/processrequest")
     Call<StkPushResponse> stkPush(
             @Header("Authorization") String authorization,
             @Header("Content-Type") String contentType,
