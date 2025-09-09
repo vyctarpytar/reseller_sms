@@ -27,10 +27,17 @@ public class MPESAPaymentController {
 
     @PostMapping
     public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment){
-         invoiceService.receivePayment(payment);
         Map<String,String> response = new HashMap<>();
-        response.put("ResultCode", "0");
-        response.put("ResultDesc", "Accepted");
+        try{
+            invoiceService.receivePayment(payment);
+            response.put("ResultCode", "0");
+            response.put("ResultDesc", "Accepted");
+        }catch (Exception e){
+            response.put("ResultCode", "C2B00016");
+            response.put("ResultDesc", "Rejected");
+        }
+
+
         return ResponseEntity.ok(response);
     }
 

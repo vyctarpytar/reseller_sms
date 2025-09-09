@@ -138,21 +138,21 @@ public class InvoiceService {
 
     }
 
-    public void receivePayment(PaymentDto paymentDto) {
+    public void receivePayment(PaymentDto paymentDto)  throws Exception {
 
-        try {
+
             Payment payment = new Payment();
             BeanUtils.copyProperties(paymentDto, payment);
             gu.printToJson(payment, "success");
             Invoice invoice = findByInvoCode(payment.getInvoiceNumber());
             invoice.setInvoStatus(InvoStatus.PAID);
-            invoice.setInvoPayerName(paymentDto.getKycName().replaceAll(" null", ""));
+            invoice.setInvoPayerName(paymentDto.getFirstName().replaceAll(" null", ""));
             invoiceRepository.saveAndFlush(invoice);
             payment.setTransResellerId(invoice.getInvoResellerId());
             paymentService.save(payment);
 
             Credit credit = Credit.builder().smsAccId(invoice.getInvoAccId()).smsPayAmount(payment.getTransAmount()).smsResellerId(invoice.getInvoResellerId())
-                    .smsPaymentRef(paymentDto.getTransId()).smsPaymentId(payment.getId()).build();
+                    .smsPaymentRef(paymentDto.getTransID()).smsPaymentId(payment.getId()).build();
 
 
             if (invoice.getInvoCreatedByEmail().equalsIgnoreCase("MAJIBYTE_LOGGED_IN_USER")) {
@@ -163,9 +163,7 @@ public class InvoiceService {
 //            user.setLayer(Layers.ACCOUNT);
                 creditService.saveCredit(credit, user);
             }
-        } catch (Exception e) {
-            throw new GlobalExceptionHandler.ResourceNotFoundException("Failed to receive payment : " + e.getMessage());
-         }
+
 
     }
 
