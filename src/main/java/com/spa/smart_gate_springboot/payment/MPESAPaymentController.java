@@ -29,15 +29,11 @@ public class MPESAPaymentController {
     private final GlobalUtils gu;
 
     @PostMapping
-    public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment, HttpServletRequest request){
+    public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment){
+        log.info("receive payment request : {}", payment);
         Map<String,String> response = new HashMap<>();
         try{
-        log.info("receive request 1  : {}  \n\n", request);
-        gu.printToJson(request);
-        log.info("\n\nreceive request 2 : {} \n\n", request.getParameter("TransID"));
-
-
-            invoiceService.receivePayment(payment);
+           invoiceService.receivePayment(payment);
             response.put("ResultCode", "0");
             response.put("ResultDesc", "Accepted");
         }catch (Exception e){
