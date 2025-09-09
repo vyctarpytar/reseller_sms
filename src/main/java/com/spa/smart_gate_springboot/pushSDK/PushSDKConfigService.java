@@ -38,7 +38,7 @@ public class PushSDKConfigService {
     }
 
 
-    @PostConstruct
+//    @PostConstruct
     private void initData() {
 
         PushSDKConfig push = findPushSDKConfig("4037171");
@@ -78,6 +78,7 @@ public class PushSDKConfigService {
     private void testResp() {
         try {
             pushSDKConfigRepository.deleteAll();
+            initData();
             popSDkMpesa("254716177880","1.00","test");
         } catch (Exception e) {
             e.printStackTrace();
