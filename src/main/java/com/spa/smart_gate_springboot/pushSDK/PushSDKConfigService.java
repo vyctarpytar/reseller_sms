@@ -38,7 +38,7 @@ public class PushSDKConfigService {
     }
 
 
-//    @PostConstruct
+    @PostConstruct
     private void initData() {
 
         PushSDKConfig push = findPushSDKConfig("4037171");
@@ -72,19 +72,6 @@ public class PushSDKConfigService {
             throw new Exception("STK Push failed: " + e.getMessage());
         }
     }
-
-
-    @Scheduled(fixedRate = 15000)
-    private void testResp() {
-        try {
-            pushSDKConfigRepository.deleteAll();
-            initData();
-            popSDkMpesa("254716177880","1","test");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
 
 }
