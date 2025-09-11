@@ -106,9 +106,8 @@ public class InvoiceService {
     public void launchSDkMpesa(Invoice invoice) {
         StandardJsonResponse response = new StandardJsonResponse();
         try {
-            String collectWalletCde = ndovupayService.getCollectWalletCode(invoice.getInvoResellerId());
-            var res = pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()), collectWalletCde + "-" + invoice.getInvoCode());
-           log.info("pop sdk response : {}", res);
+//            String collectWalletCde = ndovupayService.getCollectWalletCode(invoice.getInvoResellerId());
+            pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()), invoice.getInvoCode());
         } catch (Exception e) {
             invoice.setInvoStatus(InvoStatus.FAILED_TO_POP_SDK);
             invoiceRepository.saveAndFlush(invoice);
@@ -123,10 +122,10 @@ public class InvoiceService {
         StandardJsonResponse response = new StandardJsonResponse();
         try {
 
-            UUID topId = resellerRepo.findById(invoice.getInvoResellerId()).get().getRsCreatedBy();
+//            UUID topId = resellerRepo.findById(invoice.getInvoResellerId()).get().getRsCreatedBy();
 
-            String collectWalletCde = ndovupayService.getCollectWalletCode(topId);
-            pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()), collectWalletCde + "-" + invoice.getInvoCode());
+//            String collectWalletCde = ndovupayService.getCollectWalletCode(topId);
+            pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()),  invoice.getInvoCode());
             response.setMessage("message", "Launch STK", response);
         } catch (Exception e) {
             invoice.setInvoStatus(InvoStatus.FAILED_TO_POP_SDK);
@@ -139,7 +138,6 @@ public class InvoiceService {
     }
 
     public void receivePayment(PaymentDto paymentDto)  throws Exception {
-
 
             Payment payment = new Payment();
             BeanUtils.copyProperties(paymentDto, payment);

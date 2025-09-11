@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceService;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,21 +21,23 @@ import java.util.Map;
 @RequestMapping("/api/v2/payment")
 @Slf4j
 public class MPESAPaymentController {
-    private  final RMQPublisher rmqPublisher;
+    private final RMQPublisher rmqPublisher;
     private final ObjectMapper objectMapper;
-
-    private  final InvoiceService invoiceService;
+    private final InvoiceService invoiceService;
     private final GlobalUtils gu;
 
     @PostMapping
-    public ResponseEntity<?> receivePayment (@RequestBody PaymentDto payment){
+    public ResponseEntity<?> receivePayment(@RequestBody PaymentDto payment) {
         log.info("receive payment request : {}", payment);
-        Map<String,String> response = new HashMap<>();
-        try{
-           invoiceService.receivePayment(payment);
+        Map<String, String> response = new HashMap<>();
+        try {
+
+            rmqPublisher.publishToOutQueue(payment, "MPESA_C2B_TRANSACTION_RECEIVE");
+
+            invoiceService.receivePayment(payment);
             response.put("ResultCode", "0");
             response.put("ResultDesc", "Accepted");
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Failed to receive payment : {}", e.getMessage());
             response.put("ResultCode", "C2B00016");
             response.put("ResultDesc", "Rejected");
@@ -47,7 +48,7 @@ public class MPESAPaymentController {
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<?> receivePaymentValidate (@RequestBody  Object obj){
+    public ResponseEntity<?> receivePaymentValidate(@RequestBody Object obj) {
         log.info("receive Validate payment request : {}", obj);
         try {
             log.info("receive Validate payment request : {}", objectMapper.writeValueAsString(obj));
@@ -56,23 +57,7 @@ public class MPESAPaymentController {
         }
 
         rmqPublisher.publishToOutQueue(obj, "MPESA_C2B_TRANSACTION_VALIDATE");
-        Map<String,String> response = new HashMap<>();
-        response.put("ResultCode", "0");
-        response.put("ResultDesc", "Accepted");
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/confirmation")
-    public ResponseEntity<?> receivePaymentConfirmation (@RequestBody  Object obj){
-        log.info("receive Confirmation payment request : {}", obj);
-        try {
-            log.info("receive Confirmation payment request : {}", objectMapper.writeValueAsString(obj));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        rmqPublisher.publishToOutQueue(obj, "MPESA_C2B_TRANSACTION_RECEIVE");
-        Map<String,String> response = new HashMap<>();
+        Map<String, String> response = new HashMap<>();
         response.put("ResultCode", "0");
         response.put("ResultDesc", "Accepted");
         return ResponseEntity.ok(response);

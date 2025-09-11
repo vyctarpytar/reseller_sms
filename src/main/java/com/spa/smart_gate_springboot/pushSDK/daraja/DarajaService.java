@@ -130,9 +130,4 @@ public class DarajaService {
             throw new Exception("Failed to initiate STK Push: " + e.getMessage());
         }
     }
-
-    public void clearTokenCache() {
-        tokenCache.clear();
-        log.info("Token cache cleared");
-    }
 }
