@@ -30,7 +30,7 @@ public class PaymentDto {
     
     @JsonProperty("TransAmount")
     @NotNull(message = "Transaction amount cannot be null")
-    private String transAmount;
+    private BigDecimal transAmount;
     
     @JsonProperty("BusinessShortCode")
     private String businessShortCode;
@@ -38,9 +38,7 @@ public class PaymentDto {
     @JsonProperty("BillRefNumber")
     @NotNull(message = "Bill reference number cannot be null")
     private String billRefNumber;
-    
-    @JsonProperty("InvoiceNumber")
-    private String invoiceNumber;
+
     
     @JsonProperty("OrgAccountBalance")
     private String orgAccountBalance;

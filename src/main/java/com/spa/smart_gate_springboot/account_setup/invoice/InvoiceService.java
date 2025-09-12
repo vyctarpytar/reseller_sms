@@ -141,8 +141,9 @@ public class InvoiceService {
 
             Payment payment = new Payment();
             BeanUtils.copyProperties(paymentDto, payment);
+            payment.setTransAmount(paymentDto.getTransAmount());
             gu.printToJson(payment, "success");
-            Invoice invoice = findByInvoCode(payment.getInvoiceNumber());
+            Invoice invoice = findByInvoCode(payment.getBillRefNumber());
             invoice.setInvoStatus(InvoStatus.PAID);
             invoice.setInvoPayerName(paymentDto.getFirstName().replaceAll(" null", ""));
             invoiceRepository.saveAndFlush(invoice);
@@ -152,15 +153,9 @@ public class InvoiceService {
             Credit credit = Credit.builder().smsAccId(invoice.getInvoAccId()).smsPayAmount(payment.getTransAmount()).smsResellerId(invoice.getInvoResellerId())
                     .smsPaymentRef(paymentDto.getTransId()).smsPaymentId(payment.getId()).build();
 
-
-            if (invoice.getInvoCreatedByEmail().equalsIgnoreCase("MAJIBYTE_LOGGED_IN_USER")) {
-                creditService.saveCreditMajiByte(credit);
-            } else {
-
-                User user = userService.findById(invoice.getInvoCreatedBy());
+        User user = userService.findById(invoice.getInvoCreatedBy());
 //            user.setLayer(Layers.ACCOUNT);
-                creditService.saveCredit(credit, user);
-            }
+        creditService.saveCredit(credit, user);
 
 
     }

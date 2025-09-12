@@ -30,7 +30,6 @@ public class Payment {
     private String businessShortCode;
     @NotNull(message = "field cannot be null")
     private String billRefNumber;
-    private String invoiceNumber;
     private String msisdn;
     private String orgAccountBalance;
     private String kycName;

@@ -44,8 +44,7 @@ public class PushSDKConfigService {
         PushSDKConfig push = findPushSDKConfig("4037171");
         if (push != null) return;
         PushSDKConfig pushSDKConfig = PushSDKConfig.builder()
-                .mpCallbackUrl("https://backend.synqafrica.co.ke:8443/api/v2/payment")
-//                .mpUrl("http://smartgate.pickpay.co.ke:8484/")
+                .mpCallbackUrl("https://callback.synqafrica.co.ke/api/v2/payment")
                 .mpPassKey("807d4b8aa4dc929a51f6a2247e268e50a636355052687d02c2f5fc2c27de23fd")
                 .mpShortCode("4037171")
                 .mpConsumerKey("is2CrKOqs5ioNFLUpsyAFCYBHR1uMq0g5tYfxrWElJSbcMnr")
