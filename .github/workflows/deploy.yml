@@ -41,7 +41,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo systemctl restart sms-app
-            
+
 
       - name: Show last 25 lines of app logs
         uses: appleboy/ssh-action@v0.1.10
@@ -51,3 +51,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo journalctl -u sms-app -n 25 --no-pager
+  
+
+  #   sudo nano /etc/systemd/system/myapp.service
+  #   sudo systemctl daemon-reload
+  #   sudo systemctl restart sms-app
+  #   sudo systemctl status sms-app

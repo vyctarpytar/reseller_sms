@@ -122,11 +122,9 @@ public class DarajaService {
                 return response.body();
             } else {
                 String errorBody = response.errorBody() != null ? response.errorBody().string() : "Unknown error";
-                log.error("STK Push failed: {} - {}", response.code(), errorBody);
                 throw new Exception("STK Push failed: " + response.code() + " - " + errorBody);
             }
         } catch (Exception e) {
-            log.error("Error initiating STK Push: {}", e.getMessage());
             throw new Exception("Failed to initiate STK Push: " + e.getMessage());
         }
     }

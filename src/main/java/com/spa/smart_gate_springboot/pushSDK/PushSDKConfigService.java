@@ -68,7 +68,6 @@ public class PushSDKConfigService {
             // Convert response to JSON string for backward compatibility
             return gu.convertToJson(response);
         } catch (Exception e) {
-            log.error("Failed to initiate STK Push: {}", e.getMessage());
             throw new Exception("STK Push failed: " + e.getMessage());
         }
     }
