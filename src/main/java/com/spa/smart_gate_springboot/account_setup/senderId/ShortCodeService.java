@@ -128,6 +128,7 @@ public class ShortCodeService {
         shortCode.setShPrsp("WEISER");
         shortCode.setShCode(shortCodeDto.getShCode());
         shortCode.setShCreatedByname(auth.getEmail());
+        shortCode.setShSenderType(shortCodeDto.getShSenderType() == null ? "PROMOTION" : shortCodeDto.getShSenderType());
         shortCodeRepository.saveAndFlush(shortCode);
 
         response.setData("result", shortCode, response);

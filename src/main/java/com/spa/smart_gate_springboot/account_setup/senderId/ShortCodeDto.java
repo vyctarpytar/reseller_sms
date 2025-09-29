@@ -9,4 +9,7 @@ import lombok.RequiredArgsConstructor;
 public class ShortCodeDto{
     @NotNull(message =  "shCode Cannot Be Null")
     private String shCode;
+
+    @NotNull(message =  "shSenderType Cannot Be Null")
+    private String shSenderType;
 }
