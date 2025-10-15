@@ -135,7 +135,7 @@ public class MQReceiverSynq {
 
 
             //todo handle transactional to not use stop
-            if (!msgQueue.getMsgSenderId().contains("WasteCo_Ltd")){
+            if (!msgQueue.getMsgSenderId().contains("WasteCo_Ltd") || !msgQueue.getMsgSenderId().contains("WARETECH")){
                 if(!msgQueue.getMsgMessage().contains("STOP*")) {
                     log.info("add stop to message : {}",msgQueue.getMsgSenderId());
                     msgQueue.setMsgMessage(msgQueue.getMsgMessage() + "\nSTOP*456*9*5#");
