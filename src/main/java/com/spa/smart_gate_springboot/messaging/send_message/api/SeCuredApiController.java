@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.api;
 
+import com.spa.smart_gate_springboot.account_setup.account.Account;
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -20,6 +22,7 @@ public class SeCuredApiController {
 
     private final ApiKeyService apiKeyService;
     private final UserService userService;
+    private final AccountService accountService;
 
 
     @GetMapping()
@@ -30,9 +33,9 @@ public class SeCuredApiController {
             if (account_id == null) {
                 throw new RuntimeException("Account ID is required");
             }
-            user = userService.findById(UUID.fromString(account_id));
+           Account acc   = accountService.findByAccId(UUID.fromString(account_id));
 
-            return  apiKeyService.getAccountApiKeyInfo(user);
+            return  apiKeyService.getAccountApiKeyInfo(acc);
         }
         return  apiKeyService.getAccountApiKeyInfo(user);
     }

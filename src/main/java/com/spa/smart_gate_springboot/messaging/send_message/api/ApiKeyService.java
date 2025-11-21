@@ -161,11 +161,18 @@ public class ApiKeyService {
         if (!user.getLayer().equals(Layers.ACCOUNT)) {
             resp.setStatus(400);
             resp.setSuccess(false);
-            resp.setMessage("message", "Messages Sent Successfully", resp);
+            resp.setMessage("message", "User is not an account", resp);
             return resp;
         }
 
         ApiKey apikey = apiKeyRepository.findByApiAccIdAndActiveIsTrue(user.getUsrAccId()).orElse(null);
+        resp.setData("result", apikey, resp);
+        return resp;
+    }
+
+    public StandardJsonResponse getAccountApiKeyInfo(Account account) {
+        StandardJsonResponse resp = new StandardJsonResponse();
+        ApiKey apikey = apiKeyRepository.findByApiAccIdAndActiveIsTrue(account.getAccId()).orElse(null);
         resp.setData("result", apikey, resp);
         return resp;
     }
