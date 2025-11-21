@@ -47,6 +47,8 @@ public class AccountService {
 
 
     public Account findByAccId(UUID id) {
+        if(id == null)  throw new ApplicationExceptionHandler.resourceNotFoundException("Smart Gate Account not found with Id : " + id);
+
         return this.accountRepository.findById(id).orElseThrow(() -> new ApplicationExceptionHandler.resourceNotFoundException("Smart Gate Account not found with Id : " + id));
     }
 
