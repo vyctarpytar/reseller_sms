@@ -13,8 +13,6 @@ public class StandardJsonResponse  extends ResponseHelper{
     private Map<String, Object> messages = new HashMap<>();
     private Map<String, Object> data = new HashMap<>();
     private int total = 0;
-    private String targetUrl;
-    private Object token;
     private int status = 200;
 
 }

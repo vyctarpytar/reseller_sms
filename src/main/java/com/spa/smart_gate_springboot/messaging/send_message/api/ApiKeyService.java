@@ -154,6 +154,8 @@ public class ApiKeyService {
         respData.put("msgStatus", msgQueue.getMsgStatus());
         resp.setData(respData);
         resp.setMessage("message", "Messages Sent Successfully", resp);
+        resp.setStatus(200);
+        resp.setTotal(1);
         return resp;
 
     }
