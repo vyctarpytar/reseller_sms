@@ -35,7 +35,7 @@ public class SeCuredApiController {
             @RequestParam(required = false) String account_id) {
 
         var user = userService.getCurrentUser(request);
-        log.info("User Layer: {}", user.getLayer());
+        log.info("User Layer: {} ------> \n {}", user.getLayer(), user);
 
         // If user layer = ACCOUNT: ignore account_id, return own info
         if (user.getLayer().equals(Layers.ACCOUNT)) {
