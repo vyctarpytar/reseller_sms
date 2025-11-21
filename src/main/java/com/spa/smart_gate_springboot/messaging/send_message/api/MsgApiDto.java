@@ -18,6 +18,8 @@ public class MsgApiDto {
     private String msgMessage;
     @NotNull(message = "msg cannot be null")
     private String msgSenderId;
+
+    private String apiKey;
 }
 
 
