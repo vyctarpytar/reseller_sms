@@ -73,4 +73,10 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     void refundCostCharged(@Param("msgAccId") UUID msgAccId,@Param("msgCostId") BigDecimal msgCostId);
 
     List<Account> findAllByAccResellerId(UUID rsId);
+
+
+    @Query(nativeQuery = true,value = """
+            select * from js_core.jsc_accounts where not exists(select 1 from js_core.api_key where acc_id = api_acc_id)
+            """)
+    List<Account> fetchAccountsWithoutApiKeys();
 }

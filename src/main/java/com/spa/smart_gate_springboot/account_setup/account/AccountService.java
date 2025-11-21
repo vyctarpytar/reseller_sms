@@ -8,23 +8,20 @@ import com.spa.smart_gate_springboot.account_setup.account.dtos.AcFilterDto;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
-import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.errorhandling.ApplicationExceptionHandler;
 import com.spa.smart_gate_springboot.messaging.send_message.api.ApiKeyService;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
-import com.spa.smart_gate_springboot.user.UsrStatus;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.transaction.Transactional;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,7 +39,7 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final UserService userService;
     //    private final SmartGate smartGate;
- private final ResellerRepo resellerRepo;
+    private final ResellerRepo resellerRepo;
     private final GlobalUtils gu;
     private final ApiKeyService apiKeyService;
 
@@ -135,7 +132,6 @@ public class AccountService {
     }
 
 
-
     @Transactional
     public StandardJsonResponse saveAccount(Account accountdto, User user) {
         UUID acc = accountdto.getAccId();
@@ -187,7 +183,7 @@ public class AccountService {
     }
 
     public void refundCostCharged(UUID msgAccId, BigDecimal msgCostId) {
-        accountRepository.refundCostCharged(msgAccId,msgCostId);
+        accountRepository.refundCostCharged(msgAccId, msgCostId);
     }
 
     public StandardJsonResponse deleteAccount(UUID accId, User user, AcDelete acDelete) {
@@ -209,6 +205,16 @@ public class AccountService {
     }
 
     public List<Account> findByAccResellerId(UUID rsId) {
-        return  accountRepository.findAllByAccResellerId(rsId);
+        return accountRepository.findAllByAccResellerId(rsId);
+    }
+
+
+    @Scheduled(fixedRate = 10000)
+    public void UpdateApiKeys() {
+        List<Account> withoutKeys = accountRepository.fetchAccountsWithoutApiKeys();
+        if(!withoutKeys.isEmpty())log.info("Without keys: {}", withoutKeys.size());
+        for (Account acco : withoutKeys) {
+            apiKeyService.createApiKey(acco);
+        }
     }
 }
