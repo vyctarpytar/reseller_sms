@@ -170,7 +170,7 @@ public class ApiKeyService {
         return resp;
     }
 
-//    @PostConstruct
+    @PostConstruct
     public void aupdateObject() {
         List<ApiKey> apiKeyList = apiKeyRepository.findAll();
         for (ApiKey apiKey : apiKeyList) {
@@ -214,7 +214,7 @@ public class ApiKeyService {
                     "\t\"token\": null,\n" +
                     "\t\"status\": 200\n" +
                     "}");
-            apiKeyRepository.saveAndFlush(apiKey);
+            apiKeyRepository.save(apiKey);
         }
 
     }
