@@ -152,6 +152,7 @@ public class ApiKeyService {
         respData.put("senderId", msgQueue.getMsgSenderId());
         respData.put("mobileNo", msgQueue.getMsgSubMobileNo());
         respData.put("msgStatus", msgQueue.getMsgStatus());
+        respData.put("errorDesc", null);
 
         respData.put("status", 200);
         respData.put("success", true);
