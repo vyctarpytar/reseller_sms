@@ -21,22 +21,22 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
     }
 
 
-    @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String apiKey = request.getHeader("X-API-KEY");
-        if (TextUtils.isEmpty(apiKey)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Missing API Key : " + apiKey);
-            return false;
-        }
-
-        if (!validateApiKey(apiKey)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid API Key : " + apiKey);
-            return false;
-        }
-
-        return true;
-    }
+//    @Override
+//    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+//        String apiKey = request.getHeader("X-API-KEY");
+//        if (TextUtils.isEmpty(apiKey)) {
+//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            response.getWriter().write("Missing API Key : " + apiKey);
+//            return false;
+//        }
+//
+//        if (!validateApiKey(apiKey)) {
+//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//            response.getWriter().write("Invalid API Key : " + apiKey);
+//            return false;
+//        }
+//
+//        return true;
+//    }
 
 }
