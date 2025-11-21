@@ -62,6 +62,48 @@ public class ApiKeyService {
                     .apiAccId(acc.getAccId())
                     .createdDate(new Date())
                     .build(); // expirationDate and active will be set by @PrePersist
+
+
+            apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
+            apiKey.setApiKeyTag("X-API-KEY");
+            apiKey.setApiPayload(
+                    "curl --request POST \\\n" +
+                            "  --url " + apiKey.getApiEndPoint() + " \\\n" +
+                            "  --header 'Content-Type: application/json' \\\n" +
+                            "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" +
+                            "  --data '{\n" +
+                            "  \"msgExternalId\": 1,\n" +
+                            "  \"msgMobileNo\": \"254716177880\",\n" +
+                            "  \"msgMessage\": \"Test Api Message Dukapay\",\n" +
+                            "  \"msgSenderId\": \"DoNotReply\"\n" +
+                            "}'"
+            );
+
+            apiKey.setApiPayloadMultiple(
+                    "curl --request POST \\\n" +
+                            "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" +
+                            "  --header 'Content-Type: application/json' \\\n" +
+                            "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" +
+                            "  --data '{\n" +
+                            "  \"msgExternalId\": 1,\n" +
+                            "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" +
+                            "  \"msgMessage\": \"Test Api Message Dukapay\",\n" +
+                            "  \"msgSenderId\": \"DoNotReply\"\n" +
+                            "}'"
+            );
+
+            apiKey.setApiResponse("{\n" +
+                    "\t\"success\": true,\n" +
+                    "\t\"messages\": {\n" +
+                    "\t\t\"message\": \"Messages Sent Successfully\"\n" +
+                    "\t},\n" +
+                    "\t\"data\": {\n" +
+                    "\t},\n" +
+                    "\t\"total\": 0,\n" +
+                    "\t\"targetUrl\": null,\n" +
+                    "\t\"token\": null,\n" +
+                    "\t\"status\": 200\n" +
+                    "}");
             apiKeyRepository.save(apiKey);
         }catch (Exception e) {
             log.error( "Error Creating Api Key : {}" ,e.getMessage());
