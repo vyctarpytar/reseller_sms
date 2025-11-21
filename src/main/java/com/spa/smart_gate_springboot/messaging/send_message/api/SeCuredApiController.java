@@ -30,19 +30,25 @@ public class SeCuredApiController {
 
     @GetMapping()
     @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN','ADMIN')")
-    public StandardJsonResponse getDevSandBox(HttpServletRequest request, @RequestParam(required = false) String account_id) {
+    public StandardJsonResponse getDevSandBox(
+            HttpServletRequest request,
+            @RequestParam(required = false) String account_id) {
+
         var user = userService.getCurrentUser(request);
         log.info("User Layer: {}", user.getLayer());
+
+        // If user layer = ACCOUNT: ignore account_id, return own info
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             return apiKeyService.getAccountApiKeyInfo(user);
-        } else {
-            if (TextUtils.isEmpty(account_id)) {
-                throw new RuntimeException("Account ID is required");
-            }
-            Account acc = accountService.findByAccId(UUID.fromString(account_id));
-
-            return apiKeyService.getAccountApiKeyInfo(acc);
         }
+
+        // If not ACCOUNT: must provide account_id
+        if (account_id == null || account_id.isBlank()) {
+            throw new RuntimeException("Account ID is required");
+        }
+
+        Account acc = accountService.findByAccId(UUID.fromString(account_id));
+        return apiKeyService.getAccountApiKeyInfo(acc);
     }
 
 }
