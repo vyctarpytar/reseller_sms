@@ -107,7 +107,7 @@ public class ApiKeyService {
         }
     }
 
-    public StandardJsonResponse sendMessage(MsgApiDto msgApiDto, String apiKeyStr) {
+    public Map<String,Object> sendMessage(MsgApiDto msgApiDto, String apiKeyStr) {
         ApiKey apikey = apiKeyRepository.findByApiKey(apiKeyStr).orElseThrow(() -> new RuntimeException("Key Not Found"));
 
         MsgQueue msgQueue = MsgQueue.builder()
@@ -144,19 +144,19 @@ public class ApiKeyService {
                 }
 
         }
+// Map <String,Object> resp = new HashMap<>();
 
-        StandardJsonResponse resp = new StandardJsonResponse();
         Map<String,Object> respData = new HashMap<>();
         respData.put("messageId", msgQueue.getMsgExternalId());
         respData.put("message", msgQueue.getMsgMessage());
         respData.put("senderId", msgQueue.getMsgSenderId());
         respData.put("mobileNo", msgQueue.getMsgSubMobileNo());
         respData.put("msgStatus", msgQueue.getMsgStatus());
-        resp.setData(respData);
-        resp.setMessage("message", "Messages Sent Successfully", resp);
-        resp.setStatus(200);
-        resp.setTotal(1);
-        return resp;
+
+        respData.put("status", 200);
+        respData.put("success", true);
+
+        return respData;
 
     }
 

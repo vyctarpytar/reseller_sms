@@ -24,7 +24,7 @@ public class ApiController {
 
 
     @PostMapping("/single-sms")
-    public StandardJsonResponse apiSms(@RequestBody @Valid MsgApiDto msgQueue, HttpServletRequest request) {
+    public Map<String,Object> apiSms(@RequestBody @Valid MsgApiDto msgQueue, HttpServletRequest request) {
         String apiKey = request.getHeader("X-API-KEY");
         if(apiKey == null) apiKey = msgQueue.getApiKey();
         if(apiKey == null) throw new RuntimeException("API KEY missing!!!");
