@@ -17,5 +17,3 @@ public class WebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/v2/sandbox/**"); // Apply to your specific endpoints
     }
 }
-
-

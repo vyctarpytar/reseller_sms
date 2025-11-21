@@ -149,7 +149,7 @@ public class ApiKeyService {
         }
 
         StandardJsonResponse resp = new StandardJsonResponse();
-//        resp.setData("result", msgQueue, resp);
+        resp.setData("result", msgQueue, resp);
         resp.setMessage("message", "Messages Sent Successfully", resp);
         return resp;
 
