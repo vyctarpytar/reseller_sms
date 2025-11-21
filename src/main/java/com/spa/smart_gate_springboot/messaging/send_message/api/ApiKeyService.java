@@ -20,10 +20,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -149,7 +146,13 @@ public class ApiKeyService {
         }
 
         StandardJsonResponse resp = new StandardJsonResponse();
-        resp.setData("result", msgQueue, resp);
+        Map<String,Object> respData = new HashMap<>();
+        respData.put("messageId", msgQueue.getMsgExternalId());
+        respData.put("message", msgQueue.getMsgMessage());
+        respData.put("senderId", msgQueue.getMsgSenderId());
+        respData.put("mobileNo", msgQueue.getMsgSubMobileNo());
+        respData.put("msgStatus", msgQueue.getMsgStatus());
+        resp.setData(respData);
         resp.setMessage("message", "Messages Sent Successfully", resp);
         return resp;
 
