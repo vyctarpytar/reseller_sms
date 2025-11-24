@@ -51,7 +51,7 @@ public class ApiKeyService {
     public void createApiKey(Account acc) {
         try {
 
-            Optional<ApiKey> apiKeyop =  apiKeyRepository.findByApiAccId(acc.getAccId());
+            Optional<ApiKey> apiKeyop = apiKeyRepository.findByApiAccId(acc.getAccId());
 
             if (apiKeyop.isPresent()) {
                 log.info("Api key already exists");
@@ -59,74 +59,27 @@ public class ApiKeyService {
             }
 
             UniqueCodeGenerator ug = new UniqueCodeGenerator();
-            ApiKey apiKey = ApiKey.builder()
-                    .id(UUID.randomUUID())
-                    .apiKey(ug.generateSecureApiKey())
-                    .clientName(acc.getAccName())
-                    .apiResellerId(acc.getAccResellerId())
-                    .apiAccId(acc.getAccId())
-                    .createdDate(new Date())
-                    .build(); // expirationDate and active will be set by @PrePersist
+            ApiKey apiKey = ApiKey.builder().id(UUID.randomUUID()).apiKey(ug.generateSecureApiKey()).clientName(acc.getAccName()).apiResellerId(acc.getAccResellerId()).apiAccId(acc.getAccId()).createdDate(new Date()).build(); // expirationDate and active will be set by @PrePersist
 
 
             apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
             apiKey.setApiKeyTag("X-API-KEY");
-            apiKey.setApiPayload(
-                    "curl --request POST \\\n" +
-                            "  --url " + apiKey.getApiEndPoint() + " \\\n" +
-                            "  --header 'Content-Type: application/json' \\\n" +
-                            "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" +
-                            "  --data '{\n" +
-                            "  \"msgExternalId\": 1,\n" +
-                            "  \"msgMobileNo\": \"254716177880\",\n" +
-                            "  \"msgMessage\": \"Test Api Message Dukapay\",\n" +
-                            "  \"msgSenderId\": \"DoNotReply\"\n" +
-                            "}'"
-            );
+            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
 
-            apiKey.setApiPayloadMultiple(
-                    "curl --request POST \\\n" +
-                            "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" +
-                            "  --header 'Content-Type: application/json' \\\n" +
-                            "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" +
-                            "  --data '{\n" +
-                            "  \"msgExternalId\": 1,\n" +
-                            "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" +
-                            "  \"msgMessage\": \"Test Api Message Dukapay\",\n" +
-                            "  \"msgSenderId\": \"DoNotReply\"\n" +
-                            "}'"
-            );
+            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
 
-            apiKey.setApiResponse("{\n" +
-                    "\t\"success\": true,\n" +
-                    "\t\"messages\": {\n" +
-                    "\t\t\"message\": \"Messages Sent Successfully\"\n" +
-                    "\t},\n" +
-                    "\t\"data\": {\n" +
-                    "\t},\n" +
-                    "\t\"total\": 0,\n" +
-                    "\t\"targetUrl\": null,\n" +
-                    "\t\"token\": null,\n" +
-                    "\t\"status\": 200\n" +
-                    "}");
+            apiKey.setApiResponse("{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n" + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n" + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 0,\n" + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n" + "\t\"status\": 200\n" + "}");
             apiKeyRepository.save(apiKey);
-        }catch (Exception e) {
-            log.error( "Error Creating Api Key : {}" ,e.getMessage());
+        } catch (Exception e) {
+            log.error("Error Creating Api Key : {}", e.getMessage());
         }
     }
 
-    public Map<String,Object> sendMessage(MsgApiDto msgApiDto, String apiKeyStr) {
+    public Map<String, Object> sendMessage(MsgApiDto msgApiDto, String apiKeyStr) {
         ApiKey apikey = apiKeyRepository.findByApiKey(apiKeyStr).orElseThrow(() -> new RuntimeException("Key Not Found"));
 
-        MsgQueue msgQueue = MsgQueue.builder()
-                .msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING")
-                .msgExternalId(msgApiDto.getMsgExternalId())
-                .msgSenderId(msgApiDto.getMsgSenderId())
-                .msgMessage(msgApiDto.getMsgMessage())
-                .msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo())
-                .msgCreatedBy(null)// dont set thid
-                .msgCreatedByEmail("API_USER")
-                .build();
+        MsgQueue msgQueue = MsgQueue.builder().msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING").msgExternalId(msgApiDto.getMsgExternalId()).msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo()).msgCreatedBy(null)// dont set thid
+                .msgCreatedByEmail("API_USER").build();
 
         MsgMessageQueueArc arcQueue = new MsgMessageQueueArc();
         BeanUtils.copyProperties(msgQueue, arcQueue);
@@ -148,11 +101,11 @@ public class ApiKeyService {
             log.error(" synq sending sms --> ");
 
 //            boolean isAirtel = airtelNumberRepository.existsByAnNumber(msgQueue.getMsgSubMobileNo());
-            boolean isAirtel =true;
-            if(isAirtel){
+            boolean isAirtel = true;
+            if (isAirtel) {
                 log.info("Sending to Airtel");
                 sendMessageViaAirTel(arcQueue);
-            }else {
+            } else {
 
                 try {
                     rmqPublisher.publishToOutQueue(msgQueue, MQConfig.SYNQ_QUEUE);
@@ -165,7 +118,7 @@ public class ApiKeyService {
         }
 // Map <String,Object> resp = new HashMap<>();
 
-        Map<String,Object> respData = new HashMap<>();
+        Map<String, Object> respData = new HashMap<>();
         respData.put("messageId", msgQueue.getMsgExternalId());
         respData.put("message", msgQueue.getMsgMessage());
         respData.put("senderId", msgQueue.getMsgSenderId());
@@ -208,49 +161,15 @@ public class ApiKeyService {
         for (ApiKey apiKey : apiKeyList) {
             apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
             apiKey.setApiKeyTag("X-API-KEY");
-            apiKey.setApiPayload(
-                    "curl --request POST \\\n" +
-                            "  --url " + apiKey.getApiEndPoint() + " \\\n" +
-                            "  --header 'Content-Type: application/json' \\\n" +
-                            "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" +
-                            "  --data '{\n" +
-                            "  \"msgExternalId\": 1,\n" +
-                            "  \"msgMobileNo\": \"254716177880\",\n" +
-                            "  \"msgMessage\": \"Test Api Message Dukapay\",\n" +
-                            "  \"msgSenderId\": \"DoNotReply\"\n" +
-                            "}'"
-            );
+            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
 
-            apiKey.setApiPayloadMultiple(
-                    "curl --request POST \\\n" +
-                            "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" +
-                            "  --header 'Content-Type: application/json' \\\n" +
-                            "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" +
-                            "  --data '{\n" +
-                            "  \"msgExternalId\": 1,\n" +
-                            "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" +
-                            "  \"msgMessage\": \"Test Api Message Dukapay\",\n" +
-                            "  \"msgSenderId\": \"DoNotReply\"\n" +
-                            "}'"
-            );
+            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
 
-            apiKey.setApiResponse("{\n" +
-                    "\t\"success\": true,\n" +
-                    "\t\"messages\": {\n" +
-                    "\t\t\"message\": \"Messages Sent Successfully\"\n" +
-                    "\t},\n" +
-                    "\t\"data\": {\n" +
-                    "\t},\n" +
-                    "\t\"total\": 0,\n" +
-                    "\t\"targetUrl\": null,\n" +
-                    "\t\"token\": null,\n" +
-                    "\t\"status\": 200\n" +
-                    "}");
+            apiKey.setApiResponse("{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n" + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n" + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 0,\n" + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n" + "\t\"status\": 200\n" + "}");
             apiKeyRepository.save(apiKey);
         }
 
     }
-
 
 
     private int getNoOfMessage(MsgMessageQueueArc msgQueue) {
@@ -302,7 +221,9 @@ public class ApiKeyService {
             msgMessageQueueArc.setMsgSenderLevel("switchport".toUpperCase());
             arcRepository.save(msgMessageQueueArc);
 
-            airtelNumberRepository.save(AirtelNumber.builder().anNumber(msgMessageQueueArc.getMsgSubMobileNo()).build());
+            if (!airtelNumberRepository.existsByAnNumber(msgMessageQueueArc.getMsgSubMobileNo())) {
+                airtelNumberRepository.save(AirtelNumber.builder().anNumber(msgMessageQueueArc.getMsgSubMobileNo()).build());
+            }
 
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
