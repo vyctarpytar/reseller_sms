@@ -247,7 +247,26 @@ public class ApiKeyService {
 
 
 
+    private int getNoOfMessage(MsgMessageQueueArc msgQueue) {
+
+
+        int MSG_LENGTH = msgQueue.getMsgMessage().length();
+
+        int no_of_characters_per_message = 160;
+        return (int) Math.ceil((double) MSG_LENGTH / no_of_characters_per_message);
+
+
+    }
+
     public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc) {
+
+        int no_of_msg = getNoOfMessage(msgMessageQueueArc);
+
+//        BigDecimal cost_per_sms = getCostPerSMS(msgMessageQueueArc.getMsgAccId());
+        BigDecimal cost_per_sms = new BigDecimal("0.20");
+        BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
+        msgMessageQueueArc.setMsgPage(no_of_msg);
+        msgMessageQueueArc.setMsgCostId(totalCost);
 
         // Prepare request body
         Map<String, String> requestBody = new HashMap<>();
