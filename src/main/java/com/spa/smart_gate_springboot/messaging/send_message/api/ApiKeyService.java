@@ -8,6 +8,7 @@ import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgQueue;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AirtelService;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
@@ -31,7 +32,7 @@ public class ApiKeyService {
     private final AccountRepository accountRepo;
     private final MsgMessageQueueArcRepository arcRepository;
     private final RMQPublisher rmqPublisher;
-    private final Docket api;
+    private final AirtelService airtelService;
 
     public boolean validateApiKey(String apiKey) {
         boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
@@ -119,15 +120,16 @@ public class ApiKeyService {
                 .msgCreatedByEmail("API_USER")
                 .build();
 
+        MsgMessageQueueArc arcQueue = new MsgMessageQueueArc();
+        BeanUtils.copyProperties(msgQueue, arcQueue);
+        arcQueue.setMsgExternalId(msgQueue.getMsgExternalId());
 
         Account acc = accountRepo.findById(msgQueue.getMsgAccId()).orElseThrow(() -> new RuntimeException("Account Does Not Exist :" + msgQueue.getMsgAccId()));
         if (acc.getAccMsgBal().compareTo(BigDecimal.TEN) < 1) {
             msgQueue.setMsgStatus("PENDING_CREDIT");
             msgQueue.setMsgClientDeliveryStatus("PENDING");
 
-            MsgMessageQueueArc arcQueue = new MsgMessageQueueArc();
-            BeanUtils.copyProperties(msgQueue, arcQueue);
-            arcQueue.setMsgExternalId(msgQueue.getMsgExternalId());
+
             if (arcQueue.getMsgId() != null) {
                 log.warn(" msg id should be null here ---{}", arcQueue.getMsgId());
                 arcQueue.setMsgId(null);
@@ -136,12 +138,20 @@ public class ApiKeyService {
             arcRepository.save(arcQueue);
         } else {
             log.error(" synq sending sms --> ");
+
+            boolean isAirtel = true;
+            if(isAirtel){
+                log.info("Sending to Airtel");
+                airtelService.sendMessageViaAirTel(arcQueue);
+            }else {
+
                 try {
                     rmqPublisher.publishToOutQueue(msgQueue, MQConfig.SYNQ_QUEUE);
                 } catch (Exception e) {
                     log.error("Error Queue-ing Synq Messages : {}", e.getMessage());
 
                 }
+            }
 
         }
 // Map <String,Object> resp = new HashMap<>();

@@ -1,17 +1,13 @@
 package com.spa.smart_gate_springboot.messaging.send_message.api;
 
-import com.fasterxml.jackson.databind.util.BeanUtil;
-import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -21,7 +17,6 @@ import java.util.Map;
 public class ApiController {
 
     private final ApiKeyService apiKeyService;
-
 
     @PostMapping("/single-sms")
     public Map<String,Object> apiSms(@RequestBody @Valid MsgApiDto msgQueue, HttpServletRequest request) {

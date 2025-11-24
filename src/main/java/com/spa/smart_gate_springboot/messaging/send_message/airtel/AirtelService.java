@@ -26,20 +26,20 @@ import java.util.concurrent.RejectedExecutionException;
 public class AirtelService {
     private final String AIRTEL_END_POINT = "http://smartgate.co.ke/usrA/sendAirtelMessage.action";
     private final RestTemplate restTemplate;
-    private final GlobalUtils gu;
     private final MsgMessageQueueArcRepository msgMessageQueueArcRepository;
     private final AccountService accountService;
-    private final ObjectMapper objectMapper;
 
-    private final ThreadPoolTaskExecutor taskExecutor;
 
     public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc) {
 
         // Prepare request body
         Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("msgSubMobileNo", msgMessageQueueArc.getMsgSubMobileNo());
-        requestBody.put("msgMessage", msgMessageQueueArc.getMsgMessage());
-        requestBody.put("msgAccSenderName", msgMessageQueueArc.getMsgSenderIdName());
+        requestBody.put("message", msgMessageQueueArc.getMsgMessage());
+        requestBody.put("apikey", "aad395b77c99dc80e48eee05d2cbbee6");
+        requestBody.put("partnerID", "15086");
+        requestBody.put("shortcode", "letstalk");
+        requestBody.put("mobile", msgMessageQueueArc.getMsgSubMobileNo());
+
 
         msgMessageQueueArc.setMsgCreatedDate(new Date());
         msgMessageQueueArc.setMsgCreatedTime(new Date());
@@ -52,11 +52,11 @@ public class AirtelService {
             SMSReport response = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
 
 
-            msgMessageQueueArc.setMsgStatus(response.getStatus().getName());
+            msgMessageQueueArc.setMsgStatus(response.responses.get(0).responseDescription);
             msgMessageQueueArc.setMsgDeliveredDate(new Date());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
-            msgMessageQueueArc.setMsgCode(response.getMessageId());
+            msgMessageQueueArc.setMsgCode(response.responses.get(0).messageid);
             msgMessageQueueArc.setMsgErrorDesc(response.toString());
             msgMessageQueueArcRepository.save(msgMessageQueueArc);
 
@@ -66,55 +66,5 @@ public class AirtelService {
             throw e;
         }
     }
-
-
-    @RabbitListener(queues = MQConfig.AIRTEL_DNR, containerFactory = "rabbitListenerContainerFactory")
-    public void processDNRresponse(Channel channel, Message message) {
-
-        try {
-            taskExecutor.execute(() -> processResponse(message, channel));
-        } catch (RejectedExecutionException e) {
-            new Thread(() -> processResponse(message, channel)).start(); // Execute in the caller's thread as a last resort
-        }
-    }
-
-
-    private void processResponse(Message message, Channel channel) {
-        SMSReport smsReport = null;
-
-        try {
-            byte[] payload = message.getBody();
-            smsReport = objectMapper.readValue(payload, SMSReport.class);
-
-
-            MsgMessageQueueArc msg = msgMessageQueueArcRepository.findByMsgCode(smsReport.getMessageId()).orElse(null);
-            if(msg != null) {
-                msg.setMsgStatus(smsReport.getStatus().getName());
-                msg.setMsgDeliveredDate(new Date());
-                msg.setMsgClientDeliveryStatus("PENDING");
-                msg.setMsgRetryCount(0);
-                msg.setMsgCode(smsReport.getMessageId());
-                msgMessageQueueArcRepository.saveAndFlush(msg);
-            }
-
-            if (channel.isOpen()) {
-                channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-            }
-
-
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            try {
-                if (channel.isOpen()) {
-                    channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
-                }
-            } catch (Exception eb) {
-                eb.printStackTrace();
-            }
-        }
-
-
-    }
-
 
 }

@@ -1,24 +1,11 @@
 package com.spa.smart_gate_springboot.messaging.send_message.airtel;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import java.math.BigDecimal;
-import java.util.Date;
+import java.util.ArrayList;
 
 @Data
-public class SMSReport {
-    private Date doneAt;
-    private Integer smsCount;
-    private String messageId;
-    private Date sentAt;
-//    private Error error;
-    private String bulkId;
-    private String mccMnc;
-    private Price price;
-    private String callbackData;
-    private String from;
-    private String to;
-    private String text;
-    private Status status;
+public class SMSReport{
+    public ArrayList<Response> responses;
 }
-
