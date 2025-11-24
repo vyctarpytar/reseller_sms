@@ -35,7 +35,7 @@ public class ApiKeyService {
     private final RMQPublisher rmqPublisher;
 
     private final RestTemplate restTemplate;
-    private final String AIRTEL_END_POINT = "http://smartgate.co.ke/usrA/sendAirtelMessage.action";
+    private final String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
 
     public boolean validateApiKey(String apiKey) {
         boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
@@ -294,7 +294,7 @@ public class ApiKeyService {
 
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
-            log.error("Error sending Airtel message", e);
+            log.error("Error sending Airtel message . {}", e.getMessage(), e);
             throw e;
         }
     }
