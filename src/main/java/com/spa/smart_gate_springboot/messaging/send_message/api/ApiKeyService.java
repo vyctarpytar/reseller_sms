@@ -302,7 +302,7 @@ public class ApiKeyService {
             msgMessageQueueArc.setMsgSenderLevel("switchport".toUpperCase());
             arcRepository.save(msgMessageQueueArc);
 
-            airtelNumberRepository.save(AirtelNumber.builder().an_number(msgMessageQueueArc.getMsgSubMobileNo()).build());
+            airtelNumberRepository.save(AirtelNumber.builder().anNumber(msgMessageQueueArc.getMsgSubMobileNo()).build());
 
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
