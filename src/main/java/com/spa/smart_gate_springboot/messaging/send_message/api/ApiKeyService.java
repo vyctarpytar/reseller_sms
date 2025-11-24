@@ -258,26 +258,22 @@ public class ApiKeyService {
         requestBody.put("mobile", msgMessageQueueArc.getMsgSubMobileNo());
 
 
-        msgMessageQueueArc.setMsgCreatedDate(new Date());
-        msgMessageQueueArc.setMsgCreatedTime(new Date());
-        msgMessageQueueArc = arcRepository.save(msgMessageQueueArc);
-
         handleUpdateOfAccountBalance(msgMessageQueueArc.getMsgCostId(), msgMessageQueueArc.getMsgAccId(), msgMessageQueueArc.getMsgResellerId());
 
 
         try {
-            SMSReport response = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
-
-
-            msgMessageQueueArc.setMsgStatus(response.responses.get(0).responseDescription);
+            SMSReport responsee = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
+            msgMessageQueueArc.setMsgCreatedDate(new Date());
+            msgMessageQueueArc.setMsgCreatedTime(new Date());
+            msgMessageQueueArc.setMsgStatus(responsee.responses.get(0).responseDescription);
             msgMessageQueueArc.setMsgDeliveredDate(new Date());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
-            msgMessageQueueArc.setMsgCode(response.responses.get(0).messageid);
-            msgMessageQueueArc.setMsgErrorDesc(response.toString());
+            msgMessageQueueArc.setMsgCode(responsee.responses.get(0).messageid);
+            msgMessageQueueArc.setMsgErrorDesc(responsee.toString());
             arcRepository.save(msgMessageQueueArc);
 
-            log.info("Sent to AirTel : {}", response);
+            log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
             log.error("Error sending Airtel message", e);
             throw e;
