@@ -4,11 +4,12 @@ import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
+import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgQueue;
-import com.spa.smart_gate_springboot.messaging.send_message.airtel.AirtelService;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.SMSReport;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
@@ -17,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import springfox.documentation.spring.web.plugins.Docket;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,7 +33,9 @@ public class ApiKeyService {
     private final AccountRepository accountRepo;
     private final MsgMessageQueueArcRepository arcRepository;
     private final RMQPublisher rmqPublisher;
-    private final AirtelService airtelService;
+
+    private final RestTemplate restTemplate;
+    private final String AIRTEL_END_POINT = "http://smartgate.co.ke/usrA/sendAirtelMessage.action";
 
     public boolean validateApiKey(String apiKey) {
         boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
@@ -142,7 +145,7 @@ public class ApiKeyService {
             boolean isAirtel = true;
             if(isAirtel){
                 log.info("Sending to Airtel");
-                airtelService.sendMessageViaAirTel(arcQueue);
+                sendMessageViaAirTel(arcQueue);
             }else {
 
                 try {
@@ -241,5 +244,56 @@ public class ApiKeyService {
         }
 
     }
+
+
+
+    public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc) {
+
+        // Prepare request body
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("message", msgMessageQueueArc.getMsgMessage());
+        requestBody.put("apikey", "aad395b77c99dc80e48eee05d2cbbee6");
+        requestBody.put("partnerID", "15086");
+        requestBody.put("shortcode", "letstalk");
+        requestBody.put("mobile", msgMessageQueueArc.getMsgSubMobileNo());
+
+
+        msgMessageQueueArc.setMsgCreatedDate(new Date());
+        msgMessageQueueArc.setMsgCreatedTime(new Date());
+        msgMessageQueueArc = arcRepository.save(msgMessageQueueArc);
+
+        handleUpdateOfAccountBalance(msgMessageQueueArc.getMsgCostId(), msgMessageQueueArc.getMsgAccId(), msgMessageQueueArc.getMsgResellerId());
+
+
+        try {
+            SMSReport response = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
+
+
+            msgMessageQueueArc.setMsgStatus(response.responses.get(0).responseDescription);
+            msgMessageQueueArc.setMsgDeliveredDate(new Date());
+            msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
+            msgMessageQueueArc.setMsgRetryCount(0);
+            msgMessageQueueArc.setMsgCode(response.responses.get(0).messageid);
+            msgMessageQueueArc.setMsgErrorDesc(response.toString());
+            arcRepository.save(msgMessageQueueArc);
+
+            log.info("Sent to AirTel : {}", response);
+        } catch (Exception e) {
+            log.error("Error sending Airtel message", e);
+            throw e;
+        }
+    }
+
+    public void handleUpdateOfAccountBalance(BigDecimal msgCostId, UUID accId, UUID accResellerId) {
+        AccBalanceUpdate accBalanceUpdate = AccBalanceUpdate.builder().accId(accId).accResellerId(accResellerId).msgCost(msgCostId).build();
+
+        try {
+            rmqPublisher.publishToOutQueue(accBalanceUpdate, MQConfig.UPDATE_ACCOUNT_BALANCE);
+        } catch (Exception e) {
+            log.error("Error queueing update_balance");
+        }
+
+    }
+
 }
 
