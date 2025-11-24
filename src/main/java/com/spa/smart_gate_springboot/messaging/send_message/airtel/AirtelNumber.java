@@ -21,12 +21,14 @@ import java.util.UUID;
 public class AirtelNumber {
     @Id
     @GeneratedValue
-    private Long an_id;
-    @Column(nullable = false)
-    private String an_number;
+    @Column(name = "an_id")
+    private Long anId;
+    @Column(nullable = false, name = "an_number")
+    private String anNumber;
 
     @CreatedDate
-    private LocalDateTime an_created_date;
+  @Column(name = "an_created_date")
+    private LocalDateTime anCreatedDate;
 }
 
 
