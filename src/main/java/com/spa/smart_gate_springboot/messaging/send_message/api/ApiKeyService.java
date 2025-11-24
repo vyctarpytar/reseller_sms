@@ -9,6 +9,8 @@ import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgQueue;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AirtelNumber;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AirtelNumberRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.SMSReport;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -36,6 +38,8 @@ public class ApiKeyService {
 
     private final RestTemplate restTemplate;
     private final String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
+
+    private final AirtelNumberRepository airtelNumberRepository;
 
     public boolean validateApiKey(String apiKey) {
         boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
@@ -117,7 +121,8 @@ public class ApiKeyService {
         MsgQueue msgQueue = MsgQueue.builder()
                 .msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING")
                 .msgExternalId(msgApiDto.getMsgExternalId())
-                .msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage())
+                .msgSenderId(msgApiDto.getMsgSenderId())
+                .msgMessage(msgApiDto.getMsgMessage())
                 .msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo())
                 .msgCreatedBy(null)// dont set thid
                 .msgCreatedByEmail("API_USER")
@@ -142,7 +147,8 @@ public class ApiKeyService {
         } else {
             log.error(" synq sending sms --> ");
 
-            boolean isAirtel = true;
+//            boolean isAirtel = airtelNumberRepository.existsByAnNumber(msgQueue.getMsgSubMobileNo());
+            boolean isAirtel =true;
             if(isAirtel){
                 log.info("Sending to Airtel");
                 sendMessageViaAirTel(arcQueue);
@@ -267,6 +273,7 @@ public class ApiKeyService {
         BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
         msgMessageQueueArc.setMsgPage(no_of_msg);
         msgMessageQueueArc.setMsgCostId(totalCost);
+        msgMessageQueueArc.setMsgSenderIdName("letstalk");
 
         // Prepare request body
         Map<String, String> requestBody = new HashMap<>();
@@ -275,6 +282,8 @@ public class ApiKeyService {
         requestBody.put("partnerID", "15086");
         requestBody.put("shortcode", "letstalk");
         requestBody.put("mobile", msgMessageQueueArc.getMsgSubMobileNo());
+
+        log.info("Sending to Airtel : {}", requestBody);
 
 
         handleUpdateOfAccountBalance(msgMessageQueueArc.getMsgCostId(), msgMessageQueueArc.getMsgAccId(), msgMessageQueueArc.getMsgResellerId());
@@ -290,7 +299,10 @@ public class ApiKeyService {
             msgMessageQueueArc.setMsgRetryCount(0);
             msgMessageQueueArc.setMsgCode(responsee.responses.get(0).messageid);
             msgMessageQueueArc.setMsgErrorDesc(responsee.toString());
+            msgMessageQueueArc.setMsgSenderLevel("switchport".toUpperCase());
             arcRepository.save(msgMessageQueueArc);
+
+            airtelNumberRepository.save(AirtelNumber.builder().an_number(msgMessageQueueArc.getMsgSubMobileNo()).build());
 
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
