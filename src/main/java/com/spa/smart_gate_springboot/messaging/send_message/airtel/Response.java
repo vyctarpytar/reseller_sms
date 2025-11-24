@@ -9,7 +9,7 @@ public class Response{
     @JsonProperty("response-code")
     public int responseCode;
 
-    @JsonProperty("response-code")
+    @JsonProperty("response-description")
     public String responseDescription;
     public long mobile;
     public String messageid;
