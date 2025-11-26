@@ -54,13 +54,14 @@ public class AiretelService {
         return s;
     }
 
-    @Async
-    public void callback(@Valid CallBackResp callBackResp) {
+
+    public MsgMessageQueueArc callback(@Valid CallBackResp callBackResp) {
         MsgMessageQueueArc arc = arcRepository.findByMsgCode(callBackResp.getMessageId()).orElseThrow(() -> new RuntimeException("Message Not Found with code:  " + callBackResp.getMessageId()));
         arc.setMsgStatus(callBackResp.deliveryDescription);
         arc.setMsgClientDeliveryStatus("PENDING");
         arc.setMsgRetryCount(0);
         arcRepository.save(arc);
+        return arc;
     }
 
 
@@ -73,14 +74,18 @@ public class AiretelService {
         BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
         msgMessageQueueArc.setMsgPage(no_of_msg);
         msgMessageQueueArc.setMsgCostId(totalCost);
-        msgMessageQueueArc.setMsgSenderIdName("letstalk");
+//        String senderId = "SYNQSMS"; //""letstalk";
+        String senderId = "letstalk"; //""letstalk";
+
+
+        msgMessageQueueArc.setMsgSenderIdName(senderId);
 
         // Prepare request body
         Map<String, String> requestBody = new HashMap<>();
         requestBody.put("message", msgMessageQueueArc.getMsgMessage());
         requestBody.put("apikey", "aad395b77c99dc80e48eee05d2cbbee6");
         requestBody.put("partnerID", "15086");
-        requestBody.put("shortcode", "letstalk");
+        requestBody.put("shortcode", senderId);
         requestBody.put("mobile", msgMessageQueueArc.getMsgSubMobileNo());
 
         log.info("Sending to Airtel : {}", requestBody);
