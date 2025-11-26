@@ -98,9 +98,10 @@ public class ApiKeyService {
             arcQueue.setMsgClientDeliveryStatus("PENDING");
             arcRepository.save(arcQueue);
         } else {
-            log.error(" synq sending sms --> ");
+
 
             boolean isAirtel = airetelService.checkIsAirtel(arcQueue.getMsgSubMobileNo());
+            log.error(" synq sending sms --> {}   -> isAirtel {} ",arcQueue.getMsgSubMobileNo(),isAirtel);
             if (isAirtel) {
                 log.info("Sending to Airtel");
                 airetelService.sendMessageViaAirTel(arcQueue);
