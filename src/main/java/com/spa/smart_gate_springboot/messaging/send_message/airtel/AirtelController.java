@@ -16,9 +16,9 @@ public class AirtelController {
 
     private final AiretelService airetelService;
 
-    @PostMapping("/callback")
+    @PostMapping("/switch-port/callback")
     public void callback(@RequestBody @Valid CallBackResp callBackResp) {
-        log.info("Callback received: {}", callBackResp);
+        log.info("Airtel Callback received: {}", callBackResp);
         airetelService.callback(callBackResp);
     }
 

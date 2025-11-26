@@ -9,6 +9,7 @@ import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgQueue;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.AirtelNumber;
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.AirtelNumberRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.SMSReport;
@@ -35,11 +36,10 @@ public class ApiKeyService {
     private final AccountRepository accountRepo;
     private final MsgMessageQueueArcRepository arcRepository;
     private final RMQPublisher rmqPublisher;
+    private final AiretelService airetelService;
 
-    private final RestTemplate restTemplate;
-    private final String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
 
-    private final AirtelNumberRepository airtelNumberRepository;
+
 
     public boolean validateApiKey(String apiKey) {
         boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
@@ -100,11 +100,10 @@ public class ApiKeyService {
         } else {
             log.error(" synq sending sms --> ");
 
-//            boolean isAirtel = airtelNumberRepository.existsByAnNumber(msgQueue.getMsgSubMobileNo());
-            boolean isAirtel = true;
+            boolean isAirtel = airetelService.checkIsAirtel(arcQueue.getMsgSubMobileNo());
             if (isAirtel) {
                 log.info("Sending to Airtel");
-                sendMessageViaAirTel(arcQueue);
+                airetelService.sendMessageViaAirTel(arcQueue);
             } else {
 
                 try {
@@ -134,6 +133,8 @@ public class ApiKeyService {
     }
 
 
+
+
     public StandardJsonResponse getAccountApiKeyInfo(User user) {
         StandardJsonResponse resp = new StandardJsonResponse();
         if (!user.getLayer().equals(Layers.ACCOUNT)) {
@@ -159,6 +160,7 @@ public class ApiKeyService {
     public void aupdateObject() {
         List<ApiKey> apiKeyList = apiKeyRepository.findAll();
         for (ApiKey apiKey : apiKeyList) {
+            apiKey.setActive(true);
             apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
             apiKey.setApiKeyTag("X-API-KEY");
             apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
@@ -172,76 +174,7 @@ public class ApiKeyService {
     }
 
 
-    private int getNoOfMessage(MsgMessageQueueArc msgQueue) {
 
-
-        int MSG_LENGTH = msgQueue.getMsgMessage().length();
-
-        int no_of_characters_per_message = 160;
-        return (int) Math.ceil((double) MSG_LENGTH / no_of_characters_per_message);
-
-
-    }
-
-    public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc) {
-
-        int no_of_msg = getNoOfMessage(msgMessageQueueArc);
-
-//        BigDecimal cost_per_sms = getCostPerSMS(msgMessageQueueArc.getMsgAccId());
-        BigDecimal cost_per_sms = new BigDecimal("0.20");
-        BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
-        msgMessageQueueArc.setMsgPage(no_of_msg);
-        msgMessageQueueArc.setMsgCostId(totalCost);
-        msgMessageQueueArc.setMsgSenderIdName("letstalk");
-
-        // Prepare request body
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("message", msgMessageQueueArc.getMsgMessage());
-        requestBody.put("apikey", "aad395b77c99dc80e48eee05d2cbbee6");
-        requestBody.put("partnerID", "15086");
-        requestBody.put("shortcode", "letstalk");
-        requestBody.put("mobile", msgMessageQueueArc.getMsgSubMobileNo());
-
-        log.info("Sending to Airtel : {}", requestBody);
-
-
-        handleUpdateOfAccountBalance(msgMessageQueueArc.getMsgCostId(), msgMessageQueueArc.getMsgAccId(), msgMessageQueueArc.getMsgResellerId());
-
-
-        try {
-            SMSReport responsee = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
-            msgMessageQueueArc.setMsgCreatedDate(new Date());
-            msgMessageQueueArc.setMsgCreatedTime(new Date());
-            msgMessageQueueArc.setMsgStatus(responsee.responses.get(0).responseDescription);
-            msgMessageQueueArc.setMsgDeliveredDate(new Date());
-            msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
-            msgMessageQueueArc.setMsgRetryCount(0);
-            msgMessageQueueArc.setMsgCode(responsee.responses.get(0).messageid);
-            msgMessageQueueArc.setMsgErrorDesc(responsee.toString());
-            msgMessageQueueArc.setMsgSenderLevel("switchport".toUpperCase());
-            arcRepository.save(msgMessageQueueArc);
-
-            if (!airtelNumberRepository.existsByAnNumber(msgMessageQueueArc.getMsgSubMobileNo())) {
-                airtelNumberRepository.save(AirtelNumber.builder().anNumber(msgMessageQueueArc.getMsgSubMobileNo()).build());
-            }
-
-            log.info("Sent to AirTel : {}", responsee);
-        } catch (Exception e) {
-            log.error("Error sending Airtel message . {}", e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    public void handleUpdateOfAccountBalance(BigDecimal msgCostId, UUID accId, UUID accResellerId) {
-        AccBalanceUpdate accBalanceUpdate = AccBalanceUpdate.builder().accId(accId).accResellerId(accResellerId).msgCost(msgCostId).build();
-
-        try {
-            rmqPublisher.publishToOutQueue(accBalanceUpdate, MQConfig.UPDATE_ACCOUNT_BALANCE);
-        } catch (Exception e) {
-            log.error("Error queueing update_balance");
-        }
-
-    }
 
 }
 
