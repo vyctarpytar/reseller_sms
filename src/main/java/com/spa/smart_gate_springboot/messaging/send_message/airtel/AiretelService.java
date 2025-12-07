@@ -8,7 +8,6 @@ import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRe
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -24,10 +23,9 @@ public class AiretelService {
     private final RMQPublisher rmqPublisher;
     private final AirtelNumberRepository airtelNumberRepository;
     private final RestTemplate restTemplate;
-    private final String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
 
     private static final Set<String> AIRTEL_PREFIXES = Set.of(
-            "25473", "25475", "25478", "25470", "25474" // adjust as needed
+            "25473","25476" // adjust as needed
     );
 
     public boolean checkIsAirtel(String msisdn) {
@@ -95,6 +93,7 @@ public class AiretelService {
 
 
         try {
+            String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
             SMSReport responsee = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
             msgMessageQueueArc.setMsgCreatedDate(new Date());
             msgMessageQueueArc.setMsgCreatedTime(new Date());
