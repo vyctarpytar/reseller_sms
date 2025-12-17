@@ -160,7 +160,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
 
     List<MsgMessageQueueArc> findAllByMsgExternalIdAndMsgAccIdAndMsgSubMobileNo(String msgExternalId, UUID msgAccId, String msgSubMobileNo);
 
-    Optional<MsgMessageQueueArc> findByMsgCode(String msgCode);
+    List<MsgMessageQueueArc> findByMsgCode(String msgCode);
 
 
     @Modifying

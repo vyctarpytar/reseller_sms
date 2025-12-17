@@ -54,12 +54,15 @@ public class AiretelService {
 
 
     public MsgMessageQueueArc callback(@Valid CallBackResp callBackResp) {
-        MsgMessageQueueArc arc = arcRepository.findByMsgCode(callBackResp.getMessageId()).orElseThrow(() -> new RuntimeException("Message Not Found with code:  " + callBackResp.getMessageId()));
-        arc.setMsgStatus(callBackResp.deliveryDescription);
-        arc.setMsgClientDeliveryStatus("PENDING");
-        arc.setMsgRetryCount(0);
-        arcRepository.save(arc);
-        return arc;
+        List<MsgMessageQueueArc> arcList = arcRepository.findByMsgCode(callBackResp.getMessageId());
+        for (MsgMessageQueueArc arc  : arcList){
+            arc.setMsgStatus(callBackResp.deliveryDescription);
+            arc.setMsgClientDeliveryStatus("PENDING");
+            arc.setMsgRetryCount(0);
+            arcRepository.save(arc);
+            return arc;
+        }
+      return arcList.get(0);
     }
 
 
