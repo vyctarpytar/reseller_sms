@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 public class AirtelNumber {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "an_id")
     private Long anId;
     @Column(nullable = false, name = "an_number")
