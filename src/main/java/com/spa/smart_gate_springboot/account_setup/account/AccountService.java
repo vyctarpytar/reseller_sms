@@ -210,7 +210,6 @@ public class AccountService {
         return accountRepository.findAllByAccResellerId(rsId);
     }
 
-
     @Scheduled(fixedRate = 10000)
     public void UpdateApiKeys() {
         List<Account> withoutKeys = accountRepository.fetchAccountsWithoutApiKeys();
