@@ -3,6 +3,7 @@ package com.spa.smart_gate_springboot.messaging.send_message;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +26,8 @@ public class MsgMessageQueueArc {
     private UUID msgAccId;
     private String msgCode;
     private BigDecimal msgUsrId;
+    @Column(nullable = false)
+    @CreationTimestamp
     private LocalDateTime msgCreatedDate;
     private String msgStatus;
     private LocalDateTime msgDeliveredDate;
@@ -45,6 +48,7 @@ public class MsgMessageQueueArc {
     private String msgErrorCode;
     @Column(length = 10000)
     private String msgErrorDesc;
+    @CreationTimestamp
     private LocalDateTime msgCreatedTime;
     private String msgWhyResent;
     private Long msgPriorityId;
