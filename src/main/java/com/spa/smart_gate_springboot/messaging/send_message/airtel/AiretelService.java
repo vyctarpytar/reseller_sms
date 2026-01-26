@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -98,10 +99,10 @@ public class AiretelService {
         try {
             String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
             SMSReport responsee = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
-            msgMessageQueueArc.setMsgCreatedDate(new Date());
-            msgMessageQueueArc.setMsgCreatedTime(new Date());
+            msgMessageQueueArc.setMsgCreatedDate(LocalDateTime.now());
+            msgMessageQueueArc.setMsgCreatedTime(LocalDateTime.now());
             msgMessageQueueArc.setMsgStatus(responsee.responses.get(0).responseDescription);
-            msgMessageQueueArc.setMsgDeliveredDate(new Date());
+            msgMessageQueueArc.setMsgDeliveredDate(LocalDateTime.now());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
             msgMessageQueueArc.setMsgCode(responsee.responses.get(0).messageid);

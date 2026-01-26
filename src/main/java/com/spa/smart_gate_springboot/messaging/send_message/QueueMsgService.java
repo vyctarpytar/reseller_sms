@@ -285,7 +285,7 @@ public class QueueMsgService {
         MsgMessageQueueArc msgMessageQueueArc = arcRepository.findById(msgDelivery.getMsgdMsgId()).orElse(null);
         if (msgMessageQueueArc != null) {
             msgMessageQueueArc.setMsgStatus(msgDelivery.getMsgdStatus().trim());
-            msgMessageQueueArc.setMsgDeliveredDate(new Date());
+            msgMessageQueueArc.setMsgDeliveredDate(LocalDateTime.now());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
             MsgMessageQueueArc msgMessageQueueArc2 = arcRepository.save(msgMessageQueueArc);

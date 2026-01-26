@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -25,9 +25,9 @@ public class MsgMessageQueueArc {
     private UUID msgAccId;
     private String msgCode;
     private BigDecimal msgUsrId;
-    private Date msgCreatedDate;
+    private LocalDateTime msgCreatedDate;
     private String msgStatus;
-    private Date msgDeliveredDate;
+    private LocalDateTime msgDeliveredDate;
     private String msgSubMobileNo;
     private BigDecimal msgSubCatId;
     @Column(nullable = false)
@@ -40,12 +40,12 @@ public class MsgMessageQueueArc {
     @Column(nullable = false)
     @NotNull(message = "msgClientDeliveryStatus cannot be null")
     private String msgClientDeliveryStatus;
-    private Date msgThreadTime;
+    private LocalDateTime msgThreadTime;
     private String msgSenderLevel;
     private String msgErrorCode;
     @Column(length = 10000)
     private String msgErrorDesc;
-    private Date msgCreatedTime;
+    private LocalDateTime msgCreatedTime;
     private String msgWhyResent;
     private Long msgPriorityId;
     private UUID msgCreatedBy;
