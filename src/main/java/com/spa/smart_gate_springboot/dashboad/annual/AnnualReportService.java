@@ -685,12 +685,9 @@ log.info("quarter : {}", quarter);
             percentStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00%"));
             // Create headers
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter", "Month 1",
-                    "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
-
-                    "M2 Delivered", "M2 Failed", "M2 Delivery Rate", "Month 3", "M3 Messages", "M3 Revenue", "M3 Delivered", "M3 Failed", "M3 Delivery Rate", "Quarter Total Messages",
-
-                    "Quarter Total Revenue", "Quarter Delivered", "Quarter Failed", "Quarter Delivery Rate", "Avg Message Cost", "Unique Customers", "Top Month", "Status"};
+            String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter",
+                    "M1 Messages",  "M2 Messages", "M2 Revenue", "M3 Messages",  "Quarter Total Messages"}
+            ;
 
             for (
 
@@ -717,101 +714,22 @@ log.info("quarter : {}", quarter);
                 row.createCell(colNum++).setCellValue(report.getQuarter() != null ? report.getQuarter() : 0);
 
                 // Month 1 data
-                row.createCell(colNum++).setCellValue(report.getMonth1().
 
-                        getMonthName());
                 row.createCell(colNum++).setCellValue(report.getMonth1().getMessageCount() != null ? report.getMonth1().getMessageCount() : 0);
 
-                Cell m1RevenueCell = row.createCell(colNum++);
-                if (report.
-
-                        getMonth1().getRevenue() != null) {
-                    m1RevenueCell.setCellValue(report.getMonth1().getRevenue().doubleValue());
-                    m1RevenueCell.setCellStyle(currencyStyle);
-                }
-
-                row.createCell(colNum++).setCellValue(report.getMonth1().getDeliveredCount(
-
-                ) != null ? report.getMonth1().getDeliveredCount() : 0);
-                row.createCell(colNum++).setCellValue(report.getMonth1().getFailedCount() != null ? report.getMonth1().getFailedCount() : 0);
-
-                Cell
-
-                        m1DeliveryRateCell = row.createCell(colNum++);
-                if (report.getMonth1().getDeliveryRate() != null) {
-                    m1DeliveryRateCell.setCellValue(report.getMonth1().getDeliveryRate().doubleValue() / 100);
-                    m1DeliveryRateCell.setCellStyle(percentStyle);
-                }
-
                 // Month 2 data
-                row.createCell(colNum++).setCellValue(report.getMonth2().getMonthName());
+
                 row.createCell(colNum++).setCellValue(report.getMonth2().getMessageCount() != null ? report.getMonth2().getMessageCount() : 0);
 
-                Cell m2RevenueCell = row.createCell(colNum++);
-                if (report.getMonth2().getRevenue() != null) {
-                    m2RevenueCell.setCellValue(report.getMonth2().getRevenue().doubleValue());
-                    m2RevenueCell.setCellStyle(currencyStyle);
-                }
-
-                row. createCell(colNum++).setCellValue(report.getMonth2().getDeliveredCount() != null ? report.getMonth2().getDeliveredCount() : 0);
-                row.createCell(colNum++).setCellValue(report.getMonth2().getFailedCount() != null ? report.getMonth2().getFailedCount() : 0);
-
-                Cell m2DeliveryRateCell = row.createCell(colNum++);
-                if (report.getMonth2().getDeliveryRate() != null) {
-                    m2DeliveryRateCell.setCellValue(report.getMonth2().getDeliveryRate().doubleValue() / 100);
-                    m2DeliveryRateCell.setCellStyle(percentStyle);
-                }
 
                 // Month 3 data
-                row.createCell(colNum++).setCellValue(report.getMonth3().getMonthName());
+
                 row.createCell(colNum++).setCellValue(report.getMonth3().getMessageCount() != null ? report.getMonth3().getMessageCount() : 0);
-
-                Cell m3RevenueCell = row.createCell(colNum++);
-                if (report.getMonth3().getRevenue() != null) {
-                    m3RevenueCell.setCellValue(report.getMonth3().getRevenue().doubleValue());
-
-                    m3RevenueCell.setCellStyle(currencyStyle);
-                }
-
-                row.createCell(colNum++).setCellValue(report.getMonth3().getDeliveredCount() !=null ? report.getMonth3().getDeliveredCount() : 0);
-                row.createCell(colNum++).setCellValue(report.getMonth3().getFailedCount() != null ? report.getMonth3().getFailedCount() : 0);
-
-                Cell m3DeliveryRateCell = row.createCell(colNum++);
-                if (
-
-                        report.getMonth3().getDeliveryRate() != null) {
-                    m3DeliveryRateCell.setCellValue(report.getMonth3().getDeliveryRate().doubleValue() / 100);
-                    m3DeliveryRateCell.setCellStyle(percentStyle);
-                }
 
                 // Quarter totals
                 row.createCell(colNum++).setCellValue(report.getQuarterTotalMessages() != null ? report.getQuarterTotalMessages() : 0);
 
-                Cell quarterRevenueCell = row.createCell(colNum++);
-                if (report.getQuarterTotalRevenue() != null) {
 
-                    quarterRevenueCell.setCellValue(report.getQuarterTotalRevenue().doubleValue());
-                    quarterRevenueCell.setCellStyle(currencyStyle);
-                }
-
-                row.createCell(colNum++).setCellValue(report.getQuarterDeliveredCount() != null ? report. getQuarterDeliveredCount() : 0);
-                row.createCell(colNum++).setCellValue(report.getQuarterFailedCount() != null ? report.getQuarterFailedCount() : 0);
-
-                Cell quarterDeliveryRateCell = row.createCell(colNum++);
-                if (report.getQuarterDeliveryRate() != null) {
-                    quarterDeliveryRateCell.setCellValue(report.getQuarterDeliveryRate().doubleValue() / 100);
-                    quarterDeliveryRateCell.setCellStyle(percentStyle);
-                }
-
-                Cell avgCostCell = row.createCell(colNum++);
-                if (report.getAverageMessageCost() != null) {
-                    avgCostCell.setCellValue(report.getAverageMessageCost().doubleValue());
-                    avgCostCell.setCellStyle(currencyStyle);
-                }
-
-                row.createCell(colNum++).setCellValue(report.getUniqueCustomerCount() != null ? report.getUniqueCustomerCount() : 0);
-                row.createCell(colNum++).setCellValue(report.getTopPerformingMonth() != null ? report.getTopPerformingMonth() : "");
-                row.createCell(colNum++).setCellValue(report.getStatus() != null ? report.getStatus() : "");
             }
 
             // Auto-size columns
