@@ -41,23 +41,6 @@ public class GlobalUtils {
         return null;
     }
 
-    public static String xternString(HttpServletRequest request) {
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader;
-        try {
-            reader = request.getReader();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line).append('\n');
-            }
-            reader.close();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return sb + "";
-    }
 
     public static String formatPhoneNumber(String phone) {
         if (phone.length() == 10 && phone.startsWith("0")) {

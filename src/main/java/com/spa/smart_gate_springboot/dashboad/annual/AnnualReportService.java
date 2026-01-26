@@ -411,6 +411,11 @@ public class AnnualReportService {
     public List<AnnualReportDto> getQuarterlyReports(Integer year, Integer quarter, UUID accountId, UUID resellerId) {
         List<AnnualReport> reports;
 
+log.info("accountId : {}", accountId);
+log.info("resellerId : {}", resellerId);
+log.info("year : {}", year);
+log.info("quarter : {}", quarter);
+
         if (accountId != null) {
             reports = annualReportRepository.findByAccountId(accountId);
         } else if (resellerId != null) {
@@ -455,7 +460,7 @@ public class AnnualReportService {
     /**
      * Generate Excel report for quarterly data
      */
-    public byte[] generateExcelReport(Integer year, Integer quarter, UUID accountId, UUID resellerId) throws IOException {
+    public byte[] generateExcelReportBcp(Integer year, Integer quarter, UUID accountId, UUID resellerId) throws IOException {
         List<AnnualReportDto>  reports = getQuarterlyReports(year, quarter, accountId, resellerId);
 
         try (
@@ -638,4 +643,185 @@ public class AnnualReportService {
     public List<Integer> getAvailableYears() {
         return annualReportRepository.findDistinctYears();
     }
+
+
+
+    public byte[] generateExcelReport(Integer year, Integer quarter, UUID accountId, UUID resellerId) throws IOException {
+        List<AnnualReportDto>  reports = getQuarterlyReports(year, quarter, accountId, resellerId);
+
+        try (
+
+                Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            // Create main sheet
+            Sheet sheet = workbook.createSheet("Quarterly Report");
+
+            // Create header style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontHeightInPoints((short) 12);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // Create data style
+
+            CellStyle dataStyle = workbook.createCellStyle();
+            dataStyle.setBorderBottom(BorderStyle.THIN);
+            dataStyle.setBorderTop(BorderStyle.THIN);
+            dataStyle.setBorderRight(BorderStyle.THIN);
+            dataStyle.setBorderLeft(
+
+                    BorderStyle.THIN);
+
+            // Create currency style
+            CellStyle currencyStyle = workbook.createCellStyle();
+            currencyStyle.cloneStyleFrom(dataStyle);
+            currencyStyle.setDataFormat(workbook.createDataFormat().getFormat("KSH #,##0.00"));
+
+            CellStyle percentStyle = workbook.createCellStyle();
+            percentStyle.cloneStyleFrom(dataStyle);
+            percentStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00%"));
+            // Create headers
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter", "Month 1",
+                    "M1 Messages", "M1 Revenue", "M1 Delivered", "M1 Failed", "M1 Delivery Rate", "Month 2", "M2 Messages", "M2 Revenue",
+
+                    "M2 Delivered", "M2 Failed", "M2 Delivery Rate", "Month 3", "M3 Messages", "M3 Revenue", "M3 Delivered", "M3 Failed", "M3 Delivery Rate", "Quarter Total Messages",
+
+                    "Quarter Total Revenue", "Quarter Delivered", "Quarter Failed", "Quarter Delivery Rate", "Avg Message Cost", "Unique Customers", "Top Month", "Status"};
+
+            for (
+
+                    int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Fill data rows
+            int rowNum = 1;
+            for (AnnualReportDto report : reports) {
+                Row row = sheet.createRow(rowNum++);
+                int colNum = 0;
+
+                // Basic info
+                row.createCell(colNum++).setCellValue(report.getAccountName() != null ? report.getAccountName() : "");
+                row.createCell(colNum++).setCellValue(report.getResellerName() != null ? report.getResellerName() : "");
+                row.createCell(colNum++).setCellValue(String.valueOf(report.getUnitPrice() != null ? report.getUnitPrice() : ""));
+                row.createCell(colNum++).setCellValue(report.getValidityPeriod() != null ? report.getValidityPeriod() : 0);
+                row.createCell(colNum++).setCellValue(report.getSenderId() != null ? report.getSenderId() : "");
+                row.createCell(colNum++).setCellValue(report.getSenderIdProvider() != null ? report.getSenderIdProvider() : "");
+                row.createCell(colNum++).setCellValue(report.getYear() != null ? report.getYear() : 0);
+                row.createCell(colNum++).setCellValue(report.getQuarter() != null ? report.getQuarter() : 0);
+
+                // Month 1 data
+                row.createCell(colNum++).setCellValue(report.getMonth1().
+
+                        getMonthName());
+                row.createCell(colNum++).setCellValue(report.getMonth1().getMessageCount() != null ? report.getMonth1().getMessageCount() : 0);
+
+                Cell m1RevenueCell = row.createCell(colNum++);
+                if (report.
+
+                        getMonth1().getRevenue() != null) {
+                    m1RevenueCell.setCellValue(report.getMonth1().getRevenue().doubleValue());
+                    m1RevenueCell.setCellStyle(currencyStyle);
+                }
+
+                row.createCell(colNum++).setCellValue(report.getMonth1().getDeliveredCount(
+
+                ) != null ? report.getMonth1().getDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getMonth1().getFailedCount() != null ? report.getMonth1().getFailedCount() : 0);
+
+                Cell
+
+                        m1DeliveryRateCell = row.createCell(colNum++);
+                if (report.getMonth1().getDeliveryRate() != null) {
+                    m1DeliveryRateCell.setCellValue(report.getMonth1().getDeliveryRate().doubleValue() / 100);
+                    m1DeliveryRateCell.setCellStyle(percentStyle);
+                }
+
+                // Month 2 data
+                row.createCell(colNum++).setCellValue(report.getMonth2().getMonthName());
+                row.createCell(colNum++).setCellValue(report.getMonth2().getMessageCount() != null ? report.getMonth2().getMessageCount() : 0);
+
+                Cell m2RevenueCell = row.createCell(colNum++);
+                if (report.getMonth2().getRevenue() != null) {
+                    m2RevenueCell.setCellValue(report.getMonth2().getRevenue().doubleValue());
+                    m2RevenueCell.setCellStyle(currencyStyle);
+                }
+
+                row. createCell(colNum++).setCellValue(report.getMonth2().getDeliveredCount() != null ? report.getMonth2().getDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getMonth2().getFailedCount() != null ? report.getMonth2().getFailedCount() : 0);
+
+                Cell m2DeliveryRateCell = row.createCell(colNum++);
+                if (report.getMonth2().getDeliveryRate() != null) {
+                    m2DeliveryRateCell.setCellValue(report.getMonth2().getDeliveryRate().doubleValue() / 100);
+                    m2DeliveryRateCell.setCellStyle(percentStyle);
+                }
+
+                // Month 3 data
+                row.createCell(colNum++).setCellValue(report.getMonth3().getMonthName());
+                row.createCell(colNum++).setCellValue(report.getMonth3().getMessageCount() != null ? report.getMonth3().getMessageCount() : 0);
+
+                Cell m3RevenueCell = row.createCell(colNum++);
+                if (report.getMonth3().getRevenue() != null) {
+                    m3RevenueCell.setCellValue(report.getMonth3().getRevenue().doubleValue());
+
+                    m3RevenueCell.setCellStyle(currencyStyle);
+                }
+
+                row.createCell(colNum++).setCellValue(report.getMonth3().getDeliveredCount() !=null ? report.getMonth3().getDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getMonth3().getFailedCount() != null ? report.getMonth3().getFailedCount() : 0);
+
+                Cell m3DeliveryRateCell = row.createCell(colNum++);
+                if (
+
+                        report.getMonth3().getDeliveryRate() != null) {
+                    m3DeliveryRateCell.setCellValue(report.getMonth3().getDeliveryRate().doubleValue() / 100);
+                    m3DeliveryRateCell.setCellStyle(percentStyle);
+                }
+
+                // Quarter totals
+                row.createCell(colNum++).setCellValue(report.getQuarterTotalMessages() != null ? report.getQuarterTotalMessages() : 0);
+
+                Cell quarterRevenueCell = row.createCell(colNum++);
+                if (report.getQuarterTotalRevenue() != null) {
+
+                    quarterRevenueCell.setCellValue(report.getQuarterTotalRevenue().doubleValue());
+                    quarterRevenueCell.setCellStyle(currencyStyle);
+                }
+
+                row.createCell(colNum++).setCellValue(report.getQuarterDeliveredCount() != null ? report. getQuarterDeliveredCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getQuarterFailedCount() != null ? report.getQuarterFailedCount() : 0);
+
+                Cell quarterDeliveryRateCell = row.createCell(colNum++);
+                if (report.getQuarterDeliveryRate() != null) {
+                    quarterDeliveryRateCell.setCellValue(report.getQuarterDeliveryRate().doubleValue() / 100);
+                    quarterDeliveryRateCell.setCellStyle(percentStyle);
+                }
+
+                Cell avgCostCell = row.createCell(colNum++);
+                if (report.getAverageMessageCost() != null) {
+                    avgCostCell.setCellValue(report.getAverageMessageCost().doubleValue());
+                    avgCostCell.setCellStyle(currencyStyle);
+                }
+
+                row.createCell(colNum++).setCellValue(report.getUniqueCustomerCount() != null ? report.getUniqueCustomerCount() : 0);
+                row.createCell(colNum++).setCellValue(report.getTopPerformingMonth() != null ? report.getTopPerformingMonth() : "");
+                row.createCell(colNum++).setCellValue(report.getStatus() != null ? report.getStatus() : "");
+            }
+
+            // Auto-size columns
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        }
+    }
+
 }
