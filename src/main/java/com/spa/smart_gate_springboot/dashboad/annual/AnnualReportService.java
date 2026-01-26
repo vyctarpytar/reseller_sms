@@ -686,7 +686,7 @@ log.info("quarter : {}", quarter);
             // Create headers
             Row headerRow = sheet.createRow(0);
             String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter",
-                    "M1 Messages",  "M2 Messages", "M2 Revenue", "M3 Messages",  "Quarter Total Messages"}
+                    "M1 Messages",  "M2 Messages", "M3 Messages",  "Quarter Total Messages"}
             ;
 
             for (

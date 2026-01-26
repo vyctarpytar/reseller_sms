@@ -61,8 +61,8 @@ public class AnnualReportController {
             log.info("User {} requesting quarterly reports with filters - year: {}, quarter: {}, accountId: {}, resellerId: {}", 
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
-            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(  StringUtils.isEmpty(year) ? null : Integer.getInteger(year),
-                    StringUtils.isEmpty(quarter) ? null : Integer.getInteger(quarter),
+            List<AnnualReportDto> reports = annualReportService.getQuarterlyReports(  StringUtils.isEmpty(year) ? null : Integer.parseInt(year),
+                    StringUtils.isEmpty(quarter) ? null : Integer.parseInt(quarter),
                     StringUtils.isEmpty(accountId) ? null: UUID.fromString(accountId),
                     StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
@@ -110,8 +110,8 @@ public class AnnualReportController {
                     currentUser.getEmail(), year, quarter, accountId, resellerId);
             
             byte[] excelData = annualReportService.generateExcelReport(
-                    StringUtils.isEmpty(year) ? null : Integer.getInteger(year),
-                    StringUtils.isEmpty(quarter) ? null : Integer.getInteger(quarter),
+                    StringUtils.isEmpty(year) ? null : Integer.parseInt(year),
+                    StringUtils.isEmpty(quarter) ? null : Integer.parseInt(quarter),
                     StringUtils.isEmpty(accountId) ? null: UUID.fromString(accountId),
                     StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
