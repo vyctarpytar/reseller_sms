@@ -11,9 +11,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -409,24 +411,30 @@ public class AnnualReportService {
      * Get quarterly reports with pagination and filtering
      */
     public List<AnnualReportDto> getQuarterlyReports(Integer year, Integer quarter, UUID accountId, UUID resellerId) {
-        List<AnnualReport> reports;
+        log.info("accountId : {}", accountId);
+        log.info("resellerId : {}", resellerId);
+        log.info("year : {}", year);
+        log.info("quarter : {}", quarter);
 
-log.info("accountId : {}", accountId);
-log.info("resellerId : {}", resellerId);
-log.info("year : {}", year);
-log.info("quarter : {}", quarter);
+        Specification<AnnualReport> spec = Specification.where(null);
 
         if (accountId != null) {
-            reports = annualReportRepository.findByAccountId(accountId);
-        } else if (resellerId != null) {
-            reports = annualReportRepository.findByResellerId(resellerId);
-        } else if (year != null && quarter != null) {
-            reports = annualReportRepository.findByYearAndQuarter(year, quarter);
-        } else if (year != null) {
-            reports = annualReportRepository.findByYearOrderedByQuarterAndAccount(year);
-        } else {
-            reports = annualReportRepository.findAll();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("accountId"), accountId));
         }
+
+        if (resellerId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("resellerId"), resellerId));
+        }
+
+        if (year != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("year"), year));
+        }
+
+        if (quarter != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("quarter"), quarter));
+        }
+
+        List<AnnualReport> reports = annualReportRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "quarter", "accountName"));
 
         return reports.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -685,9 +693,20 @@ log.info("quarter : {}", quarter);
             percentStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00%"));
             // Create headers
             Row headerRow = sheet.createRow(0);
+
+            String month1Header = "M1 Messages";
+            String month2Header = "M2 Messages";
+            String month3Header = "M3 Messages";
+
+            if (quarter != null) {
+                int[] months = getQuarterMonths(quarter);
+                month1Header = Month.of(months[0]).name() + " Messages";
+                month2Header = Month.of(months[1]).name() + " Messages";
+                month3Header = Month.of(months[2]).name() + " Messages";
+            }
+
             String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter",
-                    "M1 Messages",  "M2 Messages", "M3 Messages",  "Quarter Total Messages"}
-            ;
+                    month1Header,  month2Header, month3Header,  "Quarter Total Messages"};
 
             for (
 
