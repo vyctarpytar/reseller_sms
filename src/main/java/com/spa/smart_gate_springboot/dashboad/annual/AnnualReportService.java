@@ -412,11 +412,6 @@ public class AnnualReportService {
      * Get quarterly reports with pagination and filtering
      */
     public List<AnnualReportDto> getQuarterlyReports(Integer year, Integer quarter, UUID accountId, UUID resellerId) {
-        log.info("accountId : {}", accountId);
-        log.info("resellerId : {}", resellerId);
-        log.info("year : {}", year);
-        log.info("quarter : {}", quarter);
-
         Specification<AnnualReport> spec = Specification.where(null);
 
         if (accountId != null) {
