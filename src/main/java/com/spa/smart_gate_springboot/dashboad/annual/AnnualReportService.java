@@ -24,6 +24,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -700,9 +701,9 @@ public class AnnualReportService {
 
             if (quarter != null) {
                 int[] months = getQuarterMonths(quarter);
-                month1Header = Month.of(months[0]).name() + " Messages";
-                month2Header = Month.of(months[1]).name() + " Messages";
-                month3Header = Month.of(months[2]).name() + " Messages";
+                month1Header = Month.of(months[0]).name().toLowerCase(Locale.ROOT);
+                month2Header = Month.of(months[1]).name().toLowerCase(Locale.ROOT);
+                month3Header = Month.of(months[2]).name().toLowerCase(Locale.ROOT);
             }
 
             String[] headers = {"Account Name", "Reseller","Unit Price","Validity Period", "Sender ID", "Provider", "Year", "Quarter",
