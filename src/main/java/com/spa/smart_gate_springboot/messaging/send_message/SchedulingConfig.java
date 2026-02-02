@@ -48,11 +48,13 @@ public class SchedulingConfig {
                     BeanUtils.copyProperties(m, msgQueue);
                     arcRepository.delete(m);
                     if (!TextUtils.isEmpty(m.getMsgErrorCode()) && m.getMsgErrorCode().equalsIgnoreCase("200")) {
-                        // refund the customer
-                        Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
-                        BigDecimal newBal = msgQueue.getMsgCostId().add(acc.getAccMsgBal());
-                        acc.setAccMsgBal(newBal);
-                        accountService.save(acc);
+                        if(1==3) {
+                            // refund the customer
+                            Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
+                            BigDecimal newBal = msgQueue.getMsgCostId().add(acc.getAccMsgBal());
+                            acc.setAccMsgBal(newBal);
+                            accountService.save(acc);
+                        }
                     }
                     msgQueue.setMsgSentRetried(true); //todo reset to true
                     msgQueue.setMsgCreatedDate(new Date());
@@ -79,6 +81,7 @@ public class SchedulingConfig {
             resendToSynq(reseller.getRsId(), "Exception sending");
             resendToSynq(reseller.getRsId(), "ERROR");
             resendToSynq(reseller.getRsId(), "ERRORR");
+            resendToSynq(reseller.getRsId(), "SENT");
 
         }
 

@@ -29,10 +29,8 @@ public class AiretelService {
             "25473","25476" // adjust as needed
     );
 
+
     public boolean checkIsAirtel(String msisdn) {
-        return true;
-    }
-    public boolean checkIsAirtelb(String msisdn) {
         if (msisdn == null || msisdn.isBlank()) return false;
 
         String normalized = normalizeMsisdn(msisdn);
