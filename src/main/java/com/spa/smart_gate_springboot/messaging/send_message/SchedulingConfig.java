@@ -1,12 +1,10 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
-import com.spa.smart_gate_springboot.messaging.delivery.MsgDelivery;
-import com.spa.smart_gate_springboot.messaging.delivery.MsgDeliveryService;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
@@ -16,13 +14,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -34,6 +31,7 @@ public class SchedulingConfig {
     private final AccountService accountService;
     private final QueueMsgService queueMsgService;
     private final ResellerRepo resellerRepo;
+    private final AiretelService airetelService;
 
 
     public void resendToSynq(UUID rsId, String msgStatus) {
@@ -42,30 +40,33 @@ public class SchedulingConfig {
         Page<MsgMessageQueueArc> pageData = arcRepository.resendSmsPagable(accountList, msgStatus, pageRequest);
         List<MsgMessageQueueArc> pdRsCredit = pageData.getContent();
         pdRsCredit.forEach(m -> {
-            new Thread(() -> {
-                try {
-                    MsgQueue msgQueue = new MsgQueue();
-                    BeanUtils.copyProperties(m, msgQueue);
-                    arcRepository.delete(m);
-                    if (!TextUtils.isEmpty(m.getMsgErrorCode()) && m.getMsgErrorCode().equalsIgnoreCase("200")) {
-                        if(1==3) {
-                            // refund the customer
-                            Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
-                            BigDecimal newBal = msgQueue.getMsgCostId().add(acc.getAccMsgBal());
-                            acc.setAccMsgBal(newBal);
-                            accountService.save(acc);
-                        }
-                    }
-                    msgQueue.setMsgSentRetried(true); //todo reset to true
-                    msgQueue.setMsgCreatedDate(new Date());
-                    msgQueue.setMsgSenderId(m.getMsgSenderIdName());
-                    queueMsgService.publishNewMessageSynq(msgQueue);
+            try {
+                MsgQueue msgQueue = new MsgQueue();
+                BeanUtils.copyProperties(m, msgQueue);
+                arcRepository.delete(m);
+                if (!TextUtils.isEmpty(m.getMsgErrorCode()) && m.getMsgErrorCode().equalsIgnoreCase("200")) {
 
+                        // refund the customer
+                        Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
+                        BigDecimal newBal = msgQueue.getMsgCostId().add(acc.getAccMsgBal());
+                        acc.setAccMsgBal(newBal);
+                        accountService.save(acc);
 
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
-            }).start();
+                msgQueue.setMsgSentRetried(true); //todo reset to true
+                msgQueue.setMsgCreatedDate(new Date());
+                msgQueue.setMsgSenderId(m.getMsgSenderIdName());
+
+                if (msgStatus.equalsIgnoreCase("DeliveryImpossible")) {
+                    log.info("Saf failed :- Now Sending to Airtel");
+                    airetelService.sendMessageViaAirTel(m);
+                } else {
+                    queueMsgService.publishNewMessageSynq(msgQueue);
+                }
+
+            } catch (Exception e) {
+                log.error("Error occured :- {}", e.getMessage());
+            }
         });
     }
 
@@ -81,12 +82,11 @@ public class SchedulingConfig {
             resendToSynq(reseller.getRsId(), "Exception sending");
             resendToSynq(reseller.getRsId(), "ERROR");
             resendToSynq(reseller.getRsId(), "ERRORR");
-            resendToSynq(reseller.getRsId(), "SENT");
+            resendToSynq(reseller.getRsId(), "DeliveryImpossible");
 
         }
 
     }
-
 
 
     //disable temporarily
@@ -115,8 +115,7 @@ public class SchedulingConfig {
     }
 
 
-
-    @Scheduled(fixedRate = 1000*60*5)
+    @Scheduled(fixedRate = 1000 * 60 * 5)
     public void health() {
         log.info("Health Check Cron sms:   {}", new Date());
     }
