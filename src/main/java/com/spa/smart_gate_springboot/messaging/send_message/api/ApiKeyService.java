@@ -16,6 +16,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ public class ApiKeyService {
     private final AccountRepository accountRepo;
     private final MsgMessageQueueArcRepository arcRepository;
     private final RMQPublisher rmqPublisher;
+    @Lazy
     private final AiretelService airetelService;
 
 
