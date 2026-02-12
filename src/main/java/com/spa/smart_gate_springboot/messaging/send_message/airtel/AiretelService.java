@@ -10,6 +10,7 @@ import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRe
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,7 +27,7 @@ public class AiretelService {
     private final RMQPublisher rmqPublisher;
     private final AirtelNumberRepository airtelNumberRepository;
     private final RestTemplate restTemplate;
-    private final AccountService accountService;
+    private final ObjectProvider<AccountService> accountServiceProvider;
 
     private static final Set<String> AIRTEL_PREFIXES = Set.of(
             "25473" // adjust as needed
@@ -71,7 +72,7 @@ public class AiretelService {
     }
 
     private BigDecimal getCostPerSMS(UUID msgAccId) {
-        Account acc = this.accountService.findByAccId(msgAccId);
+        Account acc = this.accountServiceProvider.getObject().findByAccId(msgAccId);
         BigDecimal _sms_price = acc.getAccSmsPrice();
         return _sms_price == null ? new BigDecimal("1.50") : _sms_price;
     }
