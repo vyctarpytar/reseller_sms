@@ -60,6 +60,7 @@ public class SchedulingConfig {
                 if (msgStatus.equalsIgnoreCase("DeliveryImpossible")) {
                     log.info("Saf failed :- Now Sending to Airtel");
                     airetelService.sendMessageViaAirTel(m);
+                    airetelService.saveAirtelNumberWithRetry(m.getMsgSubMobileNo());
                 } else {
                     queueMsgService.publishNewMessageSynq(msgQueue);
                 }

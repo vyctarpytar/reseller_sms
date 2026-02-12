@@ -2,6 +2,8 @@ package com.spa.smart_gate_springboot.messaging.send_message.airtel;
 
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
+import com.spa.smart_gate_springboot.account_setup.account.Account;
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
@@ -24,9 +26,10 @@ public class AiretelService {
     private final RMQPublisher rmqPublisher;
     private final AirtelNumberRepository airtelNumberRepository;
     private final RestTemplate restTemplate;
+    private final AccountService accountService;
 
     private static final Set<String> AIRTEL_PREFIXES = Set.of(
-            "25473","25476" // adjust as needed
+            "25473" // adjust as needed
     );
 
 
@@ -67,13 +70,18 @@ public class AiretelService {
       return arcList.get(0);
     }
 
+    private BigDecimal getCostPerSMS(UUID msgAccId) {
+        Account acc = this.accountService.findByAccId(msgAccId);
+        BigDecimal _sms_price = acc.getAccSmsPrice();
+        return _sms_price == null ? new BigDecimal("1.50") : _sms_price;
+    }
 
     public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc) {
 
         int no_of_msg = getNoOfMessage(msgMessageQueueArc);
 
-//        BigDecimal cost_per_sms = getCostPerSMS(msgMessageQueueArc.getMsgAccId());
-        BigDecimal cost_per_sms = new BigDecimal("0.20");
+        BigDecimal cost_per_sms = getCostPerSMS(msgMessageQueueArc.getMsgAccId());
+//        BigDecimal cost_per_sms = new BigDecimal("0.50");
         BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
         msgMessageQueueArc.setMsgPage(no_of_msg);
         msgMessageQueueArc.setMsgCostId(totalCost);
@@ -112,13 +120,48 @@ public class AiretelService {
             arcRepository.save(msgMessageQueueArc);
 
             if (!airtelNumberRepository.existsByAnNumber(msgMessageQueueArc.getMsgSubMobileNo())) {
-                airtelNumberRepository.save(AirtelNumber.builder().anNumber(msgMessageQueueArc.getMsgSubMobileNo()).build());
+                saveAirtelNumberWithRetry(msgMessageQueueArc.getMsgSubMobileNo());
             }
 
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
             log.error("Error sending Airtel message . {}", e.getMessage(), e);
             throw e;
+        }
+    }
+
+
+    public void saveAirtelNumberWithRetry(String msisdn) {
+        final int maxAttempts = 100;
+        long backoffMs = 25L;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                airtelNumberRepository.save(
+                        AirtelNumber.builder()
+                                .anNumber(msisdn)
+                                .anCreatedDate(LocalDateTime.now())
+                                .build()
+                );
+                return;
+            } catch (Exception e) {
+                if (attempt == maxAttempts) {
+                    log.error("Error saving airtel number after {} attempts. msisdn={}", attempt, msisdn, e);
+                    return;
+                }
+
+                log.warn("Error saving airtel number (attempt {}/{}). msisdn={}. Retrying...", attempt, maxAttempts, msisdn, e);
+
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Interrupted while retrying airtel number save. msisdn={}", msisdn, ie);
+                    return;
+                }
+
+                backoffMs = Math.min(backoffMs * 2, 500L);
+            }
         }
     }
 
@@ -144,6 +187,9 @@ public class AiretelService {
 
 
     }
+
+
+
 
 
 }

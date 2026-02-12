@@ -2,6 +2,7 @@ package com.spa.smart_gate_springboot.messaging.send_message.airtel;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
@@ -23,8 +24,8 @@ public class AirtelNumber {
     @Column(nullable = false, name = "an_number")
     private String anNumber;
 
-    @CreatedDate
-  @Column(name = "an_created_date")
+    @CreationTimestamp
+  @Column(name = "an_created_date", updatable = false)
     private LocalDateTime anCreatedDate;
 }
 
