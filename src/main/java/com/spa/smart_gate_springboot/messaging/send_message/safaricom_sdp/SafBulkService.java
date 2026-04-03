@@ -6,6 +6,7 @@ import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetup;
 import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetupService;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.SafAuthService;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.SafaricomInterface;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.SafaricomProperties;
@@ -45,13 +46,17 @@ public class SafBulkService {
     private final Retrofit safComRetrofit;
     private final MsgShortcodeSetupService msgShortcodeSetupService;
     private final AccountService accountService;
+    private final AiretelService airetelService;
 
 
     public void sendArcSms(MsgMessageQueueArc msg) throws Exception {
 
+        if(true) {
+            airetelService.sendMessageViaAirTel(msg);
+            return;
+        }
 
         accountService.handleUpdateOfAccountBalance(msg.getMsgCostId(), msg.getMsgAccId(), msg.getMsgResellerId());
-
         SendBulkSafReq sendBulkSafReq = new SendBulkSafReq();
 
         List<SafBulkDataSet> safBulkDataSetList = new ArrayList<>();
