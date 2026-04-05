@@ -46,15 +46,15 @@ public class SafBulkService {
     private final Retrofit safComRetrofit;
     private final MsgShortcodeSetupService msgShortcodeSetupService;
     private final AccountService accountService;
-    private final AiretelService airetelService;
+//    private final AiretelService airetelService;
 
 
     public void sendArcSms(MsgMessageQueueArc msg) throws Exception {
 
-        if(true) {
-            airetelService.sendMessageViaAirTel(msg);
-            return;
-        }
+//        if(true) {
+//            airetelService.sendMessageViaAirTel(msg);
+//            return;
+//        }
 
         accountService.handleUpdateOfAccountBalance(msg.getMsgCostId(), msg.getMsgAccId(), msg.getMsgResellerId());
         SendBulkSafReq sendBulkSafReq = new SendBulkSafReq();
