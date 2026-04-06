@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,10 +34,13 @@ public class AiretelService {
             "25473" // adjust as needed
     );
 
+    @Value("${sms.airtel.allowForAll}")
+    private final boolean allowForAll;
+
 
     public boolean checkIsAirtel(String msisdn) {
         if (msisdn == null || msisdn.isBlank()) return false;
-//        if(true)return true;
+        if(allowForAll)return true;
 
         String normalized = normalizeMsisdn(msisdn);
 
@@ -180,13 +184,10 @@ public class AiretelService {
     }
 
     private int getNoOfMessage(MsgMessageQueueArc msgQueue) {
-
-
         int MSG_LENGTH = msgQueue.getMsgMessage().length();
 
         int no_of_characters_per_message = 160;
         return (int) Math.ceil((double) MSG_LENGTH / no_of_characters_per_message);
-
 
     }
 

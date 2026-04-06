@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AirtelNumberRepository extends JpaRepository<AirtelNumber, Long> {
 
-    boolean existsByAnNumber(@NotNull(message = "msgSubMobileNo cannot be null") String msgSubMobileNo);
+    boolean existsByAnNumber(String msgSubMobileNo);
 }

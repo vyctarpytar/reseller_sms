@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ResponseBody;
 import org.apache.http.util.TextUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Converter;
@@ -46,15 +47,17 @@ public class SafBulkService {
     private final Retrofit safComRetrofit;
     private final MsgShortcodeSetupService msgShortcodeSetupService;
     private final AccountService accountService;
-//    private final AiretelService airetelService;
+    private final AiretelService airetelService;
 
+    @Value("${sms.airtel.allowForAll}")
+    private final boolean allowForAll;
 
     public void sendArcSms(MsgMessageQueueArc msg) throws Exception {
 
-//        if(true) {
-//            airetelService.sendMessageViaAirTel(msg);
-//            return;
-//        }
+        if(allowForAll) {
+            airetelService.sendMessageViaAirTel(msg);
+            return;
+        }
 
         accountService.handleUpdateOfAccountBalance(msg.getMsgCostId(), msg.getMsgAccId(), msg.getMsgResellerId());
         SendBulkSafReq sendBulkSafReq = new SendBulkSafReq();
