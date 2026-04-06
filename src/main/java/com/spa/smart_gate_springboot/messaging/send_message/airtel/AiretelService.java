@@ -35,12 +35,12 @@ public class AiretelService {
     );
 
     @Value("${sms.airtel.allowForAll}")
-    private final boolean allowForAll;
+    private  String allowForAll;
 
 
     public boolean checkIsAirtel(String msisdn) {
         if (msisdn == null || msisdn.isBlank()) return false;
-        if(allowForAll)return true;
+        if(Boolean.parseBoolean(allowForAll))return true;
 
         String normalized = normalizeMsisdn(msisdn);
 

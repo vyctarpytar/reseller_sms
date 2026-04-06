@@ -50,11 +50,11 @@ public class SafBulkService {
     private final AiretelService airetelService;
 
     @Value("${sms.airtel.allowForAll}")
-    private final boolean allowForAll;
+    private  String allowForAll;
 
     public void sendArcSms(MsgMessageQueueArc msg) throws Exception {
 
-        if(allowForAll) {
+        if(Boolean.parseBoolean(allowForAll)){
             airetelService.sendMessageViaAirTel(msg);
             return;
         }
