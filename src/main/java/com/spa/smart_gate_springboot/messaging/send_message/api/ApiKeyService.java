@@ -83,6 +83,7 @@ public class ApiKeyService {
         arcQueue.setMsgExternalId(msgQueue.getMsgExternalId());
 
         Account acc = accountRepo.findById(msgQueue.getMsgAccId()).orElseThrow(() -> new RuntimeException("Account Does Not Exist :" + msgQueue.getMsgAccId()));
+        arcQueue.setMsgResellerId(acc.getAccResellerId());
         if (acc.getAccMsgBal().compareTo(BigDecimal.TEN) < 1) {
             msgQueue.setMsgStatus("PENDING_CREDIT");
             msgQueue.setMsgClientDeliveryStatus("PENDING");
