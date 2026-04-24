@@ -15,7 +15,7 @@ public class CorsConfig {
         configuration.addAllowedOriginPattern("*"); // Allow all origins
         configuration.addAllowedMethod("*"); // Allow all HTTP methods
         configuration.addAllowedHeader("*"); // Allow all headers
-        configuration.setAllowCredentials(true); // Allow credentials
+        configuration.setAllowCredentials(false); // Disable credentials when using wildcard origins
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
