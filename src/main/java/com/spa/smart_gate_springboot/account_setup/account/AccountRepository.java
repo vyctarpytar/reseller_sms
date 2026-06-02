@@ -85,12 +85,21 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
      * Active accounts whose balance is below {@code threshold} and that have not been
      * alerted since {@code alertBefore} (i.e. due for a low-balance alert). Used by the
      * {@code LowBalanceAlertCron} to throttle alerts to one per account per interval.
+     * <p>
+     * Only accounts that attempted to send at least one SMS today (a row in
+     * {@code msg.message_queue_arc} dated today) are returned, so dormant accounts are
+     * never alerted.
      */
     @Query(nativeQuery = true, value = """
-            select * from js_core.jsc_accounts
-            where acc_msg_bal <= :threshold
-              and acc_deleted_date is null
-              and (acc_last_low_bal_alert is null or acc_last_low_bal_alert <= :alertBefore)
+            select * from js_core.jsc_accounts a
+            where a.acc_msg_bal <= :threshold
+              and a.acc_deleted_date is null
+              and (a.acc_last_low_bal_alert is null or a.acc_last_low_bal_alert <= :alertBefore)
+              and exists (
+                    select 1 from msg.message_queue_arc m
+                    where m.msg_acc_id = a.acc_id
+                      and m.msg_created_date >= current_date
+              )
             """)
     List<Account> findAccountsForLowBalanceAlert(@Param("threshold") BigDecimal threshold,
                                                  @Param("alertBefore") java.time.LocalDateTime alertBefore);

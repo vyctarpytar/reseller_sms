@@ -4,6 +4,9 @@ import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
+import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetup;
+import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetupRepository;
+import com.spa.smart_gate_springboot.account_setup.shortsetup.ShStatus;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
@@ -31,11 +34,122 @@ public class ApiKeyService {
     private final ApiKeyRepository apiKeyRepository;
     private final AccountRepository accountRepo;
     private final MsgMessageQueueArcRepository arcRepository;
+    private final MsgShortcodeSetupRepository shortcodeSetupRepository;
     private final RMQPublisher rmqPublisher;
     @Lazy
     private final AiretelService airetelService;
 
+    private static final String SINGLE_SMS_ENDPOINT =
+            "https://backend.synqafrica.co.ke/api/v2/sandbox/single-sms";
+    private static final String BULK_SMS_ENDPOINT =
+            "https://backend.synqafrica.co.ke/api/v2/sandbox/bulk-sms";
 
+    private static final String DEFAULT_SENDER_ID = "DoNotReply";
+    private static final String DEFAULT_MOBILE_NO = "254716177880";
+    private static final String SAMPLE_MESSAGE =
+            "Your verification code is 123456. It expires in 5 minutes. Do not share it with anyone.";
+
+    private static final String API_RESPONSE_SAMPLE =
+            "{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n"
+            + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n"
+            + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 1,\n"
+            + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n"
+            + "\t\"status\": 200\n" + "}";
+
+    /** Applies the sandbox endpoint, key tag and documented payload/response samples. */
+    private void applyApiDocs(ApiKey apiKey) {
+        Account account = apiKey.getApiAccId() == null
+                ? null
+                : accountRepo.findById(apiKey.getApiAccId()).orElse(null);
+        String senderId = resolveSenderId(apiKey.getApiAccId());
+        String mobileNo = resolveMobileNo(account);
+
+        apiKey.setApiEndPoint(SINGLE_SMS_ENDPOINT);
+        apiKey.setApiKeyTag("X-API-KEY");
+        apiKey.setApiPayload(buildSinglePayload(apiKey.getApiKey(), senderId, mobileNo));
+        apiKey.setApiPayloadMultiple(buildBulkPayload(apiKey.getApiKey(), senderId, mobileNo));
+        apiKey.setApiResponse(API_RESPONSE_SAMPLE);
+    }
+
+    /** First sender ID allocated to the account (ACTIVE preferred), else {@value #DEFAULT_SENDER_ID}. */
+    private String resolveSenderId(UUID accId) {
+        if (accId == null) {
+            return DEFAULT_SENDER_ID;
+        }
+        List<MsgShortcodeSetup> allocated = shortcodeSetupRepository.findByShAccId(accId);
+        return allocated.stream()
+                .filter(s -> s.getShStatus() == ShStatus.ACTIVE)
+                .map(MsgShortcodeSetup::getShCode)
+                .filter(code -> code != null && !code.isBlank())
+                .findFirst()
+                .or(() -> allocated.stream()
+                        .map(MsgShortcodeSetup::getShCode)
+                        .filter(code -> code != null && !code.isBlank())
+                        .findFirst())
+                .orElse(DEFAULT_SENDER_ID);
+    }
+
+    /** The account contact person's mobile (admin, then office), else {@value #DEFAULT_MOBILE_NO}. */
+    private String resolveMobileNo(Account account) {
+        if (account != null) {
+            if (account.getAccAdminMobile() != null && !account.getAccAdminMobile().isBlank()) {
+                return account.getAccAdminMobile();
+            }
+            if (account.getAccOfficeMobile() != null && !account.getAccOfficeMobile().isBlank()) {
+                return account.getAccOfficeMobile();
+            }
+        }
+        return DEFAULT_MOBILE_NO;
+    }
+
+    private String buildSinglePayload(String key, String senderId, String mobileNo) {
+        return "curl --request POST \\\n"
+                + "  --url " + SINGLE_SMS_ENDPOINT + " \\\n"
+                + "  --header 'Content-Type: application/json' \\\n"
+                + "  --header 'X-API-KEY: " + key + "' \\\n"
+                + "  --data '{\n"
+                + "  \"msgExternalId\": 1,\n"
+                + "  \"msgMobileNo\": \"" + mobileNo + "\",\n"
+                + "  \"msgMessage\": \"" + SAMPLE_MESSAGE + "\",\n"
+                + "  \"msgSenderId\": \"" + senderId + "\",\n"
+                + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n"
+                + "}'"
+                + buildCallbackSample(senderId, mobileNo);
+    }
+
+    private String buildBulkPayload(String key, String senderId, String mobileNo) {
+        return "curl --request POST \\\n"
+                + "  --url " + BULK_SMS_ENDPOINT + " \\\n"
+                + "  --header 'Content-Type: application/json' \\\n"
+                + "  --header 'X-API-KEY: " + key + "' \\\n"
+                + "  --data '{\n"
+                + "  \"msgExternalId\": 1,\n"
+                + "  \"msgMobileNos\": [\"" + mobileNo + "\",\"" + mobileNo + "\"],\n"
+                + "  \"msgMessage\": \"" + SAMPLE_MESSAGE + "\",\n"
+                + "  \"msgSenderId\": \"" + senderId + "\",\n"
+                + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n"
+                + "}'"
+                + buildCallbackSample(senderId, mobileNo);
+    }
+
+    /**
+     * Sample delivery report (DLR) this gateway POSTs to the client's {@code callbackUrl}.
+     * Appended to the API payload examples so clients can build a callback endpoint that
+     * matches the {@code ClientDeliveryPayload} contract (statusCode / statusDescription
+     * may be null when the carrier does not supply them).
+     */
+    private String buildCallbackSample(String senderId, String mobileNo) {
+        return "\n\n# Delivery report POSTed to your callbackUrl:\n" + "{\n"
+                + "  \"messageId\": \"<your msgExternalId>\",\n"
+                + "  \"mobileNo\": \"" + mobileNo + "\",\n"
+                + "  \"senderId\": \"" + senderId + "\",\n"
+                + "  \"message\": \"" + SAMPLE_MESSAGE + "\",\n"
+                + "  \"status\": \"DeliveredToTerminal\",\n"
+                + "  \"statusCode\": null,\n"
+                + "  \"statusDescription\": null,\n"
+                + "  \"deliveredAt\": \"2026-06-03T01:29:49.532988\",\n"
+                + "  \"requestId\": \"1780439388289786166\"\n" + "}";
+    }
 
 
     public boolean validateApiKey(String apiKey) {
@@ -58,14 +172,7 @@ public class ApiKeyService {
             UniqueCodeGenerator ug = new UniqueCodeGenerator();
             ApiKey apiKey = ApiKey.builder().id(UUID.randomUUID()).apiKey(ug.generateSecureApiKey()).clientName(acc.getAccName()).apiResellerId(acc.getAccResellerId()).apiAccId(acc.getAccId()).createdDate(new Date()).build(); // expirationDate and active will be set by @PrePersist
 
-
-            apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
-            apiKey.setApiKeyTag("X-API-KEY");
-            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
-
-            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
-
-            apiKey.setApiResponse("{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n" + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n" + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 0,\n" + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n" + "\t\"status\": 200\n" + "}");
+            applyApiDocs(apiKey);
             apiKeyRepository.save(apiKey);
         } catch (Exception e) {
             log.error("Error Creating Api Key : {}", e.getMessage());
@@ -124,6 +231,11 @@ public class ApiKeyService {
         respData.put("msgStatus", msgQueue.getMsgStatus());
         respData.put("errorDesc", null);
 
+        // Echo the callback URL back to the client when one was supplied (optional).
+        if (msgApiDto.getCallbackUrl() != null && !msgApiDto.getCallbackUrl().isBlank()) {
+            respData.put("callbackUrl", msgApiDto.getCallbackUrl());
+        }
+
         respData.put("status", 200);
         respData.put("success", true);
 
@@ -160,13 +272,7 @@ public class ApiKeyService {
         List<ApiKey> apiKeyList = apiKeyRepository.findAll();
         for (ApiKey apiKey : apiKeyList) {
             apiKey.setActive(true);
-            apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
-            apiKey.setApiKeyTag("X-API-KEY");
-            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
-
-            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
-
-            apiKey.setApiResponse("{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n" + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n" + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 0,\n" + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n" + "\t\"status\": 200\n" + "}");
+            applyApiDocs(apiKey);
             apiKeyRepository.save(apiKey);
         }
 

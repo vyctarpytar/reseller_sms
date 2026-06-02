@@ -7,11 +7,11 @@ import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetupS
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
+import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestBulkService;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.SafAuthService;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.SafaricomInterface;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.SafaricomProperties;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.dto.BulkResponse;
-import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.dto.ResponseModel;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.models.SafBulkDataSet;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.models.SendBulkSafReq;
 import com.spa.smart_gate_springboot.utils.AppUtils;
@@ -48,18 +48,31 @@ public class SafBulkService {
     private final MsgShortcodeSetupService msgShortcodeSetupService;
     private final AccountService accountService;
     private final AiretelService airetelService;
+    private final SafaricomRestBulkService safaricomRestBulkService;
 
     @Value("${sms.airtel.allowForAll}")
-    private  String allowForAll;
+    private String allowForAll;
+
+    /** Switch between legacy SDP (v1) and Daraja REST (v2). Set in application.properties: safaricom.api.version */
+    @Value("${safaricom.api.version:v1}")
+    private String safApiVersion;
 
     public void sendArcSms(MsgMessageQueueArc msg) throws Exception {
 
-        if(Boolean.parseBoolean(allowForAll)){
+        if (Boolean.parseBoolean(allowForAll)) {
             airetelService.sendMessageViaAirTel(msg);
             return;
         }
 
         accountService.handleUpdateOfAccountBalance(msg.getMsgCostId(), msg.getMsgAccId(), msg.getMsgResellerId());
+
+        if ("v2".equalsIgnoreCase(safApiVersion)) {
+            log.info("[SAF] Using Daraja REST API (v2) for msgCode={}", msg.getMsgCode());
+            safaricomRestBulkService.sendSms(msg);
+            return;
+        }
+
+        log.info("[SAF] Using legacy SDP (v1) for msgCode={}", msg.getMsgCode());
         SendBulkSafReq sendBulkSafReq = new SendBulkSafReq();
 
         List<SafBulkDataSet> safBulkDataSetList = new ArrayList<>();

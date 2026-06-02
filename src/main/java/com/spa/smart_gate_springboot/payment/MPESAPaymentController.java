@@ -27,14 +27,17 @@ public class MPESAPaymentController {
     private final GlobalUtils gu;
 
     @PostMapping
-    public ResponseEntity<?> receivePayment(@RequestBody PaymentDto payment) {
+    public ResponseEntity<?> receivePayment(@RequestBody Object payment) {
+
         log.info("receive payment request : {}", payment);
+
+        PaymentDto paymentDto = objectMapper.convertValue(payment, PaymentDto.class);
         Map<String, String> response = new HashMap<>();
         try {
 
             rmqPublisher.publishToOutQueue(payment, "MPESA_C2B_TRANSACTION_RECEIVE");
 
-            invoiceService.receivePayment(payment);
+            invoiceService.receivePayment(paymentDto);
             response.put("ResultCode", "0");
             response.put("ResultDesc", "Accepted");
         } catch (Exception e) {

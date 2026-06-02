@@ -1,21 +1,21 @@
 package com.spa.smart_gate_springboot.crons;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import org.apache.http.util.TextUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import retrofit2.Response;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,8 +41,7 @@ import java.util.List;
 public class ClientDeliveryResponses {
 
     private static final int PAGE_SIZE = 200;
-    private static final int CONNECT_TIMEOUT_MS = 5_000;
-    private static final int READ_TIMEOUT_MS = 10_000;
+    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     /** How long to wait before retrying a failed callback. */
     @Value("${sms.callback.retry-interval-minutes:30}")
@@ -61,17 +60,10 @@ public class ClientDeliveryResponses {
     private List<String> stuckStatuses;
 
     private final MsgMessageQueueArcRepository arcRepository;
+    private final ObjectMapper objectMapper;
 
-    /** Dedicated RestTemplate with timeouts so a slow client server can't stall the cron. */
-    private final RestTemplate callbackRestTemplate = buildCallbackRestTemplate();
-
-    private static RestTemplate buildCallbackRestTemplate() {
-        org.springframework.http.client.SimpleClientHttpRequestFactory factory =
-                new org.springframework.http.client.SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        factory.setReadTimeout(READ_TIMEOUT_MS);
-        return new RestTemplate(factory);
-    }
+    /** Retrofit client; the OkHttp interceptor logs the full request and response. */
+    private final ClientCallbackInterface callbackClient;
 
     /** Delivered messages: push the carrier delivery report to the client. */
     @Scheduled(fixedRate = 15_000)
@@ -121,23 +113,39 @@ public class ClientDeliveryResponses {
             return;
         }
         ClientDeliveryPayload payload = ClientDeliveryPayload.from(m);
+
+        RequestBody body;
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<ClientDeliveryPayload> request = new HttpEntity<>(payload, headers);
+            body = RequestBody.create(objectMapper.writeValueAsString(payload), JSON);
+        } catch (Exception e) {
+            log.warn("Failed to serialise callback payload msgId={}: {}", m.getMsgId(), e.getMessage(), e);
+            handleFailure(m, "payload serialise error: " + e);
+            return;
+        }
 
-            ResponseEntity<String> response =
-                    callbackRestTemplate.postForEntity(m.getMsgCallbackUrl(), request, String.class);
+        try {
+            Response<ResponseBody> response =
+                    callbackClient.sendCallback(m.getMsgCallbackUrl(), body).execute();
 
-            if (response.getStatusCode().is2xxSuccessful()) {
+            if (response.isSuccessful()) {
+                if (response.body() != null) {
+                    response.body().close();
+                }
                 arcRepository.markClientCallbackNotified(m.getMsgId(), LocalDateTime.now());
                 log.info("Delivery callback delivered msgId={} url={} httpStatus={}",
-                        m.getMsgId(), m.getMsgCallbackUrl(), response.getStatusCode());
+                        m.getMsgId(), m.getMsgCallbackUrl(), response.code());
             } else {
-                handleFailure(m, "Non-2xx response: " + response.getStatusCode());
+                if (response.errorBody() != null) {
+                    response.errorBody().close();
+                }
+                // Full request/response JSON is logged by CallbackLoggingInterceptor.
+                handleFailure(m, response.code() + " " + response.message());
             }
         } catch (Exception e) {
-            handleFailure(m, e.getMessage());
+            // Log the full stack trace so the exact failure point is visible (the request may
+            // never reach the interceptor, e.g. a body-serialisation error inside Retrofit).
+            log.warn("Delivery callback errored msgId={} url={}", m.getMsgId(), m.getMsgCallbackUrl(), e);
+            handleFailure(m, e.toString());
         }
     }
 
