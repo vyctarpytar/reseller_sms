@@ -61,5 +61,6 @@ public class MsgQueue {
     private UUID msgResellerId;
     private String msgResellerName;
     private String msgSourceIpAddress;
+    private String msgCallbackUrl;
 }
 

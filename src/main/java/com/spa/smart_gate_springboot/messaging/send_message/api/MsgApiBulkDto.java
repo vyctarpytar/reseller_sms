@@ -14,4 +14,10 @@ public class MsgApiBulkDto {
     private String msgMessage;
     @NotNull(message = "msg cannot be null")
     private String msgSenderId;
+
+    /**
+     * Optional client server URL. Delivery reports for every number in this bulk
+     * request are POSTed back to this URL by the {@code ClientDeliveryResponses} cron.
+     */
+    private String callbackUrl;
 }

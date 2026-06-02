@@ -61,9 +61,9 @@ public class ApiKeyService {
 
             apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
             apiKey.setApiKeyTag("X-API-KEY");
-            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
+            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
 
-            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
+            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
 
             apiKey.setApiResponse("{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n" + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n" + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 0,\n" + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n" + "\t\"status\": 200\n" + "}");
             apiKeyRepository.save(apiKey);
@@ -75,7 +75,7 @@ public class ApiKeyService {
     public Map<String, Object> sendMessage(MsgApiDto msgApiDto, String apiKeyStr) {
         ApiKey apikey = apiKeyRepository.findByApiKey(apiKeyStr).orElseThrow(() -> new RuntimeException("Key Not Found"));
 
-        MsgQueue msgQueue = MsgQueue.builder().msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING").msgExternalId(msgApiDto.getMsgExternalId()).msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo()).msgCreatedBy(null)// dont set thid
+        MsgQueue msgQueue = MsgQueue.builder().msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING").msgExternalId(msgApiDto.getMsgExternalId()).msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo()).msgCallbackUrl(msgApiDto.getCallbackUrl()).msgCreatedBy(null)// dont set thid
                 .msgCreatedByEmail("API_USER").build();
 
         MsgMessageQueueArc arcQueue = new MsgMessageQueueArc();
@@ -162,9 +162,9 @@ public class ApiKeyService {
             apiKey.setActive(true);
             apiKey.setApiEndPoint("https://backend.synqafrica.co.ke:8443/api/v2/sandbox/single-sms");
             apiKey.setApiKeyTag("X-API-KEY");
-            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
+            apiKey.setApiPayload("curl --request POST \\\n" + "  --url " + apiKey.getApiEndPoint() + " \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNo\": \"254716177880\",\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
 
-            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\"\n" + "}'");
+            apiKey.setApiPayloadMultiple("curl --request POST \\\n" + "  --url https://backend.synqafrica.co.ke:8443/api/v2/sandbox/bulk-sms \\\n" + "  --header 'Content-Type: application/json' \\\n" + "  --header 'X-API-KEY: " + apiKey.getApiKey() + "' \\\n" + "  --data '{\n" + "  \"msgExternalId\": 1,\n" + "  \"msgMobileNos\": [\"254716177880\",\"254716177880\"],\n" + "  \"msgMessage\": \"Test Api Message Dukapay\",\n" + "  \"msgSenderId\": \"DoNotReply\",\n" + "  \"callbackUrl\": \"https://your-server.com/dlr-callback\"\n" + "}'");
 
             apiKey.setApiResponse("{\n" + "\t\"success\": true,\n" + "\t\"messages\": {\n" + "\t\t\"message\": \"Messages Sent Successfully\"\n" + "\t},\n" + "\t\"data\": {\n" + "\t},\n" + "\t\"total\": 0,\n" + "\t\"targetUrl\": null,\n" + "\t\"token\": null,\n" + "\t\"status\": 200\n" + "}");
             apiKeyRepository.save(apiKey);

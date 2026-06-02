@@ -85,23 +85,50 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
             """, nativeQuery = true)
     List<Object[]> getMessageStatusStatForToday(@Param("msgAccId") UUID msgAccId, @Param("msgCreatedDate") Date msgCreatedDate, @Param("msgStatus") String msgStatus, @Param("msgSalesUserId") UUID msgSalesUserId, @Param("msgResellerId") UUID msgResellerId, @Param("msgSenderName") String msgSenderName, @Param("msgCreatedFromDate") Date msgCreatedFromDate, @Param("msgCreatedToDate") Date msgCreatedToDate);
 
-//
-//    @Query(value = """
-//             SELECT
-//                    msg_id, msg_status,msg_acc_id, msg_message, msg_cost_id, msg_camp_id,msg_thread_id,
-//                    msg_retry_count, msg_client_delivery_status,acc_delivery_url
-//                    FROM
-//                    msg.message_queue_arc,js_core.jsc_accounts
-//                    where
-//                    msg_client_delivery_status = 'PENDING'
-//                    and msg_status != 'SENT'
-//                    and msg_acc_id != 3114
-//                    and acc_id = msg_acc_id and acc_delivery_url is not null
-//                    and msg_delivered_date >= (current_date -2)
-//            """, nativeQuery = true)
+
+    /**
+     * Messages that have a client callback URL and a delivery report received
+     * (msg_delivered_date set), but whose delivery report has not yet been pushed
+     * to the client server (msg_client_delivery_status still 'PENDING').
+     * A row is only returned if it has never been attempted, or its last attempt
+     * was before {@code retryBefore} (i.e. older than the retry interval).
+     * Used by the {@code ClientDeliveryResponses} cron.
+     */
+    @Query(value = """
+            SELECT * FROM msg.message_queue_arc
+            WHERE msg_callback_url IS NOT NULL
+              AND msg_client_delivery_status = 'PENDING'
+              AND msg_delivered_date IS NOT NULL
+              AND cast(msg_created_date as date) >= current_date - 3
+              AND (msg_last_callback_attempt IS NULL OR msg_last_callback_attempt <= :retryBefore)
+            ORDER BY msg_last_callback_attempt ASC NULLS FIRST
+            """, nativeQuery = true)
+    Page<MsgMessageQueueArc> findPendingClientCallbacks(@Param("retryBefore") java.time.LocalDateTime retryBefore, Pageable pageable);
 
 
-    Page<MsgMessageQueueArc> findByMsgClientDeliveryStatusAndMsgExternalIdIsNotNullAndMsgCreatedDateGreaterThanEqual(String clientDeliveryStatus, Date yeterdat, Pageable pageable);
+    /**
+     * Messages that have a client callback URL but were never sent / never received a
+     * delivery report (msg_delivered_date IS NULL) and are stuck in a non-deliverable
+     * status (e.g. PENDING_CREDIT, RS_CREDIT_ISSUE). Only messages older than
+     * {@code stuckBefore} (a grace period) are returned, so transient queue states are
+     * not reported as failures. Same per-row retry back-off as the delivery callback.
+     * Used by the {@code ClientDeliveryResponses} cron.
+     */
+    @Query(value = """
+            SELECT * FROM msg.message_queue_arc
+            WHERE msg_callback_url IS NOT NULL
+              AND msg_client_delivery_status = 'PENDING'
+              AND msg_delivered_date IS NULL
+              AND msg_status IN (:statuses)
+              AND msg_created_date <= :stuckBefore
+              AND cast(msg_created_date as date) >= current_date - 3
+              AND (msg_last_callback_attempt IS NULL OR msg_last_callback_attempt <= :retryBefore)
+            ORDER BY msg_last_callback_attempt ASC NULLS FIRST
+            """, nativeQuery = true)
+    Page<MsgMessageQueueArc> findStuckClientCallbacks(@Param("statuses") List<String> statuses,
+                                                      @Param("stuckBefore") java.time.LocalDateTime stuckBefore,
+                                                      @Param("retryBefore") java.time.LocalDateTime retryBefore,
+                                                      Pageable pageable);
 
     @Query(value = """
             SELECT * FROM msg.message_queue_arc m WHERE cast(m.msg_acc_id as UUID) IN :accountIds
@@ -173,6 +200,41 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
                 WHERE msg_id = :msgId
             """)
     void updateMessageDeliveryToFailed(@Param("msgId") UUID msgId, @Param("message") String message, @Param("counter") int counter);
+
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = """
+                UPDATE msg.message_queue_arc
+                SET msg_client_delivery_status = 'NOTIFIED',
+                    msg_retry_count = 0,
+                    msg_last_callback_attempt = :attemptTime
+                WHERE msg_id = :msgId
+            """)
+    void markClientCallbackNotified(@Param("msgId") UUID msgId, @Param("attemptTime") java.time.LocalDateTime attemptTime);
+
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = """
+                UPDATE msg.message_queue_arc
+                SET msg_retry_count = :counter,
+                    msg_last_callback_attempt = :attemptTime
+                WHERE msg_id = :msgId
+            """)
+    void updateClientCallbackRetry(@Param("msgId") UUID msgId, @Param("counter") int counter, @Param("attemptTime") java.time.LocalDateTime attemptTime);
+
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = """
+                UPDATE msg.message_queue_arc
+                SET msg_client_delivery_status = 'CALLBACK_FAILED',
+                    msg_retry_count = :counter,
+                    msg_last_callback_attempt = :attemptTime
+                WHERE msg_id = :msgId
+            """)
+    void markClientCallbackFailed(@Param("msgId") UUID msgId, @Param("counter") int counter, @Param("attemptTime") java.time.LocalDateTime attemptTime);
 
 
     @Modifying

@@ -20,6 +20,12 @@ public class MsgApiDto {
     private String msgSenderId;
 
     private String apiKey;
+
+    /**
+     * Optional client server URL. When supplied, the delivery report for this
+     * message is POSTed back to this URL by the {@code ClientDeliveryResponses} cron.
+     */
+    private String callbackUrl;
 }
 
 

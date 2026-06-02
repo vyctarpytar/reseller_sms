@@ -84,4 +84,10 @@ public class Account {
     private LocalDateTime accDeletedDate;
     private String accDeletedBy;
     private String accDeletedReason;
+
+    /**
+     * Timestamp of the last low-balance alert sent to the account admin.
+     * Used to throttle alerts to at most one per hour.
+     */
+    private LocalDateTime accLastLowBalAlert;
 }

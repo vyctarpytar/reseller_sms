@@ -79,4 +79,27 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
             select * from js_core.jsc_accounts where not exists(select 1 from js_core.api_key where acc_id = api_acc_id)
             """)
     List<Account> fetchAccountsWithoutApiKeys();
+
+
+    /**
+     * Active accounts whose balance is below {@code threshold} and that have not been
+     * alerted since {@code alertBefore} (i.e. due for a low-balance alert). Used by the
+     * {@code LowBalanceAlertCron} to throttle alerts to one per account per interval.
+     */
+    @Query(nativeQuery = true, value = """
+            select * from js_core.jsc_accounts
+            where acc_msg_bal <= :threshold
+              and acc_deleted_date is null
+              and (acc_last_low_bal_alert is null or acc_last_low_bal_alert <= :alertBefore)
+            """)
+    List<Account> findAccountsForLowBalanceAlert(@Param("threshold") BigDecimal threshold,
+                                                 @Param("alertBefore") java.time.LocalDateTime alertBefore);
+
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = """
+            update js_core.jsc_accounts set acc_last_low_bal_alert = :alertTime where acc_id = :accId
+            """)
+    void updateLowBalanceAlertTime(@Param("accId") UUID accId, @Param("alertTime") java.time.LocalDateTime alertTime);
 }

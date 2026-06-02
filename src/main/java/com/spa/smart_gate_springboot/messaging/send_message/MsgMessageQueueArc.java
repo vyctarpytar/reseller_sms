@@ -65,4 +65,17 @@ public class MsgMessageQueueArc {
     private String msgSourceIpAddress;
     private String msgRequestId;
 
+    /**
+     * Client server URL supplied via the API. When set, the delivery report for
+     * this message is POSTed to this URL by the {@code ClientDeliveryResponses} cron.
+     */
+    @Column(length = 1000)
+    private String msgCallbackUrl;
+
+    /**
+     * Timestamp of the last attempt to POST the delivery report to {@link #msgCallbackUrl}.
+     * Used to back off failed callbacks (retry at most once every 30 minutes).
+     */
+    private LocalDateTime msgLastCallbackAttempt;
+
 }
