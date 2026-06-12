@@ -115,6 +115,7 @@ public class LowBalanceAlertCron {
                 .msgSubMobileNo(mobile)
                 .msgCreatedDate(new Date())
                 .msgCreatedTime(String.valueOf(LocalDateTime.now()))
+                .msgCreatedByEmail("AUTO")
                 .build();
 
         // Goes through the normal send pipeline: balance is checked and charged there.
