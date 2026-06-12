@@ -30,6 +30,16 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Clear old build on VM
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            sudo mkdir -p /var/www/html/sms
+            sudo rm -rf /var/www/html/sms/*
+
       - name: Copy build to VM
         uses: appleboy/scp-action@v0.1.7
         with:

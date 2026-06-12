@@ -24,7 +24,17 @@ jobs:
       - name: Build JAR
         run: mvn clean package -DskipTests
 
-      - name: Copy JAR to EC2
+      - name: Prepare app dir on VM
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            sudo mkdir -p /opt/app
+            sudo chown -R $(whoami):$(whoami) /opt/app
+
+      - name: Copy JAR to VM
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VM_HOST }}
@@ -35,7 +45,7 @@ jobs:
           target: "/opt/app/"
 
 
-      - name: Restart App on EC2
+      - name: Restart App on VM
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VM_HOST }}
@@ -45,7 +55,7 @@ jobs:
             sudo systemctl restart sms-app
 
 
-      - name: Show last 25 lines of app logs
+      - name: Show last 25 lines of app logs on VM
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VM_HOST }}
@@ -55,7 +65,7 @@ jobs:
             sudo journalctl -u sms-app -n 25 --no-pager
   
 
-  #   sudo nano /etc/systemd/system/myapp.service
+  #   sudo nano /etc/systemd/system/sms-app.service
   #   sudo systemctl daemon-reload
   #   sudo systemctl restart sms-app
   #   sudo systemctl status sms-app
