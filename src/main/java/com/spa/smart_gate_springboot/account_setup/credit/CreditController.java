@@ -1,5 +1,6 @@
 package com.spa.smart_gate_springboot.account_setup.credit;
 
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.invoice.CreditInvoDto;
 import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceFilter;
 import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceService;
@@ -28,6 +29,7 @@ public class CreditController {
     private final CreditService creditService;
     private final UserService userService;
     private final InvoiceService invoiceService;
+    private final AccountService accountService;
 
     //logged in as top level
     @PostMapping("reseller")
@@ -97,10 +99,14 @@ public class CreditController {
 
     //logged in as reseller - show account credits
     @PostMapping("reseller-account")
-    public StandardJsonResponse getCreditHistoryAsAccountByReseller(@RequestBody CreditFilter creditFilter, HttpServletRequest request) {
+    public StandardJsonResponse getCreditHistoryAsAccountByReseller(@RequestBody CreditFilter creditFilter, HttpServletRequest request, @RequestParam(required = false) String account_id) {
         var user = userService.getCurrentUser(request);
 
         if (user.getLayer().equals(Layers.ACCOUNT)) creditFilter.setAccId(user.getUsrAccId());
+
+        // Drill-down: scope to the single account being viewed (ownership enforced).
+        UUID accScope = accountService.resolveAccountScope(user, account_id);
+        if (accScope != null) creditFilter.setAccId(accScope);
 
         if (creditFilter.getAccId() == null) {
             //show all accounts for reseller
@@ -110,10 +116,13 @@ public class CreditController {
     }
 
     @PostMapping("invoice-list")
-    public StandardJsonResponse getFilteredInvoice(HttpServletRequest request, @RequestBody InvoiceFilter invoiceFilter) {
+    public StandardJsonResponse getFilteredInvoice(HttpServletRequest request, @RequestBody InvoiceFilter invoiceFilter, @RequestParam(required = false) String account_id) {
         User user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) invoiceFilter.setInvoAccId(user.getUsrAccId());
         if (user.getLayer().equals(Layers.RESELLER)) invoiceFilter.setInvoResellerId(user.getUsrResellerId());
+        // Drill-down: scope invoices to the single account being viewed (ownership enforced).
+        UUID accScope = accountService.resolveAccountScope(user, account_id);
+        if (accScope != null) invoiceFilter.setInvoAccId(accScope);
         return invoiceService.getAllInvoices(invoiceFilter);
     }
 

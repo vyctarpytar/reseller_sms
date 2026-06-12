@@ -64,9 +64,12 @@ public class AccountControler {
     }
 
     @GetMapping("/balance")
-    public StandardJsonResponse getBalanceDto(HttpServletRequest request) {
+    public StandardJsonResponse getBalanceDto(HttpServletRequest request, @RequestParam(required = false) String account_id) {
         var user = userService.getCurrentUser(request);
-        return accountService.getBalanceDto(user.getUsrAccId());
+        // Drill-down: a reseller/TOP acting "as" an account sees that account's balance.
+        UUID accScope = accountService.resolveAccountScope(user, account_id);
+        UUID accId = accScope != null ? accScope : user.getUsrAccId();
+        return accountService.getBalanceDto(accId);
     }
 
     @GetMapping("without-sender-id")
