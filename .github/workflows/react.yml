@@ -1,4 +1,4 @@
-name: React Build and Deploy to VM
+name: React -  Build and Deploy to VM
 
 on:
   push:
