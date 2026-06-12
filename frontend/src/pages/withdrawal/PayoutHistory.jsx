@@ -70,7 +70,7 @@ function PayoutHistory() {
       render: (item) => {
         return (
           <div
-            className={`${item === 'FAILED' ? 'bg-[#FFA500]' : 'bg-darkGreen'}  text-[#FFf]  inline-block rounded-[5px] px-2 py-1 w-auto`}
+            className={`${item === 'FAILED' ? 'bg-[#FFA500]' : 'bg-primary'}  text-[#FFf]  inline-block rounded-[5px] px-2 py-1 w-auto`}
           >
             {item}
           </div>

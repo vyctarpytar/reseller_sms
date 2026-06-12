@@ -20,11 +20,12 @@ import {
   fetchTopBalance,
 } from "../features/menu/menuSlice";
 import { cashConverter, getSubdomain, numberWithCommas } from "../utils";
-import weiserLogo from "../assets/img/weiser-logo.png";
 import syncLogo from "../assets/img/sync-logo.png";
 import synctelLogo from "../assets/img/synctel-logo.jpeg";
 import futuresoftLogo from "../assets/img/futuresoft-logo.png";
 import HeaderCrumb from "./HeaderCrumb";
+import ResellerCrumb from "./ResellerCrumb";
+import CreditAddSelfModal from "../pages/credit/CreditAddSelfModal";
 
 export default function Header() {
   const { isLoggedIn, user } = useSelector((state) => state.auth);
@@ -37,6 +38,11 @@ export default function Header() {
   const [subdomain, setSubdomain] = useState("");
 
   const [open, setOpen] = useState(false);
+
+  const [isModalOpenSelf, setIsModalOpenSelf] = useState(false);
+  const showModalSelf = () => {
+    setIsModalOpenSelf(true);
+  };
 
   const handleRegister = () => {
     navigate("/signup-choose-account");
@@ -232,15 +238,15 @@ export default function Header() {
                   ? synctelLogo
                   : subdomain === "futuresoft"
                   ? futuresoftLogo
-                  : weiserLogo
+                  : syncLogo
               }
               alt="logo"
               className={`${
                 subdomain === "synqtel" ? "h-[5vh]" : "h-[7vh]"
               } object-contain`}
             />
-            {user?.layer === "TOP" && subdomain === "smartgate"
-              ? "Smartgate"
+            {user?.layer === "TOP" && subdomain === "synqafrica"
+              ? "Synq Africa"
               : balanceHeader?.accName}
           </span>
           {user?.layer === "TOP" && (
@@ -248,56 +254,91 @@ export default function Header() {
               <HeaderCrumb />
             </div>
           )}
+          {user?.layer === "RESELLER" && (
+            <div className="flex items-center ml-10">
+              <ResellerCrumb />
+            </div>
+          )}
         </div>
 
         {user?.layer != "TOP" && (
-          <div className="lg:flex hidden gap-x-5">
+          <div className="lg:flex hidden items-center gap-x-3">
             {user?.layer != "RESELLER" && (
               <>
-                <div
-                  className={`${
-                    balanceHeader?.accStatus === "OUT_OF_CREDIT"
-                      ? "bg-red"
-                      : subdomain === "synqafrica" ||
-                        subdomain === "synqtel" ||
-                        subdomain === "futuresoft"
-                      ? "bg-syncBtn"
-                      : "bg-darkGreen"
-                  } px-3 py-2 text-white text-18 font-dmSans`}
-                >
-                  Sms Bal: {cashConverter(balanceHeader?.accBalance)}
-                </div>
-                <div
-                  className={`${
-                    balanceHeader?.accStatus === "OUT_OF_CREDIT"
-                      ? "bg-red"
-                      : subdomain === "synqafrica" ||
-                        subdomain === "synqtel" ||
-                        subdomain === "futuresoft"
-                      ? "bg-syncBtn"
-                      : "bg-darkGreen"
-                  } px-3 py-2 text-white text-[18px] font-dmSans`}
-                >
-                  Unit: {numberWithCommas(balanceHeader?.accUnits)}
-                </div>
+                {(() => {
+                  const out = balanceHeader?.accStatus === "OUT_OF_CREDIT";
+                  return (
+                    <>
+                      <div
+                        className={`flex flex-col rounded-xl border bg-white px-4 py-1.5 ${
+                          out ? "border-red/40" : "border-border"
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase tracking-wider text-muted leading-none">
+                          Sms Balance
+                        </span>
+                        <span
+                          className={`text-[16px] font-semibold leading-tight ${
+                            out ? "text-red" : "text-primary"
+                          }`}
+                        >
+                          {cashConverter(balanceHeader?.accBalance)}
+                        </span>
+                      </div>
+                      <div
+                        className={`flex flex-col rounded-xl border bg-white px-4 py-1.5 ${
+                          out ? "border-red/40" : "border-border"
+                        }`}
+                      >
+                        <span className="text-[10px] uppercase tracking-wider text-muted leading-none">
+                          Units
+                        </span>
+                        <span
+                          className={`text-[16px] font-semibold leading-tight ${
+                            out ? "text-red" : "text-primary"
+                          }`}
+                        >
+                          {numberWithCommas(balanceHeader?.accUnits)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </>
             )}
 
             {(user?.layer === "RESELLER" || user?.layer === "TOP") && (
               <div
-                className={`${
+                className={`flex flex-col rounded-xl border bg-white px-4 py-1.5 ${
                   balanceHeader?.rsAllocatableMsgBal < 2000
-                    ? "bg-red"
-                    : subdomain === "synqafrica" ||
-                      subdomain === "synqtel" ||
-                      subdomain === "futuresoft"
-                    ? "bg-syncBtn"
-                    : "bg-darkGreen"
-                } px-3 py-2 text-white text-[18px] font-dmSans`}
+                    ? "border-red/40"
+                    : "border-border"
+                }`}
               >
-                Units Balance:{" "}
-                {numberWithCommas(balanceHeader?.rsAllocatableMsgBal)}
+                <span className="text-[10px] uppercase tracking-wider text-muted leading-none">
+                  Units Balance
+                </span>
+                <span
+                  className={`text-[16px] font-semibold leading-tight ${
+                    balanceHeader?.rsAllocatableMsgBal < 2000
+                      ? "text-red"
+                      : "text-primary"
+                  }`}
+                >
+                  {numberWithCommas(balanceHeader?.rsAllocatableMsgBal)}
+                </span>
               </div>
+            )}
+
+            {user?.layer === "RESELLER" && (
+              <Tooltip placement="bottom" title="Load Self Credit">
+                <button
+                  onClick={showModalSelf}
+                  className="flex items-center justify-center h-[40px] w-[40px] rounded-xl bg-[#69472E] text-white text-[22px] leading-none hover:bg-[#7c5638] transition-colors"
+                >
+                  +
+                </button>
+              </Tooltip>
             )}
           </div>
         )}
@@ -355,6 +396,12 @@ export default function Header() {
           </Dropdown>
         </div>
       </div>
+
+      <CreditAddSelfModal
+        isModalOpen={isModalOpenSelf}
+        setIsModalOpen={setIsModalOpenSelf}
+        prodd={""}
+      />
     </>
   );
 }

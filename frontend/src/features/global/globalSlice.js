@@ -3,7 +3,7 @@ import axios from "axios";
 import axiosInstance from "../../instance";
 import qs from "qs";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
   glbLoading: false,

@@ -174,7 +174,7 @@ function ResellersList() {
                           <div className={`w-[3.875rem] h-[3.875rem] flex justify-center items-center
                           ${item?.rsStatus === "DELETED"
                                 ? "bg-red"
-                                : "bg-darkGreen"
+                                : "bg-primary"
                             }  
                              rounded-full`}>
                             <img src={svg23} alt={svg23} />
@@ -211,7 +211,7 @@ function ResellersList() {
                       <div className="bg-[#f4f4f5] p-[.875rem] flex flex-col  h-[4rem] justify-center">
                         <div className={`reseller_card_title !text-[16px]  ${
                             item?.rsStatus === "ACTIVE"
-                              ? "!text-[#388E3C]"
+                              ? "!text-[var(--brand)]"
                               : item?.rsStatus === "SUSPENDED" ||
                                 item?.rsStatus === "DELETED"
                               ? "!text-[#ff0000]"
@@ -234,7 +234,7 @@ function ResellersList() {
             onClick={handleAdd}
           >
             <div className="flex items-center gap-x-5  p-[.875rem]">
-              <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-darkGreen rounded-full">
+              <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-primary rounded-full">
                 <img src={svg25} alt={"svg25"} />
               </div>
 

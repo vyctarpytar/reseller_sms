@@ -242,6 +242,14 @@ public class QueueMsgService {
 
     }
 
+    // Comma-joins the bucket status list for the native `msg_status = ANY(string_to_array(...))` clause,
+    // or null when no bucket filter is set (so the query falls through to "match all statuses").
+    private String msgStatusCsv(FilterDto filterDto) {
+        List<String> statuses = filterDto.getMsgStatusList();
+        if (statuses == null || statuses.isEmpty()) return null;
+        return String.join(",", statuses);
+    }
+
     public StandardJsonResponse findByMessagesArcFilters(FilterDto filterDto) {
         if (filterDto.getLimit() == 0) filterDto.setLimit(10);
         filterDto.setSortColumn("msg_created_date");
@@ -256,7 +264,7 @@ public class QueueMsgService {
 
         log.info("msg date from: {} to: {} ", filterDto.getMsgCreatedFrom(), filterDto.getMsgCreatedTo());
 
-        Page<MsgMessageQueueArc> list = arcRepository.findByMessagesArcFilters(filterDto.getMsgAccId(), filterDto.getMsgResellerId(), filterDto.getMsgGrpId(), filterDto.getMsgCreatedDate(), filterDto.getMsgStatus(), filterDto.getMsgSubmobileNo(), filterDto.getMsgMessage(), filterDto.getMsgSenderId(), filterDto.getMsgCreatedFrom(), filterDto.getMsgCreatedTo(), pageable);
+        Page<MsgMessageQueueArc> list = arcRepository.findByMessagesArcFilters(filterDto.getMsgAccId(), filterDto.getMsgResellerId(), filterDto.getMsgGrpId(), filterDto.getMsgCreatedDate(), filterDto.getMsgStatus(), msgStatusCsv(filterDto), filterDto.getMsgSubmobileNo(), filterDto.getMsgMessage(), filterDto.getMsgSenderId(), filterDto.getMsgCreatedFrom(), filterDto.getMsgCreatedTo(), pageable);
 
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setData("result", list.getContent(), resp);
@@ -357,6 +365,7 @@ public class QueueMsgService {
                         filterDto.getMsgGrpId(),
                         filterDto.getMsgCreatedDate(),
                         filterDto.getMsgStatus(),
+                        msgStatusCsv(filterDto),
                         filterDto.getMsgSubmobileNo(),
                         filterDto.getMsgMessage(),
                         filterDto.getMsgSenderId(),

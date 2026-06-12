@@ -4,7 +4,7 @@ import axios from "axios";
 import axiosInstance from "../../instance";
 import { BASE_URL } from "../../config/constant";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
   authLoading: false,

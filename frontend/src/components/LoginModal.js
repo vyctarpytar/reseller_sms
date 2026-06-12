@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { Form, Input, Modal, Spin } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUser, login, setToken } from "../features/auth/authSlice";
+import { login, setToken } from "../features/auth/authSlice";
 import { customToast } from "../utils";
 import { fetchMenu } from "../features/menu/menuSlice";
 import toast from "react-hot-toast";

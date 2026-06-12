@@ -152,7 +152,7 @@ function CodesRequestList() {
         <div className="product_sub flex lg:flex-row flex-col items-center mt-[1.5rem] !text-[18px]">
           You can assign account to unassigned request. &nbsp;{" "}
           <span
-            className="text-[#388E3C] cursor-pointer "
+            className="text-[var(--brand)] cursor-pointer "
             onClick={handleRequestProduct}
           >
             Request a product.

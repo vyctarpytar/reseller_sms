@@ -13,6 +13,7 @@ import { Skeleton, Spin, Table, Tooltip } from "antd";
 import FilterStatusModal from "./FilterStatusModal";
 import svg38 from "../../../assets/svg/svg38.svg";
 import { downloadExcel } from "../../../features/save/saveSlice";
+import ExportExcelButton from "../../../components/ExportExcelButton";
 import toast from "react-hot-toast";
 
 function StatusSummary() {
@@ -139,20 +140,7 @@ function StatusSummary() {
           )}
         </div>
         <div className="flex justify-end item-center">
-          <Tooltip placement="top" title={"Download Excel"}>
-            {saving ? (
-              <Spin className="sms-spin" />
-            ) : (
-              <button
-                disabled={saving}
-                onClick={handleClick}
-                className="flex items-center"
-              >
-                <MaterialIcon size={45} color="#00B050" icon="article" />
-                <span>Export to excel</span>
-              </button>
-            )}
-          </Tooltip>
+          <ExportExcelButton onClick={handleClick} loading={saving} />
         </div>
       </div>
       {loading ? (

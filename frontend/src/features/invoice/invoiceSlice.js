@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios"; 
 import axiosInstance from "../../instance";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
 	loading: false,
@@ -25,6 +25,24 @@ export const fetchInvoices = createAsyncThunk('saveSlice/fetch/saved/sms', async
 		return rejectWithValue(error.response.data);
 	}
   });
+
+// Fetches a branded invoice/receipt PDF as a Blob (for in-app preview + download).
+// type: "invoice" | "receipt". Returns the Blob on success.
+export const fetchInvoiceDocument = createAsyncThunk(
+	"invoice/fetchDocument",
+	async ({ invoId, type }, { rejectWithValue }) => {
+		const path = type === "receipt" ? "receipt-pdf" : "invoice-pdf";
+		try {
+			const response = await axiosInstance.get(
+				`${url}/api/v2/invoice/${invoId}/${path}`,
+				{ responseType: "blob" }
+			);
+			return response.data;
+		} catch (error) {
+			return rejectWithValue(error?.response?.data);
+		}
+	}
+);
 
   export const fetchinvoDistinctStatus = createAsyncThunk(
 	"resellerSlice/fetchinvoDistinctStatus",

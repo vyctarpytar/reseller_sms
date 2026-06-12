@@ -86,7 +86,7 @@ function InProgressTable() {
     {
       key: "0",
       label: (
-        <div className=" mb-1 flex items-center text-[16px] font-sans justify-center  text-darkGreen"
+        <div className=" mb-1 flex items-center text-[16px] font-sans justify-center  text-primary"
         onClick={handleRequestView}>
           View
         </div>
@@ -97,7 +97,7 @@ function InProgressTable() {
       key: "1",
       label: (
         <div
-          className=" flex items-center text-[16px] font-sans justify-center text-darkGreen" 
+          className=" flex items-center text-[16px] font-sans justify-center text-primary" 
         >
          Edit
         </div>

@@ -4,24 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Multi-tenant **reseller SMS platform** front-end (React 18 + Create React App). The `package.json` name is `ezambia`; the product is white-labeled per reseller (logos, side images, and theming swap based on the subdomain — see `getSubdomain()` and the `synctel`/`futuresoft`/`sync` asset sets in `src/assets/img/`). The backend is a Java/SMS gateway exposing `/api/v1` and `/api/v2` endpoints; this repo is UI only.
+Multi-tenant **reseller SMS platform** front-end (React 18 + Vite, migrated from Create React App). The `package.json` name is `synqafrica`; the product is white-labeled per reseller (logos, side images, and theming swap based on the subdomain — see `getSubdomain()` and the `synctel`/`futuresoft`/`sync` asset sets in `src/assets/img/`). The backend is a Java/SMS gateway exposing `/api/v1` and `/api/v2` endpoints; this repo is UI only.
 
 ## Commands
 
 ```bash
-npm start          # dev server on http://localhost:3000 (CRA)
-npm run build      # production build to /build
-npm test           # CRA/Jest watch mode (Testing Library)
-npm test -- --watchAll=false src/App.test.js   # run a single test file, no watch
+npm run dev        # dev server on http://localhost:3000 (Vite); npm start is an alias
+npm run build      # production build to /build (Vite, outDir overridden to build)
+npm run preview    # serve the built /build folder to smoke-test before deploy
 ```
 
-There is no separate lint script — ESLint runs through `react-scripts` (config `react-app`, `react-app/jest` in `package.json`) and surfaces in the dev server / build output.
+There is no lint or test script (the CRA `react-scripts test`/Jest setup was dropped in the Vite migration; CI only builds). `vite.config.js` carries the migration-specific config: a `transformWithEsbuild` plugin so JSX is allowed in `.js` files, and `assetsInclude` for `.xlsx`/`.docx` imports.
 
 ### Environment
 
-`.env` (gitignored, already present locally) holds:
-- `REACT_APP_API_BASE_URL` — backend base URL; read as `process.env.REACT_APP_API_BASE_URL` in every slice. **This is the source of truth for the API host**, not `src/config/constant.js` (whose `BASE_URL` constant is stale/unused by the axios layer).
-- `REACT_APP_GOOGLE`, `NODE_ENV`.
+`.env` (gitignored, already present locally) holds Vite env vars (must use the `VITE_` prefix, read via `import.meta.env`):
+- `VITE_API_BASE_URL` — backend base URL; read as `import.meta.env.VITE_API_BASE_URL` in every slice. **This is the source of truth for the API host**, not `src/config/constant.js` (whose `BASE_URL` constant is stale/unused by the axios layer). Note: CI injects no `.env`, so the deployed bundle ships with this `undefined` and axios falls back to same-origin (nginx proxies the API).
+- `VITE_GOOGLE`.
 
 ## Architecture
 

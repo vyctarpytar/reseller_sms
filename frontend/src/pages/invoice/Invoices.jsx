@@ -1,19 +1,23 @@
-import { Badge, Dropdown, Skeleton, Table, Tooltip } from "antd";
-import React, { useEffect, useRef, useState } from "react";
+import { Dropdown, Skeleton, Spin, Table } from "antd";
+import React, { useEffect, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import MaterialIcon from "material-icons-react";
-import { addSpaces, cashConverter, dateForHumans } from "../../utils";
+import { addSpaces, cashConverter, customToast, dateForHumans } from "../../utils";
 import noCon from "../../assets/img/noCon.png";
 import svg38 from "../../assets/svg/svg38.svg";
 import FilterModal from "./FilterModal";
-import { fetchInvoices } from "../../features/invoice/invoiceSlice";
+import {
+  fetchInvoices,
+  fetchInvoiceDocument,
+} from "../../features/invoice/invoiceSlice";
 import StatusBadge from "../../components/StatusBadge";
+import InvoiceDocModal from "./InvoiceDocModal";
+
+const RECEIPTABLE = ["PAID", "PARTIALLY_PAID"];
 
 function Invoices() {
-  const [notOpen, setnotOpen] = useState(false);
-  const { sentSmsData, sentSmsCount } = useSelector((state) => state.save);
   const { invoiceData, invoiceCount, loading } = useSelector(
     (state) => state.inv
   );
@@ -22,13 +26,50 @@ function Invoices() {
   const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({});
-  const handleOpenChange = () => {
-    setnotOpen(false);
-  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const showModal = () => {
     setIsModalOpen(true);
+  };
+
+  // Branded invoice / receipt preview + download
+  const [docLoadingKey, setDocLoadingKey] = useState(null);
+  const [docModal, setDocModal] = useState({
+    open: false,
+    url: null,
+    title: "",
+    fileName: "",
+  });
+
+  const openDoc = async (record, type) => {
+    setDocLoadingKey(`${record?.invoId}-${type}`);
+    try {
+      const res = await dispatch(
+        fetchInvoiceDocument({ invoId: record?.invoId, type })
+      );
+      if (res?.payload instanceof Blob) {
+        if (docModal.url) URL.revokeObjectURL(docModal.url);
+        const label = type === "receipt" ? "Receipt" : "Invoice";
+        setDocModal({
+          open: true,
+          url: URL.createObjectURL(res.payload),
+          title: `${label} · ${record?.invoCode ?? ""}`,
+          fileName: `${type}-${record?.invoCode ?? record?.invoId}.pdf`,
+        });
+      } else {
+        customToast({
+          content: `Could not generate the ${type}. Please try again.`,
+          bdColor: "error",
+        });
+      }
+    } finally {
+      setDocLoadingKey(null);
+    }
+  };
+
+  const closeDoc = () => {
+    if (docModal.url) URL.revokeObjectURL(docModal.url);
+    setDocModal({ open: false, url: null, title: "", fileName: "" });
   };
 
   const columns = [
@@ -39,15 +80,8 @@ function Invoices() {
     {
       title: "Amount",
       dataIndex: "invoAmount",
+      render: (value) => <div>{cashConverter(value)}</div>,
     },
-    // {
-    //   title: "Tax Rate",
-    //   dataIndex: "invoTaxRate",
-    // },
-    // {
-    //   title: "Amount After Tax",
-    //   dataIndex: "invoAmountAfterTax",
-    // },
     {
       title: "Pay Mobile",
       render: (item) => {
@@ -62,18 +96,58 @@ function Invoices() {
     {
       title: "Created Date",
       dataIndex: "invoCreatedDate",
+      render: (value) => <div>{dateForHumans(value)}</div>,
     },
     {
       title: "Due Date",
       dataIndex: "invoDueDate",
+      render: (value) => <div>{dateForHumans(value)}</div>,
     },
     {
       title: "Status",
-      render: (item) => (
+      align: "center",
+      render: (_, record) => (
         <div className="flex items-center justify-center">
-          <StatusBadge value={item?.invoStatus} />
+          <StatusBadge value={record?.invoStatus} />
         </div>
       ),
+    },
+    {
+      title: "Document",
+      align: "center",
+      render: (_, record) => {
+        const receiptable = RECEIPTABLE.includes(
+          String(record?.invoStatus).toUpperCase()
+        );
+        const busy =
+          docLoadingKey && docLoadingKey.startsWith(`${record?.invoId}-`);
+        const items = [
+          { key: "invoice", label: "Preview invoice" },
+          ...(receiptable
+            ? [{ key: "receipt", label: "Preview receipt" }]
+            : []),
+        ];
+        return (
+          <Dropdown
+            trigger={["click"]}
+            disabled={!!busy}
+            menu={{ items, onClick: ({ key }) => openDoc(record, key) }}
+          >
+            <button
+              type="button"
+              className="btn-ghost px-3 py-1"
+              onClick={(e) => e.preventDefault()}
+            >
+              {busy ? (
+                <Spin size="small" />
+              ) : (
+                <MaterialIcon icon="picture_as_pdf" color="#69472E" />
+              )}
+              <MaterialIcon icon="expand_more" color="#64748b" />
+            </button>
+          </Dropdown>
+        );
+      },
     },
   ];
 
@@ -152,7 +226,7 @@ function Invoices() {
             <Skeleton />
           ) : (
             <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
-              {sentSmsData && sentSmsData?.length > 0 ? (
+              {invoiceData && invoiceData?.length > 0 ? (
                 <Table
                   className="w-full"
                   scroll={{
@@ -161,7 +235,7 @@ function Invoices() {
                   pagination={{
                     position: ["bottomCenter"],
                     current: pageIndex + 1,
-                    total: sentSmsCount,
+                    total: invoiceCount,
                     pageSize: pageSize,
                     onChange: (page, size) => {
                       setPageIndex(page - 1);
@@ -173,7 +247,7 @@ function Invoices() {
                   }}
                   rowKey={(record) => record?.invoId}
                   columns={columns}
-                  dataSource={sentSmsData}
+                  dataSource={invoiceData}
                   loading={loading}
                 />
               ) : (
@@ -194,6 +268,14 @@ function Invoices() {
         setIsModalOpen={setIsModalOpen}
         formData={formData}
         setFormData={setFormData}
+      />
+
+      <InvoiceDocModal
+        open={docModal.open}
+        onClose={closeDoc}
+        url={docModal.url}
+        title={docModal.title}
+        fileName={docModal.fileName}
       />
     </>
   );

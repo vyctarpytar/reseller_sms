@@ -8,47 +8,38 @@ function InsideHeader({ title, subtitle, back,handleGoBack }) {
   };
   return (
     <> 
-      <div className="w-[100%] h-auto bg-lightBlue  py-[25px] px-10 lg:flex hidden justify-between items-center">
-        <div className="flex flex-col">
-          <span className="font-bold text-[40px] text-[#141414] dash-title leading-[60.75px]">
-            {title}
-          </span>
-          <span className="text-black21 text-[18px] font-normal leading-[24px] font-dmSans">
-            {subtitle}
-          </span>
-        </div>
-
-        {back && (
-          <div className="flex items-center">
+      <div className="w-[100%] h-auto bg-white border-b border-[#ECE9E4] pt-7 pb-4 px-10 lg:flex hidden justify-between items-end">
+        <div className="flex items-center gap-x-4">
+          {back && (
             <button
               type="button"
               onClick={handleGoBack ? handleGoBack : handleGoBackDefault}
-              className="bg-transparent flex items-center"
+              className="bg-transparent flex justify-center items-center rounded-full w-[38px] h-[38px] border border-[#ECE9E4] hover:bg-[#F7F5F2] transition-colors"
+              aria-label="Go back"
             >
-              <div className="flex justify-center items-center rounded-full w-[40px] h-[40px] p-2 bg-[#EDF8FF]">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="24"
-                  viewBox="0 0 28 24"
-                  fill="none"
-                >
-                  <path
-                    d="M17.7692 18L11.0469 12L17.7692 6"
-                    stroke="#147CBC"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-              <span className="font-bold text-[22px] text-[#222222] font-dmSans">
-                Go Back
-              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 28 24" fill="none">
+                <path
+                  d="M17.7692 18L11.0469 12L17.7692 6"
+                  stroke="#69472E"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
+          )}
+          <div className="flex flex-col gap-1">
+            <span className="font-bold text-[28px] text-[#1A1A1A] dash-title leading-tight tracking-tight">
+              {title}
+            </span>
+            {subtitle && (
+              <span className="text-[#8A8178] text-[15px] font-normal leading-[20px] font-dmSans">
+                {subtitle}
+              </span>
+            )}
           </div>
-        )}
-      </div> 
+        </div>
+      </div>
     </>
   );
 }

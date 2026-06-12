@@ -425,7 +425,7 @@ const FilterModal = ({
               >
                 <Button
                   type="btn"
-                  className="flex items-center w-[150px] bg-[#A3A2A7] text-white h-[45px] py-3 px-2
+                  className="flex items-center w-[150px] bg-[#69472E] text-white h-[45px] py-3 px-2
                  rounded-[10px] gap-x-1 mb-10 mt-5 !text-lexendS text-[16px] font-[500]"
                 >
                   <img src={svg25} alt="add-icon" />

@@ -7,6 +7,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.spa.smart_gate_springboot.errorhandling.ApplicationExceptionHandler;
+
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.HashMap;
@@ -43,6 +45,17 @@ public class GlobalExceptionHandler {
         public ResourceNotFoundException(String message) {
             super(message);
         }
+    }
+
+    // Surface the thrown message verbatim with a 404 (no "Backend Error" prefix),
+    // instead of letting it fall through to the catch-all RuntimeException handler (500).
+    @ExceptionHandler(ApplicationExceptionHandler.resourceNotFoundException.class)
+    public ResponseEntity<StandardJsonResponse> handleApplicationResourceNotFound(ApplicationExceptionHandler.resourceNotFoundException ex) {
+        StandardJsonResponse response = new StandardJsonResponse();
+        response.setSuccess(false);
+        response.setMessage("message", ex.getMessage(), response);
+        response.setStatus(HttpStatus.NOT_FOUND.value());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler( AuthenticationException.class)

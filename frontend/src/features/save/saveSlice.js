@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../instance';
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
 	saving: false,
@@ -9,6 +9,8 @@ const initialState = {
 	sentSmsData:[],
 	loadingSms: false,
 	sentSmsCount:0,
+	sentSmsSummary:null,
+	loadingSummary:false,
 	senderIdData:[],
 	senderIdCount:0,
 	loadingId:false,
@@ -144,6 +146,26 @@ export const fetchSavedSms = createAsyncThunk('saveSlice/fetch/saved/sms', async
 		return rejectWithValue(error.response.data);
 	}
   });
+
+  // Server-aggregated summary for the Sent SMS screen. Hits the same dashboard
+  // aggregation endpoint (api/v2/dash) so totals stay accurate and account-scoped
+  // (the axios interceptor injects reseller_id/account_id) instead of summing a page.
+  export const fetchSentSmsSummary = createAsyncThunk(
+	'saveSlice/fetch/sent-sms/summary',
+	async (data, { rejectWithValue }) => {
+		let saveUrl = data.url;
+		delete data.url;
+		try {
+			const response = await axiosInstance.post(`${url}/${saveUrl}`, data);
+			if (!response.data.success) {
+				return rejectWithValue(response.data);
+			}
+			return response.data;
+		} catch (error) {
+			return rejectWithValue(error.response?.data);
+		}
+	}
+  );
 
   export const downloadExcel = createAsyncThunk(
 	"sms/downloadExcel",
@@ -287,6 +309,17 @@ export const saveSlice = createSlice({
 				state.loadingSms = false;
 				state.sentSmsData= action.payload?.data?.result;
 				state.sentSmsCount =  action.payload?.total
+			})
+			.addCase(fetchSentSmsSummary.pending, (state) => {
+				state.loadingSummary = true;
+			})
+			.addCase(fetchSentSmsSummary.fulfilled, (state, action) => {
+				state.loadingSummary = false;
+				state.sentSmsSummary = action.payload?.data?.result;
+			})
+			.addCase(fetchSentSmsSummary.rejected, (state) => {
+				state.loadingSummary = false;
+				state.sentSmsSummary = null;
 			})
 			.addCase(fetchSavedSms.rejected, (state) => {
 				state.loadingSms = false;

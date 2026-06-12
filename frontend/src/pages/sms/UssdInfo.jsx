@@ -14,7 +14,7 @@ import uplooadSimple from "../../assets/svg/UploadSimple.svg";
 import { fetchNewProductRequest } from "../../features/product-request/productRequestSlice";
 
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 const { TextArea } = Input;
 function UssdInfo({ next, prev }) {
   const [form] = Form.useForm();
@@ -411,7 +411,7 @@ function UssdInfo({ next, prev }) {
                 {fileUrl && (
                   <div className="flex justify-between items-center">
                     <div className="flex items-center mt-[.5rem]">
-                      <CloudUploadOutlined className="text-2xl text-[#388E3C]" />
+                      <CloudUploadOutlined className="text-2xl text-[var(--brand)]" />
                       <span className="label_1 ml-[.5rem] w-full truncate">
                         {fileUrl?.split("_").pop()}
                       </span>

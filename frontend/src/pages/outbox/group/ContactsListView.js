@@ -115,7 +115,7 @@ export default function ContactsListView({ handleGraduateOption }) {
       label: (
         <Link
           onClick={handleEdit}
-          className="flex  text-[16px] font-sans  !text-darkGreen"
+          className="flex  text-[16px] font-sans  !text-primary"
         >
           Edit
         </Link>
@@ -127,7 +127,7 @@ export default function ContactsListView({ handleGraduateOption }) {
       label: (
         <div
           onClick={showModalDelete}
-          className="flex  text-[16px] font-sans  !text-darkGreen"
+          className="flex  text-[16px] font-sans  !text-primary"
         >
           Remove
         </div>

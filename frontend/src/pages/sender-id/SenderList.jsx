@@ -108,7 +108,7 @@ function SenderList() {
       render: (item) => (
         <>
           <button onClick={()=>setProdd(item)}>
-            <div className="text-darkGreen" onClick={showModalPermission}>
+            <div className="text-primary" onClick={showModalPermission}>
               <Tooltip title="Assign Sender ID">
               <img src={svg27} alt="svg27"/>
               </Tooltip>
@@ -183,7 +183,7 @@ function SenderList() {
         </div> 
             <div className="w-[200px]">
             <button
-              className="cstm-btn   !bg-darkGreen   flex items-center gap-x-3"
+              className="cstm-btn   !bg-primary   flex items-center gap-x-3"
               onClick={showModalAdd}
             >
               Add Sender ID

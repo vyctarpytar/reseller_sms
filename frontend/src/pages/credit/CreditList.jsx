@@ -106,7 +106,7 @@ function CreditList() {
           {/* <div className=" flex items-center gap-x-5">
             <div className="w-[250px]">
               <button
-                className="cstm-btn !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3"
+                className="cstm-btn !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3"
                 onClick={showModal}
               >
                 <img src={svg30} alt="svg30" />
@@ -116,7 +116,7 @@ function CreditList() {
             {user?.layer === "RESELLER" && (
               <div className="w-[250px]">
                 <button
-                  className="cstm-btn !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3"
+                  className="cstm-btn !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3"
                   onClick={showModalSelf}
                 >
                   <img src={svg30} alt="svg30" />

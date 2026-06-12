@@ -19,6 +19,7 @@ import {
 import toast from "react-hot-toast";
 import useModalToggle from "../../custom_hooks/useModalToggle";
 import ConfirmModal from "../../components/ConfirmModal";
+import StatusBadge from "../../components/StatusBadge";
 import RescheduleModal from "./RescheduleModal";
 
 function ScheduledSmsList() {
@@ -132,25 +133,11 @@ function ScheduledSmsList() {
 
     {
       title: "Status",
-      render: (item) => {
-        return (
-          <div
-            className={`${  item?.schStatus == "SENT"
-                ? "text-[#388E3C]"
-                : item?.schStatus == "PENDING"
-                ? "text-[#ffa500]"
-                : item?.schStatus == "DISABLED"
-                ? "text-[#ff0000]"
-                : item?.schStatus == "DeliveryImpossible"
-                ? "text-[#808080]"
-                : "text-blk14"
-            }  
-         font-[700] flex items-center justify-center text-center`}
-          >
-            {item?.schStatus}
-          </div>
-        );
-      },
+      render: (item) => (
+        <div className="flex items-center justify-center">
+          <StatusBadge value={item?.schStatus} />
+        </div>
+      ),
     },
     {
   title: "Actions",
@@ -213,7 +200,7 @@ function ScheduledSmsList() {
 
   return (
     <>
-      <div className="w-full overflow-y-scroll h-full">
+      <div className="w-full overflow-y-scroll h-full bg-surface">
         <InsideHeader
           title="Scheduled SMS"
           subtitle="This is a list of all sms you have scheduled"
@@ -227,7 +214,7 @@ function ScheduledSmsList() {
                 {user?.layer === "ACCOUNT" && (
                   <div className={`w-[250px]`}>
                     <button
-                      className={`cstm-btn  !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3`}
+                      className={`cstm-btn  !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3`}
                       onClick={handleSendSms}
                     >
                       <img src={svg32} alt="svg32" />
@@ -270,10 +257,10 @@ function ScheduledSmsList() {
           {loadingSms ? (
             <Skeleton />
           ) : (
-            <div>
+            <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
               {scheduledSmsData && scheduledSmsData?.length > 0 ? (
                 <Table
-                  className="mt-[1.31rem] w-full mb-10"
+                  className="w-full"
                   scroll={{
                     // x: "max-content",
                     x: "auto",
@@ -297,11 +284,14 @@ function ScheduledSmsList() {
                   loading={loadingSms}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center mt-10">
-                  <img src={noCon} alt="noCon" />
-                  <span className="text-black21 text-[18px] font-normal leading-[24px] font-dmSans">
-                    No Sms Found
-                  </span>
+                <div className="card flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto my-10">
+                  <img src={noCon} alt="" className="h-28 w-28 object-contain opacity-90" />
+                  <h3 className="mt-5 text-lg font-medium text-primary">
+                    No scheduled SMS yet
+                  </h3>
+                  <p className="mt-2 text-sm text-muted">
+                    Messages you schedule will appear here.
+                  </p>
                 </div>
               )}
             </div>

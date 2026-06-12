@@ -14,7 +14,7 @@ import uplooadSimple from "../../assets/svg/UploadSimple.svg";
 import { formatImgPath, formatPath } from "../../utils";
 import { fetchNewProductRequest } from "../../features/product-request/productRequestSlice";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 const { TextArea } = Input;
 function ProductInfo({ next, prev }) {
   const [form] = Form.useForm();

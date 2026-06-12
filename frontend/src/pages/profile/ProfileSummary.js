@@ -28,7 +28,7 @@ function ProfileSummary() {
           <div className="h-[73.03px] w-[1px] ml-[43px] border border-[#BDBDBD] lg:block hidden"></div>
           <div className="flex flex-col lg:ml-[60px] ml-0">
             <span className="typography_profile">{userProfile?.firstname}</span>
-            <div className="mt-[8px] bg-[#388E3C] h-[35px] w-[86px] px-4 py-3 rounded-[4px] flex items-center justify-center text-white">
+            <div className="mt-[8px] bg-[var(--brand)] h-[35px] w-[86px] px-4 py-3 rounded-[4px] flex items-center justify-center text-white">
               {userProfile?.layer}
             </div>
           </div>

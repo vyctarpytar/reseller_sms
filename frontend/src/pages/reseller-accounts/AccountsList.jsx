@@ -87,6 +87,26 @@ function AccountsList() {
   };
 
   const settingItems = [
+    ...(user?.layer !== "ACCOUNT"
+      ? [
+          {
+            key: "open",
+            label: (
+              <Link
+                className="flex gap-x-[.75rem] items-center py-[.5rem]"
+                onClick={() => handleRequest(prodd)}
+              >
+                <img src={svg23} alt="svg23" className="w-4 h-4" />
+                <span className="whitespace-nowrap">Open account</span>
+              </Link>
+            ),
+          },
+          {
+            key: "divider-open",
+            type: "divider",
+          },
+        ]
+      : []),
     {
       key: "1",
       label: (
@@ -143,12 +163,16 @@ function AccountsList() {
     showModal();
   };
 
-  const handleRequest = async (item) => {
-    // if (user?.layer === "ACCOUNT") {
-    // } else {
-    //   await dispatch(setResellerId(item));
-    //   await navigate(-1);
-    // }
+  // Drill into an account ("navigate as that account"): scope every
+  // subsequent API call to it by setting selectedAccount, then let
+  // DashboardMain route to the account-level dashboard. Mirrors the
+  // TOP-level drill in HeaderCrumb.handleAccClick.
+  const handleRequest = async (account) => {
+    if (user?.layer === "ACCOUNT") return;
+    if (account?.accStatus === "DELETED") return;
+    await localStorage.setItem("selectedAccount", account?.accId);
+    await localStorage.setItem("selectedAccountName", account?.accName);
+    await navigate("/dashboard-main");
   };
 
   useEffect(() => {
@@ -216,7 +240,7 @@ function AccountsList() {
                       <div className="flex justify-between p-[.875rem]">
                         <div
                           className="flex items-center gap-x-5"
-                          onClick={() => handleRequest(item?.accId)}
+                          onClick={() => handleRequest(item)}
                         >
                           <div
                             className={`w-[3.875rem] h-[3.875rem] flex justify-center items-center ${
@@ -224,7 +248,7 @@ function AccountsList() {
                                 ? "bg-[#ffa500]"
                                 : item?.accStatus === "DELETED"
                                 ? "bg-red"
-                                : "bg-darkGreen"
+                                : "bg-primary"
                             }   rounded-full`}
                           >
                             <img src={svg23} alt={svg23} />
@@ -261,7 +285,7 @@ function AccountsList() {
                         <div
                           className={`reseller_card_title !text-[16px] ${
                             item?.accStatus === "ACTIVE"
-                              ? "!text-[#388E3C]"
+                              ? "!text-[var(--brand)]"
                               : item?.accStatus === "SUSPENDED" ||
                                 item?.accStatus === "DELETED"
                               ? "!text-[#ff0000]"
@@ -286,7 +310,7 @@ function AccountsList() {
               onClick={handleAdd}
             >
               <div className="flex items-center gap-x-5  p-[.875rem]">
-                <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-darkGreen rounded-full">
+                <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-primary rounded-full">
                   <img src={svg25} alt={"svg25"} />
                 </div>
 

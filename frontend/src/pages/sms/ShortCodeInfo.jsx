@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import { cleanRequestType } from "../../features/sms-request/smsRequestSlice";
 import { fetchNewProductRequest } from "../../features/product-request/productRequestSlice";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 const { TextArea } = Input;
 function ShortCodeInfo({ next, prev }) {
   const [form] = Form.useForm();

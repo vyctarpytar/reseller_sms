@@ -81,7 +81,7 @@ const AddContactListModal = ({ open, handleCancel, handleFetchData }) => {
                 <button
                   key="back"
 				  onClick={handleCancel}
-                  className="cstm-btn !bg-white !text-[#388E3C] !border !border-[#388E3C]"
+                  className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)]"
                 >
                   Cancel
                 </button>

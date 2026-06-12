@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { addSpaces, dateForHumans, getLetterWord } from "../../utils";
 import svg27 from "../../assets/svg/svg27.svg";
 import UserPermissionModal from "./UserPermissionModal";
+import StatusBadge from "../../components/StatusBadge";
 import FilterModal from "./FilterModal";
 
 function UsersList() {
@@ -85,18 +86,7 @@ function UsersList() {
     },
     {
       title: "Status",
-      render: (item) => {
-        return (
-          <div className="flex items-center text-center gap-x-2">
-            <span
-              className={`w-[10px] h-[10px] rounded-full ${
-                item?.usrStatus === "ACTIVE" ? "bg-green" : "bg-red"
-              }`}
-            ></span>
-            {item?.usrStatus}
-          </div>
-        );
-      },
+      render: (item) => <StatusBadge value={item?.usrStatus} />,
     },
     {
       title: "Role",
@@ -179,7 +169,7 @@ function UsersList() {
       key: "0",
       label: (
         <div
-          className=" flex  text-[16px] font-sans items-center justify-center text-darkGreen"
+          className=" flex  text-[16px] font-sans items-center justify-center text-primary"
           onClick={handleEdit}
         >
           Edit
@@ -190,7 +180,7 @@ function UsersList() {
       key: "1",
       label: (
         <div
-          className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-darkGreen"
+          className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-primary"
           onClick={handlePermissions}
         >
           Assign Permission
@@ -252,7 +242,7 @@ function UsersList() {
  
 
   return (
-    <div className="w-full h-full overflow-y-scroll">
+    <div className="w-full h-full overflow-y-scroll bg-surface">
       <InsideHeader
         title="List of Users"
         subtitle="Manage your users here"
@@ -263,7 +253,7 @@ function UsersList() {
         <div className="flex  items-center gap-x-10  mt-10">
           <div className="w-[140px]">
             <button
-              className="cstm-btn !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3"
+              className="cstm-btn !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3"
               onClick={handleAdd}
             >
               Add User
@@ -293,8 +283,9 @@ function UsersList() {
             )}
           </div>
         </div>
+        <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
         <Table
-          className="mt-[1.31rem] w-full"
+          className="w-full"
           scroll={{
             x: 800,
           }}
@@ -316,6 +307,7 @@ function UsersList() {
           dataSource={myUsersData}
           loading={usersLoading}
         />
+        </div>
       </div>
 
       <UsersAddModal

@@ -23,6 +23,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
              AND ( case when   cast ( :msgDateFrom as DATE)   is not null and  cast ( :msgDateTo as DATE)   is not null  
                              then cast(msg_created_date as date) >= cast(  :msgDateFrom as Date) and  cast(msg_created_date as date) <= cast(  :msgDateTo as Date)  else 1=1 end )
             AND (case when :msgStatus IS not  NULL then  msg_status = :msgStatus else 1=1 end )
+            AND ( cast(:msgStatusCsv as text) IS NULL OR msg_status = ANY(string_to_array(:msgStatusCsv, ',')) )
             AND (case when :msgMessage IS not  NULL then  msg_message ilike :msgMessage else 1=1 end )
             AND (case when :msgSubmobileNo IS not  NULL then  msg_sub_mobile_no ilike :msgSubmobileNo else 1=1 end )
                 AND (case when :msgSenderName IS not  NULL then   coalesce(msg_sender_id_name,'-1') = :msgSenderName else 1=1 end )
@@ -31,7 +32,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
             """, nativeQuery = true)
     Page<MsgMessageQueueArc> findByMessagesArcFilters(@Param("msgAccId") UUID msgAccId, @Param("msgResellerId") UUID msgResellerId, @Param("msgGrpId") UUID msgGrpId,
                                                       @Param("msgCreatedDate") Date msgCreatedDate,
-                                                      @Param("msgStatus") String msgStatus, @Param("msgSubmobileNo") String msgSubmobileNo, @Param("msgMessage") String msgMessage,
+                                                      @Param("msgStatus") String msgStatus, @Param("msgStatusCsv") String msgStatusCsv, @Param("msgSubmobileNo") String msgSubmobileNo, @Param("msgMessage") String msgMessage,
                                                       @Param("msgSenderName") String msgSenderName,
                                                       @Param("msgDateFrom") Date msgDateFrom,
                                                       @Param("msgDateTo") Date msgDateTo,

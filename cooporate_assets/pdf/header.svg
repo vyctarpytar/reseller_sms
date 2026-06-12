@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 150" width="1000" height="150" role="img" aria-label="Synq Africa letterhead header">
+  <!-- PDF letterhead band. Full page width; sits at the top of every page. Official Synq Africa
+       logo on the left, contact stack on the right, terracotta hairline rule underneath.
+       Source of truth — export to header.png and mirror into resources/branding/ (see skill).
+       The <image> href is relative; rsvg-convert / Inkscape resolve it when exporting to PNG. -->
+  <rect x="0" y="0" width="1000" height="150" fill="#ffffff"/>
+  <!-- official logo (1920x500 ⇒ keep aspect: ~384x100 at this height) -->
+  <image href="../logos/SA-Logo.png" xlink:href="../logos/SA-Logo.png"
+         x="40" y="33" width="384" height="100" preserveAspectRatio="xMinYMid meet"/>
+  <!-- right-side contact stack -->
+  <text x="960" y="64" text-anchor="end" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="13" font-weight="600" fill="#334155">synqafrica.co.ke</text>
+  <text x="960" y="84" text-anchor="end" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="12" fill="#64748b">support@synqafrica.co.ke</text>
+  <!-- terracotta hairline rule -->
+  <rect x="40" y="132" width="920" height="3" rx="1.5" fill="#D96C3B"/>
+</svg>

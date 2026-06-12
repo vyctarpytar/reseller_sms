@@ -65,8 +65,12 @@ export default function SideBarClosed() {
     const mapItems = (items, isChild) => {
       return items?.map((item) => {
         const iconSrc = icons[item?.mnIcons] || gridSvg;
+        const rawLabel =
+          item?.mnName.charAt(0).toUpperCase() + item?.mnName.slice(1);
+        const label =
+          rawLabel?.toLowerCase() === "wallet" ? "Mpesa Wallet" : rawLabel;
         return getItem(
-          item?.mnName.charAt(0).toUpperCase() + item?.mnName.slice(1),
+          label,
           item?.mnLink,
           !isChild ? <img src={iconSrc} alt={item?.mnIcons} /> : null,
           item?.children && item?.children?.length > 0

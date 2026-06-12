@@ -366,6 +366,13 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
             </Form.Item>
           )}
 
+          <div className="mt-4 rounded-[6px] border border-[#E0A800]/40 bg-[#FFF8E1] px-4 py-3">
+            <p className="text-[.8rem] text-[#8A6D00] m-0">
+              <span className="font-semibold">Note:</span> This amount will not
+              reflect on your wallet balance.
+            </p>
+          </div>
+
           <div className="flex justify-between mt-[48px] ">
             <div className="justify-start"></div>
             <div className="justify-end flex items-center mb-[58px] gap-x-5">
@@ -374,7 +381,7 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
                   key="back"
                   type="button"
                   onClick={handleCancel}
-                  className="cstm-btn !bg-white !text-[#388E3C] !border !border-[#388E3C]"
+                  className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)]"
                 >
                   Cancel
                 </button>

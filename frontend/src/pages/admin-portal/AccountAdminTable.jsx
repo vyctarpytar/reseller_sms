@@ -80,7 +80,7 @@ function AccountAdminTable() {
       render: (item) => (
         <>
           <button onClick={()=>setProdd(item)}>
-            <div className="text-darkGreen" onClick={()=>handleAccountView(item)}>View</div>
+            <div className="text-primary" onClick={()=>handleAccountView(item)}>View</div>
             {/* <Dropdown
               overlayStyle={{
                 width: "150px",
@@ -119,7 +119,7 @@ function AccountAdminTable() {
     {
       key: "0",
       label: (
-        <div className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-darkGreen"
+        <div className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-primary"
         onClick={handleAccountView}>
           View
         </div>
@@ -130,7 +130,7 @@ function AccountAdminTable() {
       key: "1",
       label: (
         <div
-          className=" flex  text-[16px] font-sans items-center justify-center text-darkGreen" 
+          className=" flex  text-[16px] font-sans items-center justify-center text-primary" 
           onClick={showModalDelete}
         >
          Delete
