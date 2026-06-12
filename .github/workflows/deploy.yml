@@ -6,6 +6,8 @@ on:
       - main
     paths-ignore:
       - 'frontend/**'
+      - '.github/workflows/react.yml'
+      - '.github/workflows/deploy.yml'
 
 jobs:
   build:

@@ -28,6 +28,8 @@ jobs:
 
       - name: Build React app
         working-directory: frontend
+        env:
+          CI: false
         run: npm run build
 
       - name: Clear old build on VM
