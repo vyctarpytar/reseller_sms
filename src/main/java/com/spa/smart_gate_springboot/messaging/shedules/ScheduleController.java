@@ -1,6 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.shedules;
 
 
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,12 +19,16 @@ public class ScheduleController{
 
     private final UserService userService;
     private final ScheduleService scheduleService;
+    private final AccountService accountService;
 
     @PostMapping
-    public StandardJsonResponse getSchedules(HttpServletRequest request, ScheduleFilterDto filterDto) {
+    public StandardJsonResponse getSchedules(HttpServletRequest request, ScheduleFilterDto filterDto, @RequestParam(required = false) String account_id) {
         var user = userService.getCurrentUser(request);
         filterDto.setSchUsrId(user.getUsrId());
         filterDto.setSchAccId(user.getUsrAccId());
+        // Drill-down: scope schedules to the single account being viewed (ownership enforced).
+        UUID accScope = accountService.resolveAccountScope(user, account_id);
+        if (accScope != null) filterDto.setSchAccId(accScope);
          return scheduleService.getFilteredSchedules(filterDto,user);
     }
 

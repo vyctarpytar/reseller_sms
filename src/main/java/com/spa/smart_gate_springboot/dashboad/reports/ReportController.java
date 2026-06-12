@@ -1,5 +1,6 @@
 package com.spa.smart_gate_springboot.dashboad.reports;
 
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.dashboad.reports.models.FilterRptDto;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.user.Role;
@@ -21,8 +22,9 @@ import java.util.UUID;
 public class ReportController {
     private final ReportService reportService;
     private final UserService userService;
+    private final AccountService accountService;
 
-    private static void setFilters(FilterRptDto filterDto, User user) {
+    private void setFilters(FilterRptDto filterDto, User user, String accountId) {
         if (user.getLayer().equals(Layers.ACCOUNT)) {
             filterDto.setMsgAccId(user.getUsrAccId());
         } else if (user.getRole().equals(Role.SALE)) {
@@ -35,39 +37,44 @@ public class ReportController {
                 filterDto.setMsgResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // show synq tel
             }
         }
+        // Drill-down: scope reports to the single account being viewed (ownership enforced).
+        UUID accScope = accountService.resolveAccountScope(user, accountId);
+        if (accScope != null) {
+            filterDto.setMsgAccId(accScope);
+        }
     }
 
     @PostMapping("account-donut")
-    public StandardJsonResponse getSmsSummaryPerAccount(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
+    public StandardJsonResponse getSmsSummaryPerAccount(HttpServletRequest request, @RequestBody FilterRptDto filterDto, @RequestParam(required = false) String account_id) {
         User user = userService.getCurrentUser(request);
-        setFilters(filterDto, user);
+        setFilters(filterDto, user, account_id);
         return reportService.getSmsSummaryPerAccount(filterDto);
     }
 
     @PostMapping("daily-sms-usage")
-    public StandardJsonResponse getDailySmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto,@RequestParam(required = false) String reseller_id) {
+    public StandardJsonResponse getDailySmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto,@RequestParam(required = false) String reseller_id, @RequestParam(required = false) String account_id) {
         if (reseller_id != null) {
             filterDto.setMsgResellerId(UUID.fromString(reseller_id));
         }
         User user = userService.getCurrentUser(request);
-        setFilters(filterDto, user);
+        setFilters(filterDto, user, account_id);
         return reportService.getDailySmsUsage(filterDto);
     }
 
     @PostMapping("status-sms-usage")
-    public StandardJsonResponse getStatusSmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto,@RequestParam(required = false) String reseller_id) {
+    public StandardJsonResponse getStatusSmsUsage(HttpServletRequest request, @RequestBody FilterRptDto filterDto,@RequestParam(required = false) String reseller_id, @RequestParam(required = false) String account_id) {
         if (reseller_id != null) {
             filterDto.setMsgResellerId(UUID.fromString(reseller_id));
         }
         User user = userService.getCurrentUser(request);
-        setFilters(filterDto, user);
+        setFilters(filterDto, user, account_id);
         return reportService.getStatusSmsUsage(filterDto);
     }
 
     @PostMapping("/daily-sms-usage-download-excel")
-    public ResponseEntity<byte[]> dailySMSUsageSummary(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
+    public ResponseEntity<byte[]> dailySMSUsageSummary(HttpServletRequest request, @RequestBody FilterRptDto filterDto, @RequestParam(required = false) String account_id) {
         User user = userService.getCurrentUser(request);
-        setFilters(filterDto, user);
+        setFilters(filterDto, user, account_id);
 
         byte[] excelBytes = reportService.getDailySmsUsageDownloadExcell(filterDto);
         if (excelBytes == null) {
@@ -80,9 +87,9 @@ public class ReportController {
     }
 
     @PostMapping("/status-sms-summary-download-excel")
-    public ResponseEntity<byte[]> statusSmsSummary(HttpServletRequest request, @RequestBody FilterRptDto filterDto) {
+    public ResponseEntity<byte[]> statusSmsSummary(HttpServletRequest request, @RequestBody FilterRptDto filterDto, @RequestParam(required = false) String account_id) {
         User user = userService.getCurrentUser(request);
-        setFilters(filterDto, user);
+        setFilters(filterDto, user, account_id);
 
         byte[] excelBytes = reportService.getStatusSmsUsageDownloadExcell(filterDto);
         if (excelBytes == null) {

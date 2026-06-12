@@ -1,5 +1,6 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.FilterDto;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.GroupMessageDto;
@@ -33,6 +34,7 @@ public class MessageController {
     private final QueueMsgService queueMsgService;
     private final UserService userService;
     private final ScheduleService scheduleService;
+    private final AccountService accountService;
 
 
     @PostMapping("/group/{grpId}")
@@ -116,7 +118,7 @@ public class MessageController {
     }
 
     @PostMapping
-    public StandardJsonResponse getAllSmsForAccount(@RequestBody FilterDto filterDto, HttpServletRequest request,@RequestParam(required = false) String reseller_id) {
+    public StandardJsonResponse getAllSmsForAccount(@RequestBody FilterDto filterDto, HttpServletRequest request,@RequestParam(required = false) String reseller_id,@RequestParam(required = false) String account_id) {
 
         if (reseller_id != null) {
             filterDto.setMsgResellerId(UUID.fromString(reseller_id));
@@ -136,6 +138,11 @@ public class MessageController {
 //            filterDto.setMsgResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // sync Reseller
             filterDto.setMsgResellerId(user.getUsrId()); // sync Reseller
         }
+        // Drill-down: when acting "as" a single account, scope to it (ownership enforced).
+        UUID accScope = accountService.resolveAccountScope(user, account_id);
+        if (accScope != null) {
+            filterDto.setMsgAccId(accScope);
+        }
         return queueMsgService.findByMessagesArcFilters(filterDto);
     }
 
@@ -154,13 +161,18 @@ public class MessageController {
     }
 
     @PostMapping("/download-excel")
-    public ResponseEntity<byte[]> downloadExcel(HttpServletRequest request, @RequestBody FilterDto filterDto) {
+    public ResponseEntity<byte[]> downloadExcel(HttpServletRequest request, @RequestBody FilterDto filterDto, @RequestParam(required = false) String account_id) {
         User user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.ACCOUNT)) filterDto.setMsgAccId(user.getUsrAccId());
         if (user.getLayer().equals(Layers.RESELLER)) filterDto.setMsgResellerId(user.getUsrResellerId());
         if (user.getRole().equals(Role.SALE)) filterDto.setMsgSaleUserId(user.getUsrId());
         if (user.getLayer().equals(Layers.TOP) && (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a")))) { // sync TOP
             filterDto.setMsgResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // sync Reseller
+        }
+        // Drill-down: keep the export scoped to the single account being viewed.
+        UUID accScope = accountService.resolveAccountScope(user, account_id);
+        if (accScope != null) {
+            filterDto.setMsgAccId(accScope);
         }
 
         byte[] excelBytes = queueMsgService.downloadMsgExcell(filterDto, user);
