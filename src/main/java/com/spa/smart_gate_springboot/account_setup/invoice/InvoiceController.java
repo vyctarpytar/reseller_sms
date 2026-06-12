@@ -20,13 +20,6 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
     private final UserService userService;
 
-    @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN')")
-    @PostMapping("mark-as-paid/{invoId}")
-    public StandardJsonResponse markInvoiceAsPaid(@PathVariable UUID invoId, @RequestBody InvoPaidDto invoPaidDto, HttpServletRequest request) {
-        var user = userService.getCurrentUser(request);
-        return invoiceService.markAsPaidCredit(invoId, user, invoPaidDto);
-    }
-
     @GetMapping("/distinct-statuses")
     public StandardJsonResponse getDistinctInvoiceStatuses() {
         StandardJsonResponse resp = new StandardJsonResponse();

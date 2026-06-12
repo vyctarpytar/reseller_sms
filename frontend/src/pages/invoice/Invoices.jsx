@@ -9,7 +9,7 @@ import noCon from "../../assets/img/noCon.png";
 import svg38 from "../../assets/svg/svg38.svg";
 import FilterModal from "./FilterModal";
 import { fetchInvoices } from "../../features/invoice/invoiceSlice";
-import AccpetanceModal from "./AccpetanceModal";
+import StatusBadge from "../../components/StatusBadge";
 
 function Invoices() {
   const [notOpen, setnotOpen] = useState(false);
@@ -17,8 +17,7 @@ function Invoices() {
   const { invoiceData, invoiceCount, loading } = useSelector(
     (state) => state.inv
   );
-  const { user } = useSelector((state) => state.auth);
- 
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -31,15 +30,6 @@ function Invoices() {
   const showModal = () => {
     setIsModalOpen(true);
   };
-
-  const [isModalAcceptance, setIsModalAcceptance] = useState(false);
-  const showModalConfirmation = async () => {
-    setIsModalAcceptance(true);
-  };
-
-  const hasApprove = user?.role ==="ACCOUNTANT" || user?.role ==="SUPER_ADMIN" 
-
-  const [prodd,setProdd] =  useState()
 
   const columns = [
     {
@@ -79,46 +69,12 @@ function Invoices() {
     },
     {
       title: "Status",
-      render: (item) => {
-        return (
-          <div
-            className={`${
-              item?.invoStatus == "PAID"
-                ? "text-[#388E3C]"
-                : item?.invoStatus == "PENDING_PAYMENT"
-                ? "text-[#ff0000]"
-                : "text-blk14"
-            }  
-         font-[700] flex items-center justify-center text-center`}
-          >
-            {item?.invoStatus}
-          </div>
-        );
-      },
+      render: (item) => (
+        <div className="flex items-center justify-center">
+          <StatusBadge value={item?.invoStatus} />
+        </div>
+      ),
     },
-
-    ...(hasApprove
-      ? [
-        {
-          title: "Actions",
-          render: (item) => (
-            <>
-              <button onClick={() => setProdd(item)}>
-                <div
-                  className="text-darkGreen h-auto py-1 px-3 rounded-[20px] w-full border border-[#388E3C]"
-                  onClick={showModalConfirmation}
-                >
-                  {
-                  item?.invoStatus != "PAID" && "Approve"}
-                  
-                </div>
-              </button>
-            </>
-          ),
-        },
-      ]
-      : []), 
-   
   ];
 
   const handleSendSms = () => {
@@ -156,7 +112,7 @@ function Invoices() {
 
   return (
     <>
-      <div className="w-full overflow-y-scroll h-full">
+      <div className="w-full overflow-y-scroll h-full bg-surface">
         <InsideHeader
           title="Invoices"
           subtitle="This is a list of all invoices you have requested"
@@ -195,10 +151,10 @@ function Invoices() {
           {loading ? (
             <Skeleton />
           ) : (
-            <div>
+            <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
               {sentSmsData && sentSmsData?.length > 0 ? (
                 <Table
-                  className="mt-[1.31rem] w-full mb-10"
+                  className="w-full"
                   scroll={{
                     x: 800,
                   }}
@@ -238,13 +194,6 @@ function Invoices() {
         setIsModalOpen={setIsModalOpen}
         formData={formData}
         setFormData={setFormData}
-      />
-
-      <AccpetanceModal
-        isModalOpen={isModalAcceptance}
-        setIsModalOpen={setIsModalAcceptance}
-        prodd={prodd}
-        title={`Approve ${prodd?.invoCode}`} 
       />
     </>
   );
