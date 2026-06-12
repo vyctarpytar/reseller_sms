@@ -8,6 +8,7 @@ import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
 import com.spa.smart_gate_springboot.payment.Payment;
 import com.spa.smart_gate_springboot.payment.PaymentDto;
 import com.spa.smart_gate_springboot.payment.PaymentService;
+import com.spa.smart_gate_springboot.payment.StkCallbackDto;
 import com.spa.smart_gate_springboot.pushSDK.PushSDKConfigService;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
@@ -104,7 +105,8 @@ public class InvoiceService {
     public void launchSDkMpesa(Invoice invoice) {
         StandardJsonResponse response = new StandardJsonResponse();
         try {
-            pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()), invoice.getInvoCode());
+            String checkoutRequestId = pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()), invoice.getInvoCode());
+            invoice.setInvoCheckoutRequestId(checkoutRequestId);
         } catch (Exception e) {
             invoice.setInvoStatus(InvoStatus.FAILED_TO_POP_SDK);
             invoiceRepository.saveAndFlush(invoice);
@@ -118,7 +120,8 @@ public class InvoiceService {
     public void launchSDkResellerSelf(Invoice invoice) {
         StandardJsonResponse response = new StandardJsonResponse();
         try {
-            pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()),  invoice.getInvoCode());
+            String checkoutRequestId = pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()),  invoice.getInvoCode());
+            invoice.setInvoCheckoutRequestId(checkoutRequestId);
             response.setMessage("message", "Launch STK", response);
         } catch (Exception e) {
             invoice.setInvoStatus(InvoStatus.FAILED_TO_POP_SDK);
@@ -147,7 +150,9 @@ public class InvoiceService {
             }
 
             invoice.setInvoStatus(InvoStatus.PAID);
-            invoice.setInvoPayerName(paymentDto.getFirstName().replaceAll(" null", ""));
+            if (paymentDto.getFirstName() != null) {
+                invoice.setInvoPayerName(paymentDto.getFirstName().replaceAll(" null", ""));
+            }
             invoiceRepository.saveAndFlush(invoice);
             payment.setTransResellerId(invoice.getInvoResellerId());
             paymentService.save(payment);
@@ -160,6 +165,75 @@ public class InvoiceService {
         creditService.saveCredit(credit, user);
 
 
+    }
+
+    /**
+     * Process a Safaricom STK push result callback. This is the only signal we get when a top-up is
+     * cancelled on the SIM prompt, fails (wrong PIN / insufficient funds / unreachable) or times out,
+     * so without it the invoice would sit in PENDING_PAYMENT forever.
+     *
+     * <p>Matching is by CheckoutRequestID (captured at launch). On success we record the receipt but
+     * leave settlement to the C2B confirmation as a fallback we also settle here idempotently, so a
+     * successful top-up credits units even if no separate C2B confirmation arrives. The
+     * {@code receivePayment} idempotency guard (status==PAID / existsByTransId) prevents double-credit.
+     */
+    public void handleStkCallback(StkCallbackDto dto) {
+        StkCallbackDto.StkCallback cb = dto.callback();
+        if (cb == null || cb.getCheckoutRequestID() == null) {
+            log.warn("STK callback without CheckoutRequestID — ignored");
+            return;
+        }
+        Invoice invoice = invoiceRepository.findByInvoCheckoutRequestId(cb.getCheckoutRequestID()).orElse(null);
+        if (invoice == null) {
+            log.warn("STK callback for unknown CheckoutRequestID={} (resultCode={})",
+                    cb.getCheckoutRequestID(), cb.getResultCode());
+            return;
+        }
+        if (invoice.getInvoStatus() == InvoStatus.PAID) {
+            log.info("STK callback for already-settled invoice {} — no-op", invoice.getInvoCode());
+            return;
+        }
+
+        Integer resultCode = cb.getResultCode();
+        if (resultCode != null && resultCode == 0) {
+            Object receipt = dto.metadata("MpesaReceiptNumber");
+            Object amount = dto.metadata("Amount");
+            Object phone = dto.metadata("PhoneNumber");
+            if (receipt != null) invoice.setInvoMpesaReceipt(receipt.toString());
+            invoiceRepository.saveAndFlush(invoice);
+            log.info("STK success invoice={} receipt={} — settling", invoice.getInvoCode(), receipt);
+
+            // Settle idempotently from the callback so a paid top-up always allocates units.
+            try {
+                PaymentDto pay = new PaymentDto();
+                pay.setBillRefNumber(invoice.getInvoCode());
+                pay.setTransId(receipt != null ? receipt.toString() : "STK-" + cb.getCheckoutRequestID());
+                pay.setTransAmount(amount != null ? new BigDecimal(amount.toString()) : invoice.getInvoAmount());
+                pay.setMsisdn(phone != null ? phone.toString() : invoice.getInvoPayerMobileNumber());
+                receivePayment(pay);
+            } catch (Exception e) {
+                log.error("STK settlement failed for invoice {} : {}", invoice.getInvoCode(), e.getMessage());
+            }
+            return;
+        }
+
+        // ResultCode != 0 — the top-up did not go through.
+        // 1032 = "Request cancelled by user"; everything else is a generic failure.
+        InvoStatus terminal = (resultCode != null && resultCode == 1032) ? InvoStatus.CANCELLED : InvoStatus.FAILED;
+        invoice.setInvoStatus(terminal);
+        invoice.setInvoFailureReason(cb.getResultDesc());
+        invoiceRepository.saveAndFlush(invoice);
+        log.warn("STK {} invoice={} code={} reason={}", terminal, invoice.getInvoCode(),
+                resultCode, cb.getResultDesc());
+    }
+
+    /**
+     * Safety net for STK pushes that never produce any callback (the customer ignores the prompt and
+     * it silently lapses). Flips PENDING_PAYMENT invoices past their due date to EXPIRED. Driven by
+     * {@link com.spa.smart_gate_springboot.account_setup.invoice.InvoiceExpiryCron}.
+     */
+    public int expireStalePending() {
+        return invoiceRepository.expireStalePending(LocalDateTime.now());
     }
 
     private Invoice findByInvoCode(String billRefNumber) {

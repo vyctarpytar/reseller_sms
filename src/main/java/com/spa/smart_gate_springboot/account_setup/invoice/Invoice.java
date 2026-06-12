@@ -39,6 +39,13 @@ public class Invoice {
     private BigDecimal invoAmountAfterTax;
     private String invoPayerMobileNumber;
 
+    /** Safaricom CheckoutRequestID returned when the STK push is launched; used to match the stkCallback back to this invoice. */
+    @Column(unique = true)
+    private String invoCheckoutRequestId;
+    /** ResultDesc from a failed/cancelled stkCallback, kept for support/audit. */
+    private String invoFailureReason;
+    /** M-Pesa receipt number reported on a successful stkCallback (settlement still flows through the C2B confirmation). */
+    private String invoMpesaReceipt;
 
 
     private String invoMarkedPaidByEmail;

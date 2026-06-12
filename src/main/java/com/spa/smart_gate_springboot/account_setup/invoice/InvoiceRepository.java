@@ -17,6 +17,16 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 
     Optional<Invoice> findByInvoCode(String billRefNumber);
 
+    Optional<Invoice> findByInvoCheckoutRequestId(String checkoutRequestId);
+
+    /** Expire STK pushes that never settled and are past their due date. Returns the number updated. */
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query("update credit_invoice i set i.invoStatus = com.spa.smart_gate_springboot.account_setup.invoice.InvoStatus.EXPIRED, "
+            + "i.invoFailureReason = 'STK push expired without settlement' "
+            + "where i.invoStatus = com.spa.smart_gate_springboot.account_setup.invoice.InvoStatus.PENDING_PAYMENT "
+            + "and i.invoDueDate is not null and i.invoDueDate < :now")
+    int expireStalePending(@Param("now") java.time.LocalDateTime now);
+
     @Query(value = """
             select * from msg.credit_invoice
             where 1=1
@@ -52,7 +62,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 value = """
 select sum(invo_amount) as invo_amount, invo_month_name, invo_month_id
 from msg.credit_invoice
-where invo_status not in ('PENDING_PAYMENT', 'FAILED_TO_POP_SDK')
+where invo_status not in ('PENDING_PAYMENT', 'FAILED_TO_POP_SDK', 'CANCELLED', 'FAILED', 'EXPIRED')
   and invo_reseller_id = :resellerId
   and extract(year from invo_created_date) = extract(year from current_timestamp)
 group by invo_month_name, invo_month_id

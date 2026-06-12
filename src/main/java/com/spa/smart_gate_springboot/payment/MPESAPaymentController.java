@@ -31,8 +31,27 @@ public class MPESAPaymentController {
 
         log.info("receive payment request : {}", payment);
 
-        PaymentDto paymentDto = objectMapper.convertValue(payment, PaymentDto.class);
         Map<String, String> response = new HashMap<>();
+
+        // Two payload shapes hit this endpoint:
+        //  1. STK push result callback  -> { "Body": { "stkCallback": { ResultCode, CheckoutRequestID, ... } } }
+        //     (success, but also cancel / wrong-PIN / timeout — the only signal we get for a failed top-up).
+        //  2. C2B confirmation          -> flat { TransID, BillRefNumber, TransAmount, ... } which settles the invoice.
+        StkCallbackDto stk = objectMapper.convertValue(payment, StkCallbackDto.class);
+        if (stk.isStkCallback()) {
+            try {
+                rmqPublisher.publishToOutQueue(payment, "MPESA_STK_CALLBACK");
+                invoiceService.handleStkCallback(stk);
+            } catch (Exception e) {
+                log.error("Failed to process STK callback : {}", e.getMessage());
+            }
+            // Always ack the callback so Safaricom/the gateway stops retrying.
+            response.put("ResultCode", "0");
+            response.put("ResultDesc", "Accepted");
+            return ResponseEntity.ok(response);
+        }
+
+        PaymentDto paymentDto = objectMapper.convertValue(payment, PaymentDto.class);
         try {
 
             rmqPublisher.publishToOutQueue(payment, "MPESA_C2B_TRANSACTION_RECEIVE");

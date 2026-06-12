@@ -37,6 +37,17 @@ function ResellersList() {
     dispatch(fetchReseller());
   }
 
+  // Clicking a reseller card drills into that reseller's hierarchy: set the
+  // tenant scope (selectedOrg) and clear any account scope, then route through
+  // dashboard-main which lands a TOP user on /dashboard-reseller.
+  const handleEnterReseller = (item) => {
+    if (item?.rsStatus === "DELETED") return;
+    localStorage.setItem("selectedOrg", item?.rsId);
+    localStorage.removeItem("selectedAccount");
+    localStorage.removeItem("selectedAccountName");
+    navigate("/dashboard-main");
+  };
+
   const handleAdd = async () => {
     await setProdd("");
     await showModal();
@@ -162,7 +173,7 @@ function ResellersList() {
               {resellerData?.length > 0 &&
                 resellerData?.map((item) => (
                   <div
-                    onClick={() => setProdd(item)}
+                    onClick={() => handleEnterReseller(item)}
                     className="cursor-pointer"
                   >
                     <div
@@ -201,7 +212,12 @@ function ResellersList() {
                             menu={{ items: settingItems }}
                             placement="bottom"
                           >
-                            <button onClick={() => setProdd(item)}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProdd(item);
+                              }}
+                            >
                               <img src={svg27} alt="svg27" />
                             </button>
                           </Dropdown>

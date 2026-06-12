@@ -15,7 +15,6 @@ import org.apache.http.util.TextUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -104,10 +103,8 @@ public class MenuService {
 
         List<Menu> flatMenuList = menuRepo.findMenuTreeByOwner(layer);
 
-        // if not SPA REMOVE Link account-admin
-        if ( role != null && !role.equals(Role.ACCOUNTANT)) {
-            flatMenuList = flatMenuList.stream().filter(menu ->!( menu.getMnLink().equalsIgnoreCase("billing"))).collect(Collectors.toList());
-        }
+        // The ACCOUNTANT-only gate on the Billing menu has been retired — Billing (and its
+        // Invoices / Payments / Manage Clients children) is now visible to all resellers.
 
         return buildTree(flatMenuList);
     }

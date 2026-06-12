@@ -60,19 +60,39 @@ public class InvoiceController {
 
     /** Branded invoice PDF (the bill). Streamed inline so the frontend can preview or download it. */
     @GetMapping("/{invoId}/invoice-pdf")
-    public void downloadInvoicePdf(@PathVariable UUID invoId, HttpServletResponse response) throws Exception {
+    public void downloadInvoicePdf(@PathVariable UUID invoId, HttpServletRequest request, HttpServletResponse response) throws Exception {
         Invoice invoice = invoiceService.findById(invoId);
+        assertCanAccess(invoice, request);
         reportExportService.pdfInvoice(invoice, response);
     }
 
     /** Branded receipt PDF (proof of payment). Only available once a payment has been recorded. */
     @GetMapping("/{invoId}/receipt-pdf")
-    public void downloadReceiptPdf(@PathVariable UUID invoId, HttpServletResponse response) throws Exception {
+    public void downloadReceiptPdf(@PathVariable UUID invoId, HttpServletRequest request, HttpServletResponse response) throws Exception {
         Invoice invoice = invoiceService.findById(invoId);
+        assertCanAccess(invoice, request);
         if (!RECEIPTABLE.contains(invoice.getInvoStatus())) {
             throw new RuntimeException("No receipt available — invoice " + invoice.getInvoCode() + " has no recorded payment");
         }
         reportExportService.pdfReceipt(invoice, response);
+    }
+
+    /**
+     * Tenant scoping for invoice/receipt PDFs: a reseller may only read their own invoices, an account
+     * only its own; TOP may read any. Without this any logged-in user could pull another tenant's
+     * invoice/receipt by guessing the UUID.
+     */
+    private void assertCanAccess(Invoice invoice, HttpServletRequest request) {
+        var user = userService.getCurrentUser(request);
+        Layers layer = user.getLayer();
+        if (layer == Layers.TOP) return;
+        if (layer == Layers.RESELLER
+                && user.getUsrResellerId() != null
+                && user.getUsrResellerId().equals(invoice.getInvoResellerId())) return;
+        if (layer == Layers.ACCOUNT
+                && user.getUsrAccId() != null
+                && user.getUsrAccId().equals(invoice.getInvoAccId())) return;
+        throw new RuntimeException("Not authorized to access invoice " + invoice.getInvoCode());
     }
 
 }

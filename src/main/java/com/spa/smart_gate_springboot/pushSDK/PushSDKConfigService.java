@@ -51,7 +51,7 @@ public class PushSDKConfigService {
      * existing callers in InvoiceService are unchanged; the C2B confirmation still settles at
      * /api/v2/payment using {@code accountref} (the invoice code).
      */
-    public void popSDkMpesa(String phone, String amount, String accountref) throws Exception {
+    public String popSDkMpesa(String phone, String amount, String accountref) throws Exception {
         try {
             GatewayStkResponse response = waretechMpesaService.initiateStk(
                     phone, new BigDecimal(amount), accountref, "Payment for " + accountref);
@@ -62,6 +62,8 @@ public class PushSDKConfigService {
             }
             // Convert response to JSON string (kept for parity / logging).
             gu.convertToJson(response);
+            // CheckoutRequestID lets us match the stkCallback (success / cancel / failure) back to the invoice.
+            return response.getCheckoutRequestID();
         } catch (Exception e) {
             throw new Exception("STK Push failed: " + e.getMessage());
         }
