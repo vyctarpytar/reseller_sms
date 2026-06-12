@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { 
+	--mainBg: #FFFF;
+	--darkBlue: #147cbc;
+	--darkGreen:#388E3C;
+	--blueDark:#1B47B4; 
+	--black1:#222222;
+	background-color: var(--mainBg) !important;
+	font-family: 'DM Sans', sans-serif !important;
+}
+html {
+	background-color: var(--mainBg) !important;
+	overflow-y: hidden; 
+}
+
+.react-tel-input .form-control {
+	height: 100% !important;
+	width: 100% !important;
+	border: none !important;
+	outline: none !important;
+	padding-left: 75px !important;
+}
+
+.flag-dropdown {
+	padding: 10px !important;
+}
+
+.verification_complete {
+	display: flex;
+	width: 31.25rem;
+	padding: 2.5rem;
+	flex-direction: column;
+	align-items: center;
+	border-radius: 1.5rem;
+	background: #ECECEC;
+}
+.login-pic{
+	background-image: url('./assets/img/sideImage.jpg');  
+	height:100%; 
+	background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.login-pic-sync{
+	background-image: url('./assets/img/sync-side-image.png');  
+	height:100%; 
+	background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.login-pic-synctel{
+	background-image: url('./assets/img/synctel-side-image.jpeg');  
+	height:100%; 
+	background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.login-pic-futuresoft{
+	background-image: url('./assets/img/aviationbanner.jpg');  
+	height:100%; 
+	background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+ 
+
+
+.login-box{
+	background-color: rgba(0, 0, 0, 0.4);
+	border-radius: 5px;
+    padding: 70px 40px 50px;
+	max-width: 480px; 
+    width: 100%;
+}
+
+/* .notification-dropdown > .ant-dropdown-menu{
+    min-height: 500px !important;
+    height: 80vh !important;
+    overflow-y: scroll !important;
+} */
+
+ 

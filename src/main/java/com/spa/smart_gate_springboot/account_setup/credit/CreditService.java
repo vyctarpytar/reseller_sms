@@ -9,6 +9,8 @@ import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceRepository;
 import com.spa.smart_gate_springboot.account_setup.request.ReStatus;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
+import com.spa.smart_gate_springboot.account_setup.wallet.WalletService;
+import com.spa.smart_gate_springboot.account_setup.wallet.WalletTxType;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.QueueMsgService;
 import com.spa.smart_gate_springboot.user.Role;
@@ -43,6 +45,50 @@ public class CreditService {
     private final QueueMsgService queueMsgService;
     private final InvoiceRepository invoiceRepository;
     private final GlobalUtils gu;
+    private final WalletService walletService;
+
+    /**
+     * Credits the reseller's cash wallet when an account it owns buys SMS units with real money
+     * (cash-only: a Payment id is present). The KSh the account paid becomes the reseller's cash;
+     * units inventory is deducted separately. Idempotent on the M-Pesa transId (smsPaymentRef).
+     */
+    private void creditResellerCashOnUnitSale(Credit credit, Reseller rs) {
+        if (credit.getSmsPaymentId() == null) return; // manual/non-cash grant — not real money in
+        try {
+            walletService.credit(
+                    WalletService.walletCodeForReseller(rs.getRsId()),
+                    credit.getSmsPayAmount(),
+                    WalletTxType.UNIT_SALE_CREDIT,
+                    credit.getSmsPaymentRef(),
+                    "SMS units purchased by account " + credit.getSmsAccountName(),
+                    credit.getSmsCreatedBy());
+        } catch (Exception e) {
+            log.error("Failed to credit reseller {} cash wallet on unit sale (ref {}): {}",
+                    rs.getRsId(), credit.getSmsPaymentRef(), e.getMessage());
+            throw e; // money correctness: fail the credit rather than silently drop the cash
+        }
+    }
+
+    /**
+     * Credits the platform (TOP) cash wallet when a reseller buys units from TOP with real money
+     * via STK (cash-only). Idempotent on the M-Pesa transId.
+     */
+    private void creditTopCashOnUnitSale(Credit credit) {
+        if (credit.getSmsPaymentId() == null) return;
+        try {
+            walletService.credit(
+                    WalletService.TOP_WALLET_CODE,
+                    credit.getSmsPayAmount(),
+                    WalletTxType.UNIT_SALE_CREDIT,
+                    credit.getSmsPaymentRef(),
+                    "SMS units purchased by reseller " + credit.getSmsResellerName(),
+                    credit.getSmsCreatedBy());
+        } catch (Exception e) {
+            log.error("Failed to credit TOP cash wallet on reseller unit sale (ref {}): {}",
+                    credit.getSmsPaymentRef(), e.getMessage());
+            throw e;
+        }
+    }
 
     public Credit save(Credit credit) {
         return creditRepository.save(credit);
@@ -223,6 +269,9 @@ public class CreditService {
         rs.setRsAllocatableUnit(rs.getRsAllocatableUnit().subtract(unitsLoaded));
         resellerService.save(rs);
 
+        // Real money paid by the account becomes the reseller's cash (units inventory left the reseller).
+        creditResellerCashOnUnitSale(credit, rs);
+
         queueMsgService.resendPendingSMSAccountCredit(account.getAccId());
 
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Balance : " + newBal, response);
@@ -261,10 +310,50 @@ public class CreditService {
         rs.setRsStatus(ReStatus.ACTIVE.name());
         resellerService.save(rs);
 
+        // Reseller bought units from TOP with real money via STK — TOP receives the cash.
+        creditTopCashOnUnitSale(credit);
+
         queueMsgService.resendPendingSMSResellerCredit(rs.getRsId());
 
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Balance : " + newBal, response);
 
+    }
+
+    /**
+     * Allocates {@code units} of SMS credit to a reseller and records a Credit ledger row, WITHOUT any
+     * cash-wallet movement. Used by the buy-units-from-wallet flow, where the caller has already
+     * debited the reseller wallet and credited TOP within the same transaction.
+     * Returns the persisted Credit.
+     */
+    @Transactional
+    public Credit allocateResellerUnitsFromWallet(Reseller rs, BigDecimal units, BigDecimal cashSpent, User user) {
+        BigDecimal rsMsgBal = rs.getRsMsgBal() == null ? BigDecimal.ZERO : rs.getRsMsgBal();
+        BigDecimal rsAllocatable = rs.getRsAllocatableUnit() == null ? BigDecimal.ZERO : rs.getRsAllocatableUnit();
+
+        Credit credit = Credit.builder()
+                .smsResellerId(rs.getRsId())
+                .smsResellerName(rs.getRsCompanyName())
+                .smsPayAmount(cashSpent)
+                .smsPrevBal(rsMsgBal)
+                .smsLoaded(units.longValue())
+                .smsRate(rs.getRsSmsUnitPrice())
+                .smsLoadingMethod("WALLET")
+                .build();
+
+        rs.setRsAllocatableUnit(rsAllocatable.add(units));
+        rs.setRsMsgBal(rsMsgBal.add(cashSpent));
+        rs.setRsStatus(ReStatus.ACTIVE.name());
+        resellerService.save(rs);
+
+        credit.setSmsNewBal(rs.getRsMsgBal());
+        credit.setSmsCreatedBy(user.getUsrId());
+        credit.setSmsCreatedByName(user.getEmail());
+        credit.setSmsCreatedDate(LocalDateTime.now());
+        credit.setCrStatus(CrStatus.PROCESSED);
+        Credit saved = save(credit);
+
+        queueMsgService.resendPendingSMSResellerCredit(rs.getRsId());
+        return saved;
     }
 
     private void resellerLoadCredit(Credit credit, StandardJsonResponse response) {
@@ -312,6 +401,8 @@ public class CreditService {
         rs.setRsAllocatableUnit(rs.getRsAllocatableUnit().subtract(unitsLoaded));
         resellerService.save(rs);
 
+        // Same economic event as accountLoadCredit: account units funded by real money → reseller gets the cash.
+        creditResellerCashOnUnitSale(credit, rs);
 
         queueMsgService.resendPendingSMSAccountCredit(account.getAccId());
 

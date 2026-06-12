@@ -5,7 +5,6 @@ import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.credit.Credit;
 import com.spa.smart_gate_springboot.account_setup.credit.CreditService;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
-import com.spa.smart_gate_springboot.ndovuPay.NdovupayService;
 import com.spa.smart_gate_springboot.payment.Payment;
 import com.spa.smart_gate_springboot.payment.PaymentDto;
 import com.spa.smart_gate_springboot.payment.PaymentService;
@@ -43,7 +42,6 @@ public class InvoiceService {
     private final UserService userService;
     private final PushSDKConfigService pushSDKConfigService;
     private final GlobalUtils gu;
-    private final NdovupayService ndovupayService;
     private final ResellerRepo resellerRepo;
     private final AccountService accountService;
 
@@ -106,7 +104,6 @@ public class InvoiceService {
     public void launchSDkMpesa(Invoice invoice) {
         StandardJsonResponse response = new StandardJsonResponse();
         try {
-//            String collectWalletCde = ndovupayService.getCollectWalletCode(invoice.getInvoResellerId());
             pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()), invoice.getInvoCode());
         } catch (Exception e) {
             invoice.setInvoStatus(InvoStatus.FAILED_TO_POP_SDK);
@@ -121,10 +118,6 @@ public class InvoiceService {
     public void launchSDkResellerSelf(Invoice invoice) {
         StandardJsonResponse response = new StandardJsonResponse();
         try {
-
-//            UUID topId = resellerRepo.findById(invoice.getInvoResellerId()).get().getRsCreatedBy();
-
-//            String collectWalletCde = ndovupayService.getCollectWalletCode(topId);
             pushSDKConfigService.popSDkMpesa(invoice.getInvoPayerMobileNumber(), String.valueOf(invoice.getInvoAmount()),  invoice.getInvoCode());
             response.setMessage("message", "Launch STK", response);
         } catch (Exception e) {
@@ -144,6 +137,15 @@ public class InvoiceService {
             payment.setTransAmount(paymentDto.getTransAmount());
             gu.printToJson(payment, "success");
             Invoice invoice = findByInvoCode(payment.getBillRefNumber());
+
+            // Idempotency guard — M-Pesa C2B confirmations are at-least-once. Re-processing a duplicate
+            // would re-allocate units (and the historical double-credit bug). Skip if already settled.
+            if (invoice.getInvoStatus() == InvoStatus.PAID || paymentService.existsByTransId(paymentDto.getTransId())) {
+                log.warn("Duplicate C2B payment ignored — invoCode={} transId={}",
+                        payment.getBillRefNumber(), paymentDto.getTransId());
+                return;
+            }
+
             invoice.setInvoStatus(InvoStatus.PAID);
             invoice.setInvoPayerName(paymentDto.getFirstName().replaceAll(" null", ""));
             invoiceRepository.saveAndFlush(invoice);

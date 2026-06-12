@@ -1,13 +1,15 @@
 package com.spa.smart_gate_springboot.pushSDK;
 
-import com.spa.smart_gate_springboot.pushSDK.daraja.DarajaService;
-import com.spa.smart_gate_springboot.pushSDK.daraja.dto.StkPushResponse;
+import com.spa.smart_gate_springboot.payment.mpesa.gateway.WaretechMpesaService;
+import com.spa.smart_gate_springboot.payment.mpesa.gateway.dto.GatewayStkResponse;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class PushSDKConfigService {
     final private PushSDKConfigRepository pushSDKConfigRepository;
     private final GlobalUtils gu;
-    private final DarajaService darajaService;
+    private final WaretechMpesaService waretechMpesaService;
 
 
     public PushSDKConfig create(PushSDKConfig pushSDKConfig) {
@@ -44,17 +46,21 @@ public class PushSDKConfigService {
     }
 
 
-
+    /**
+     * Launch an STK collection prompt via the Waretech gateway. Signature kept (String amount) so
+     * existing callers in InvoiceService are unchanged; the C2B confirmation still settles at
+     * /api/v2/payment using {@code accountref} (the invoice code).
+     */
     public void popSDkMpesa(String phone, String amount, String accountref) throws Exception {
-        PushSDKConfig pushSDKConfig = findPushSDKConfig("4037171");
-        if (pushSDKConfig == null) {
-            throw new Exception("Push SDK configuration not found for shortcode: 4037171");
-        }
-        
         try {
-            StkPushResponse response = darajaService.initiateSTKPush(pushSDKConfig, phone, amount, accountref);
-            
-            // Convert response to JSON string for backward compatibility
+            GatewayStkResponse response = waretechMpesaService.initiateStk(
+                    phone, new BigDecimal(amount), accountref, "Payment for " + accountref);
+
+            if (response == null || !response.isAccepted()) {
+                throw new Exception("STK push not accepted by gateway: "
+                        + (response != null ? response.getResponseDescription() : "no response"));
+            }
+            // Convert response to JSON string (kept for parity / logging).
             gu.convertToJson(response);
         } catch (Exception e) {
             throw new Exception("STK Push failed: " + e.getMessage());

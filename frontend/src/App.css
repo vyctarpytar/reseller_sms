@@ -1,0 +1,380 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100;0,9..40,200;0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;0,9..40,1000;1,9..40,100;1,9..40,200;1,9..40,300;1,9..40,400;1,9..40,500;1,9..40,600;1,9..40,700;1,9..40,800;1,9..40,900;1,9..40,1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+ 
+
+@font-face {
+	font-family: 'Satoshi';
+	src: url("./assets/Fonts/WEB/fonts/Satoshi-Bold.woff2") format('woff2'),
+		url("./assets/Fonts/WEB/fonts/Satoshi-Bold.woff") format('woff'),
+		url("./assets/Fonts/WEB/fonts/Satoshi-Bold.ttf") format('truetype'),
+}
+
+
+
+
+
+.input-phone {
+	display: flex;
+	width: 100%;
+	height: 52px;
+	/* padding: 0px 0px 0px 19px; */
+	align-items: center;
+	border-radius: 3px;
+	border: 1px solid #9095a0;
+	background: var(--White, #fff);
+	box-shadow: 0px 0px 1px 0px rgba(23, 26, 31, 0.07),
+		0px 0px 2px 0px rgba(23, 26, 31, 0.12);
+}
+
+.input-phone:hover {
+	border: 2px solid #285ff6;
+	background: var(--White, #fff);
+	box-shadow: 0px 0px 1px 0px rgba(23, 26, 31, 0.07),
+		0px 0px 2px 0px rgba(23, 26, 31, 0.12);
+}
+
+.input-phone:focus {
+	border: 2px solid #285ff6;
+	background: var(--White, #fff);
+	box-shadow: 0px 0px 1px 0px rgba(23, 26, 31, 0.07),
+		0px 0px 2px 0px rgba(23, 26, 31, 0.12);
+}
+
+.input {
+	max-width: 100%;
+	width: 100%;
+	height: 42px;
+	align-items: center;
+	border-radius: 6px;
+	border: 1px solid #cacaca;
+	 
+}
+
+.input:hover {
+	border: 1px solid #cacaca;
+	 
+}
+
+.input:focus {
+	border: 1px solid #cacaca;
+}
+
+
+.input-textarea {
+	max-width: 100%;
+	width: 100%; 
+	align-items: center;
+	border-radius: 6px !important;
+	border: 1px solid #D4D4D8 !important;
+	background: var(--White, #fff);
+	box-shadow: none !important;
+}
+
+.input-textarea:hover {
+	border: 1px solid #D4D4D8 !important;
+	background: var(--White, #fff) !important;
+	box-shadow: none !important;
+}
+
+.input-textarea:focus {
+	border: 1px solid #D4D4D8 !important;
+	background: var(--White, #fff) !important;
+	box-shadow: none !important;
+}
+
+
+.input-login {
+	display: flex;
+	padding: 0.625rem 0.8125rem;
+	flex-direction: row;
+	align-items: center;
+	align-self: stretch;
+	border-radius: 0.375rem;
+	border: 1px solid #D4D4D8;
+	background: #FFF; 
+}
+
+.input-login-password {
+	display: flex;
+	padding: 0.625rem 0.8125rem;
+	flex-direction: row;
+	align-items: center;
+	align-self: stretch;
+	border-radius: 0.375rem;
+	border: 1px solid #212121 !important;
+	background: #FFF;
+	width: 100%;
+	height:42px !important;
+	color:red
+}
+
+
+ 
+
+.register-date.ant-picker {
+	display: flex;
+	padding: 0.625rem 0.8125rem;
+	flex-direction: row;
+	align-items: center;
+	align-self: stretch;
+	border-radius: 0.375rem;
+	border: 1px solid #D4D4D8;
+	background: #FFF;
+}
+
+ 
+
+.fgt-pass {
+	@apply text-blu hover:border-b-2 hover:border-blu hover:text-blu;
+	font-size: 16px;
+	font-weight: 500;
+	line-height: 120%;
+}
+
+.cstm-btn {
+	width: 100%;
+	display: flex;
+	padding: 0.5625rem 1.25rem;
+	justify-content: center;
+	align-items: flex-start;
+	align-self: stretch;
+	border-radius: 624.9375rem;
+	background: var(--Icon-active, #388E3C);
+	box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+	color: #FFF;
+	text-align: center;
+	font-family: "Lexend", sans-serif;
+	font-size: 16px !important;
+	font-style: normal;
+	font-weight: 600;
+	line-height: 1.5rem; 
+}
+
+.cstm-btn-2 {
+	width: 100%;
+	display: flex;
+	padding: 0.5625rem 1.25rem;
+	justify-content: center;
+	align-items: flex-start;
+	align-self: stretch;
+	border-radius: 624.9375rem;
+	background: #fff;
+	box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+	color: #388E3C;
+	border: 1px solid #388E3C;
+	text-align: center;
+	font-family: "Lexend", sans-serif;
+	font-size: 16px !important;
+	font-style: normal;
+	font-weight: 600;
+	line-height: 1.5rem; 
+}
+
+.cstm-btn-borderless {
+	width: 100%;
+	display: flex;
+	padding: 0.5625rem 1.25rem;
+	justify-content: center;
+	align-items: flex-start;
+	align-self: stretch;
+	border-radius: 624.9375rem;
+	background: #fff;
+	border:none;
+	color: #388E3C;
+	text-align: center;
+	font-family: "Lexend", sans-serif;
+	font-size: 0.875rem !important;
+	font-style: normal;
+	font-weight: 600;
+	line-height: 1.5rem;
+	/* 171.429% */
+}
+ 
+
+
+.green-border-btn {
+	display: flex;
+	/* padding: 0.5625rem 1.25rem; */
+	justify-content: center;
+	align-items: flex-start;
+	align-self: stretch;
+	border-radius: 624.9375rem;
+	/* border: 1px solid #2E7D32; */
+	box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+	color: var(--Icon-active, #388E3C);
+	text-align: center;
+	font-family: "Lexend", sans-serif;
+	font-size: 0.875rem;
+	font-style: normal;
+	font-weight: 600;
+	line-height: 1.5rem;
+	/* 171.429% */
+}
+
+.cstm-btn-white {
+	@apply text-blu bg-white font-semibold text-[18px] flex items-center justify-center p-2 w-full rounded-[3px] border-2 border-white hover:bg-blu hover:text-white hover:border-2 hover:border-white;
+}
+
+ 
+.side-bar-scroll {
+	padding: 19px 0px 100px 0px !important;
+}
+
+.side-bar-scroll::-webkit-scrollbar {
+	width: 20px;
+}
+
+.side-bar-scroll::-webkit-scrollbar-track {
+	background-color: transparent;
+}
+
+.side-bar-scroll::-webkit-scrollbar-thumb {
+	border-radius: 20px;
+	border: 6px solid transparent;
+	background-clip: content-box;
+}
+
+ 
+
+.profile-title {
+	font-size: 20px;
+	color: #000;
+	font-weight: 700;
+}
+
+.profile-name {
+	color: rgba(0, 0, 0, 0.7);
+	font-size: 15px;
+	font-weight: 500;
+}
+
+ 
+
+.login-img {
+	/* display: flex; */
+	flex-shrink: 0;
+	background: url(./assets/img/image24.png) rgba(0, 0, 0, 0.30);
+	background-size: cover;
+	background-blend-mode: multiply;
+	background-repeat: no-repeat;
+	/* background-position: center; */
+	background-size:120%; 
+	
+}
+
+.login-overlay {
+	display: flex;
+	width: 36.1875rem;
+	height: 14.75rem;
+	padding: 3.75rem 1.25rem;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5rem;
+	flex-shrink: 0;
+	background: rgba(43, 43, 43, 0.72);
+}
+
+.zambia-logo {
+	width: 10.01688rem;
+	/* height: 3.25rem; */
+	flex-shrink: 0;
+	object-fit: contain;
+}
+
+ 
+.services-btn {
+	width: 100%; 
+	height: 64px;
+	gap: 7px;
+	border-radius: 8px 0px 0px 0px;
+	opacity: 0px;
+	display: flex;
+	align-items: center;
+	background-color: #F9FFF9;
+	box-shadow: 0px 4px 4px 0px #0000001C;
+	padding-left: 28.75px;
+	padding-top: 26px;
+	padding-bottom: 27px;
+	color: #388E3C;
+	font-family: "DM Sans" !important; 
+	font-size: 16px;
+}
+.history-btn{
+	width: 100%;
+	height: 64px;
+	gap: 7px;
+	border-radius: 8px 0px 0px 0px;
+	border: 1px solid #ECECEC;
+	opacity: 0px;
+	color:#212121;
+	padding-left: 28.75px;
+	padding-top: 26px;
+	padding-bottom: 27px; 
+	display: flex;
+	align-items: center;
+
+}
+
+.service-card{
+	max-width: 100%;
+	/* min-width: 432.33px;
+	width: 432.33px; */
+	height: auto;
+	border-radius: 13.4px; 
+	background: #fff;
+	border: 1px solid #ECECEC;
+	flex-grow: 1;
+}
+
+.service-line{
+	height: 3px;
+	width: 36px; 
+	background: #388E3C; 
+	/* transform: rotate(90deg); */
+}
+.black-nav {
+	display: flex;
+	width: 100%;
+	padding: 1.4375rem 0rem;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background: #2B2B2B; 
+}
+
+.banner{
+	background-image: url('./assets/img/image10.png');
+	height:100%;
+	/* background-size: 100%; */
+	background-repeat: no-repeat;
+ 
+}
+
+.started{
+	background-blend-mode: normal;
+	background: #1a8b00;
+	background-image: url('./assets/img/image11.png');
+	/* height: 19.625rem; */
+	background-size: 40%;
+	object-fit: cover;
+	background-position: right;
+	background-repeat: no-repeat;
+}
+.dash-title{
+	font-family: 'Satoshi'; 
+}
+
+ 
+.prod_view_table_css span:nth-child(4n+1),
+.prod_view_table_css span:nth-child(4n+2) {
+  background-color: #f0f0f0; 
+}
+
+.prod_view_table_css span:nth-child(4n+3),
+.prod_view_table_css span:nth-child(4n+4) {
+  background-color: #FFFFFF;  
+}
+.recharts-default-legend{
+	cursor: pointer !important; 
+}

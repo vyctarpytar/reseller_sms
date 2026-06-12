@@ -11,6 +11,10 @@ public class PaymentService {
     public Payment save(Payment payment) {
        return  paymentRepository.saveAndFlush(payment);
     }
+
+    public boolean existsByTransId(String transId) {
+        return transId != null && paymentRepository.existsByTransId(transId);
+    }
 }
 
 

@@ -69,8 +69,6 @@ public class Reseller {
     private String rsStatus;
     private String rsKraPin;
     private String rsReorderLevel;
-    @Builder.Default
-    private Boolean rsHasNdovuPayAccount = false;
     private BigDecimal rsAllocatableUnit;
     
     // Deletion tracking fields

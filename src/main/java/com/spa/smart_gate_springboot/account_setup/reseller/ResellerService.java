@@ -6,7 +6,7 @@ import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.api.ApiKeyService;
-import com.spa.smart_gate_springboot.ndovuPay.NdovupayService;
+import com.spa.smart_gate_springboot.account_setup.wallet.WalletService;
 import com.spa.smart_gate_springboot.user.Permission;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 public class ResellerService {
     private final ResellerRepo resellerRepo;
     private final UserService userService;
-    private final NdovupayService ndovupayService;
+    private final WalletService walletService;
     private final ApiKeyService apiKeyService;
     private final AccountService accountService;
     private final GlobalUtils gu;
@@ -51,7 +51,12 @@ public class ResellerService {
         if (rdId == null) {
             createDefaultAccount(reseller1);
             createDefaultAdmin(reseller1);
-            ndovupayService.createNdovuPayOrganisation(reseller1);
+            // Provision the reseller's cash wallet (replaces the old NdovuPay org creation).
+            try {
+                walletService.getOrCreateReseller(reseller1.getRsId());
+            } catch (Exception e) {
+                log.error("Failed to create wallet for new reseller {}: {}", reseller1.getRsId(), e.getMessage());
+            }
         }
         resp.setData("result", reseller1, resp);
         resp.setMessage("message", "ok", resp);
