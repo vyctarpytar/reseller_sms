@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Synq Africa — Branded PDF chrome</title>
+<style>
+  body{margin:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#334155;background:#e7e3da;padding:40px}
+  .page{width:794px;min-height:1000px;margin:0 auto;background:#fff;box-shadow:0 8px 40px rgba(19,22,29,.18);
+        border-radius:4px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .page img{width:100%;display:block}
+  .body{flex:1;padding:36px 40px;position:relative}
+  .watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .watermark img{width:460px;opacity:.05}
+  h2{color:#69472E;font-size:18px;margin:0 0 4px}
+  .muted{color:#64748b;font-size:12px}
+  /* stat cards */
+  .cards{display:flex;gap:14px;margin:22px 0 26px}
+  .card{flex:1;border:1px solid #EEEAE4;border-radius:10px;padding:14px 16px;border-top:3px solid #D96C3B}
+  .card .lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#64748b}
+  .card .val{font-size:22px;color:#69472E;font-weight:600;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  thead th{background:#69472E;color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:11px}
+  thead th.r{text-align:right}thead th.c{text-align:center}
+  tbody td{padding:9px 12px;border-bottom:1px solid #EEEAE4}
+  tbody tr:nth-child(even){background:#FAF8F5}
+  td.r{text-align:right}td.c{text-align:center}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:600}
+  .pill.green{background:#a7f3d0;color:#047857}.pill.amber{background:#fde68a;color:#b45309}
+  .pageno{position:absolute;right:40px;bottom:8px;font-size:10px;color:#64748b}
+</style>
+</head>
+<body>
+<div class="page">
+  <img src="header.svg" alt="header"/>
+  <div class="body">
+    <div class="watermark"><img src="../logos/synq-africa-mark.png" alt=""/></div>
+    <h2>SMS Delivery Statement</h2>
+    <div class="muted">Period: 01 Jun 2026 – 13 Jun 2026 · Reseller: Acme Telco</div>
+    <div class="cards">
+      <div class="card"><div class="lbl">Messages Sent</div><div class="val">128,400</div></div>
+      <div class="card"><div class="lbl">Delivered</div><div class="val">126,910</div></div>
+      <div class="card"><div class="lbl">Spend (KES)</div><div class="val">96,300</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Campaign</th><th class="r">Sent</th><th class="r">Delivered</th><th class="r">Cost</th><th class="c">Status</th></tr></thead>
+      <tbody>
+        <tr><td>01 Jun</td><td>June Promo</td><td class="r">42,100</td><td class="r">41,800</td><td class="r">31,575</td><td class="c"><span class="pill green">DELIVERED</span></td></tr>
+        <tr><td>05 Jun</td><td>OTP Batch</td><td class="r">61,200</td><td class="r">60,910</td><td class="r">45,900</td><td class="c"><span class="pill green">DELIVERED</span></td></tr>
+        <tr><td>11 Jun</td><td>Survey Blast</td><td class="r">25,100</td><td class="r">24,200</td><td class="r">18,825</td><td class="c"><span class="pill amber">QUEUED</span></td></tr>
+      </tbody>
+    </table>
+    <div class="pageno">Page 1 of 1</div>
+  </div>
+  <img src="footer.svg" alt="footer"/>
+</div>
+</body>
+</html>

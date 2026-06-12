@@ -10,7 +10,7 @@ import { save, saveExcel } from "../../../../features/save/saveSlice";
 import { fetchContacts } from "../../../../features/contact/ContactSlice";
 
 const { TextArea } = Input;
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const ContactExcelModal = ({ open, handleCancelModal }) => {
   const [form] = Form.useForm();
@@ -152,7 +152,7 @@ const ContactExcelModal = ({ open, handleCancelModal }) => {
                   key="back"
                   type="button"
                   onClick={handleCancelModal}
-                  className="cstm-btn !bg-white !text-[#388E3C] !border !border-[#388E3C]"
+                  className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)]"
                 >
                   Cancel
                 </button>

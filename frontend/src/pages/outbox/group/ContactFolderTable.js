@@ -91,7 +91,7 @@ export default function ContactFolderTable({
       label: (
         <Link
           onClick={handleView}
-          className="flex  text-[16px] font-sans   !text-darkGreen"
+          className="flex  text-[16px] font-sans   !text-primary"
         >
           View
         </Link>
@@ -103,7 +103,7 @@ export default function ContactFolderTable({
       label: (
         <Link
           onClick={handleEdit}
-          className="flex  text-[16px] font-sans  !text-darkGreen"
+          className="flex  text-[16px] font-sans  !text-primary"
         >
           Edit
         </Link>
@@ -115,7 +115,7 @@ export default function ContactFolderTable({
       label: (
         <div
           onClick={showModalDelete}
-          className="flex  text-[16px] font-sans   !text-darkGreen"
+          className="flex  text-[16px] font-sans   !text-primary"
         >
           Remove
         </div>

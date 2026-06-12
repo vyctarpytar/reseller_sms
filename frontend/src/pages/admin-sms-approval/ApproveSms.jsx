@@ -53,7 +53,7 @@ function ApproveSms() {
       render: (item) => (
         <>
           <button onClick={() => setProdd(item)}>
-            <div className="text-darkGreen" onClick={showModal}>
+            <div className="text-primary" onClick={showModal}>
               View
             </div>
           </button>

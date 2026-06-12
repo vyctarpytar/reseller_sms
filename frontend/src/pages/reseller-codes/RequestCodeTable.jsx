@@ -84,7 +84,7 @@ function RequestCodeTable() {
     {
       key: "0",
       label: (
-        <div className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-darkGreen"
+        <div className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-primary"
         onClick={handleRequestView}>
           View
         </div>
@@ -95,7 +95,7 @@ function RequestCodeTable() {
       key: "1",
       label: (
         <div
-          className=" flex  text-[16px] font-sans items-center justify-center text-darkGreen" 
+          className=" flex  text-[16px] font-sans items-center justify-center text-primary" 
         >
          Edit
         </div>

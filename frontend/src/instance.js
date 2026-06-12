@@ -1,7 +1,7 @@
 import axios from "axios";
 import LoginModal from "./components/LoginModal";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 export const handleLogout = async () => {
   await localStorage.clear();

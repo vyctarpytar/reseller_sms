@@ -47,7 +47,7 @@ function OutboxList() {
             <div className="product-card  min-h-[6.125rem] lg:w-[550px] w-full">
               <div className="flex justify-between p-[.875rem] items-center">
                 <div className="flex items-center gap-x-5">
-                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-darkGreen rounded-full">
+                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-primary rounded-full">
                     <img src={svg31} alt={svg31} />
                   </div>
 
@@ -74,7 +74,7 @@ function OutboxList() {
             <div className="product-card  min-h-[6.125rem] lg:w-[550px] w-full">
               <div className="flex justify-between p-[.875rem] items-center">
                 <div className="flex items-center gap-x-5">
-                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-darkGreen rounded-full">
+                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-primary rounded-full">
                     <img src={svg23} alt={svg23} />
                   </div>
 
@@ -99,7 +99,7 @@ function OutboxList() {
             <div className="product-card  min-h-[6.125rem] lg:w-[550px] w-full">
               <div className="flex justify-between p-[.875rem] items-center">
                 <div className="flex items-center gap-x-5">
-                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-darkGreen rounded-full">
+                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-primary rounded-full">
                     <img src={svg23} alt={svg23} />
                   </div>
 
@@ -125,7 +125,7 @@ function OutboxList() {
             <div className="product-card  min-h-[6.125rem] lg:w-[550px] w-full">
               <div className="flex justify-between p-[.875rem] items-center">
                 <div className="flex items-center gap-x-5">
-                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-darkGreen rounded-full">
+                  <div className="w-[3.875rem] h-[3.875rem] flex justify-center items-center bg-primary rounded-full">
                     <img src={svg23} alt={svg23} />
                   </div>
 

@@ -97,7 +97,7 @@ function DetailsView() {
             <span>{singleRequest?.reDesc ?? null}</span>
 
             <span>Permission Letter</span>
-            <span className="flex items-center text-darkGreen cursor-pointer"
+            <span className="flex items-center text-primary cursor-pointer"
                 onClick={()=>handleClick(singleRequest?.reAuthorizationFileName)}>
               <img src={svg28} alt="svg28" />
               {formatPath(singleRequest?.reAuthorizationFileName)}
@@ -136,14 +136,14 @@ function DetailsView() {
             <span>{singleRequest?.reseller?.vatNumber ?? null}</span>
 
             <span>Certificate of Incorporation</span>
-            <span className="flex items-center text-darkGreen cursor-pointer"
+            <span className="flex items-center text-primary cursor-pointer"
                 onClick={()=>handleClick(singleRequest?.reIncorporationCertFileName)}>
               <img src={svg28} alt="svg28" />
               {formatPath(singleRequest?.reIncorporationCertFileName)}
             </span>
 
             <span>Tax Certificate</span>
-            <span className="flex items-center text-darkGreen cursor-pointer"
+            <span className="flex items-center text-primary cursor-pointer"
                 onClick={()=>handleClick(singleRequest?.reKraFileName)}>
               <img src={svg28} alt="svg28" />
               {formatPath(singleRequest?.reKraFileName)}
@@ -188,7 +188,7 @@ function DetailsView() {
         <div
           className={`rounded-[1rem] p-[.25rem] ${
             singleRequest?.reStatus == "PROCESSED"
-              ? "bg-[#388E3C]"
+              ? "bg-[var(--brand)]"
               : "bg-[#808080]"
           }  flex items-center justify-center !text-white
            w-[220px] gap-x-[5px] prod_view_table !text-[16px]`}

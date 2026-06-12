@@ -49,9 +49,42 @@ public class AccountService {
 
 
     public Account findByAccId(UUID id) {
-        if(id == null)  throw new ApplicationExceptionHandler.resourceNotFoundException("Smart Gate Account not found with Id : " + id);
+        if (id == null) throw new ApplicationExceptionHandler.resourceNotFoundException("No account was specified for this request. Please select an account and try again.");
 
-        return this.accountRepository.findById(id).orElseThrow(() -> new ApplicationExceptionHandler.resourceNotFoundException("Smart Gate Account not found with Id : " + id));
+        return this.accountRepository.findById(id).orElseThrow(() -> new ApplicationExceptionHandler.resourceNotFoundException("We couldn't find that account. It may have been removed."));
+    }
+
+    /**
+     * Resolve the account a data query should be scoped to, honoring the optional
+     * {@code account_id} drill-down param sent by the portal while enforcing tenant
+     * isolation:
+     * <ul>
+     *   <li>ACCOUNT users are always pinned to their own account (param ignored).</li>
+     *   <li>RESELLER users may only drill into accounts that belong to their own
+     *       reseller; any other account is denied.</li>
+     *   <li>TOP users may act as any account.</li>
+     * </ul>
+     *
+     * @return the account UUID to filter by, or {@code null} when no account-level
+     *         scope applies (e.g. a reseller viewing all their accounts).
+     */
+    public UUID resolveAccountScope(User user, String accountId) {
+        // An account user can never escape their own account.
+        if (user.getLayer().equals(Layers.ACCOUNT)) {
+            return user.getUsrAccId();
+        }
+        if (TextUtils.isEmpty(accountId)) {
+            return null;
+        }
+        UUID accId = UUID.fromString(accountId);
+        if (user.getLayer().equals(Layers.RESELLER)) {
+            Account account = findByAccId(accId);
+            if (account.getAccResellerId() == null
+                    || !account.getAccResellerId().equals(user.getUsrResellerId())) {
+                throw new AccessDeniedException("Account does not belong to your reseller");
+            }
+        }
+        return accId;
     }
 
     /**

@@ -77,7 +77,6 @@ public interface ReportRepository extends JpaRepository<MsgMessageQueueArc, UUID
               and  ( case when   cast ( :msgCreatedFromDate as DATE)   is not null then
                               cast(msg_created_date as date) between cast(  :msgCreatedFromDate as Date) and  cast(  :msgCreatedToDate as Date)
                                  else  cast(msg_created_date as date) = cast(  :msgCreatedDate as Date) end )
-              AND msg_status NOT IN ('PENDING_CREDIT', 'PENDING_ENROUTE', 'PENDING_PROCESSING', 'PROCESSING', 'Processing', 'OUTCRED', 'SENTERR', 'SYSTERR')
              and (case when cast(:msgSalesUserId as UUID) is not null then
                              exists(select 1 from js_core.jsc_accounts where acc_created_by = :msgSalesUserId and msg_acc_id = acc_id) else 1=1 end )
                           and (case when cast(:msgResellerId as uuid) is not null then
@@ -89,7 +88,6 @@ public interface ReportRepository extends JpaRepository<MsgMessageQueueArc, UUID
                           and  ( case when   cast ( :msgCreatedFromDate as DATE)   is not null then
                                           cast(msg_created_date as date) between cast(  :msgCreatedFromDate as Date) and  cast(  :msgCreatedToDate as Date)
                                              else  cast(msg_created_date as date) = cast(  :msgCreatedDate as Date) end )
-                          AND msg_status NOT IN ('PENDING_CREDIT', 'PENDING_ENROUTE', 'PENDING_PROCESSING', 'PROCESSING', 'Processing', 'OUTCRED', 'SENTERR', 'SYSTERR')
              and (case when cast(:msgSalesUserId as UUID) is not null then
                              exists(select 1 from js_core.jsc_accounts where acc_created_by = :msgSalesUserId and msg_acc_id = acc_id) else 1=1 end )
                           and (case when cast(:msgResellerId as uuid) is not null then

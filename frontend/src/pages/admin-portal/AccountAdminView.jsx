@@ -156,21 +156,21 @@ function AccountAdminView() {
         <div className="mt-[0.5rem] border border-[#f1f1f1] rounded-[3px] p-3 ">
           <div className="grid grid-cols-2 prod_view_table gap-y-[1rem] prod_view_table_css">
           <span>Certificate of Incorporation</span>
-            <span className="flex items-center text-darkGreen cursor-pointer"
+            <span className="flex items-center text-primary cursor-pointer"
                 onClick={()=>handleClick(singleAcc?.accIncorporationCertFileName)}>
               <img src={svg28} alt="svg28" />
               {singleAcc?.accIncorporationCertFileName ? formatPath(singleAcc?.accIncorporationCertFileName) : "No File"}
             </span>
 
             <span>Tax Certificate</span>
-            <span className="flex items-center text-darkGreen cursor-pointer"
+            <span className="flex items-center text-primary cursor-pointer"
                 onClick={()=>handleClick(singleAcc?.accKraFileName)}>
               <img src={svg28} alt="svg28" />
               {singleAcc?.accKraFileName ? formatPath(singleAcc?.accKraFileName) : "No File"}
             </span> 
 
             <span>Permission Letter</span>
-            <span className="flex items-center text-darkGreen cursor-pointer"
+            <span className="flex items-center text-primary cursor-pointer"
                 onClick={()=>handleClick(singleAcc?.accAuthorizationFileName)}>
               <img src={svg28} alt="svg28" />
               {singleAcc?.accAuthorizationFileNam ? formatPath(singleAcc?.accAuthorizationFileName) : "No File"}
@@ -190,7 +190,7 @@ function AccountAdminView() {
         <div
           className={`rounded-[1rem] p-[.25rem] ${
             singleAcc?.accStatus == "ACTIVE"
-              ? "bg-[#388E3C]"
+              ? "bg-[var(--brand)]"
               : "bg-[#808080]"
           }  flex items-center justify-center !text-white
            w-[250px] gap-x-[5px] prod_view_table !text-[16px]`}

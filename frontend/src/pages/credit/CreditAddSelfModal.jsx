@@ -67,11 +67,26 @@ const CreditAddSelfModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   };
 
   const handleNumberChange = (e) => {
+    const digits = String(e).replace(/\D/g, "").slice(0, 12);
     setFormData((prevData) => ({
       ...prevData,
-      smsPayerMobileNumber: String(e),
+      smsPayerMobileNumber: digits,
     }));
   };
+
+  // Prefill the phone field with the logged-in user's number when the modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      setFormData((prevData) => ({
+        ...prevData,
+        smsPayerMobileNumber:
+          prevData?.smsPayerMobileNumber ||
+          String(user?.drftPhoneNo || "")
+            .replace(/\D/g, "")
+            .slice(0, 12),
+      }));
+    }
+  }, [isModalOpen, user?.drftPhoneNo]);
 
   function fetchResellerData() {
     dispatch(fetchReseller());
@@ -228,7 +243,7 @@ const CreditAddSelfModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
                 <button
                   key="back"
                   onClick={handleCancel}
-                  className="cstm-btn !bg-white !text-[#388E3C] !border !border-[#388E3C]"
+                  className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)]"
                 >
                   Cancel
                 </button>

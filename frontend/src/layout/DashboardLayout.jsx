@@ -4,12 +4,12 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
   Menu, 
 } from "antd";
-import { handleLoginSession, logout } from "../features/auth/authSlice"; 
+import { logout } from "../features/auth/authSlice";
 import MobileDrawer from "./MobileDrawer"; 
 import MaterialIcon from "material-icons-react";
 import  dashboardsvg from '../assets/svg/grid.svg'
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 export default function DashboardLayout({ children }) {
   const { pathname } = useLocation();

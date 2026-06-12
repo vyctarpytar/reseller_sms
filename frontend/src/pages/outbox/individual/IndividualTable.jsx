@@ -77,7 +77,7 @@ function IndividualTable() {
       <div className="mt-[3.31rem] ">
         <div className={`w-[200px]`}>
           <button
-            className={`cstm-btn  !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3`}
+            className={`cstm-btn  !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3`}
             onClick={showModal}
           >
             <img src={svg32} alt="svg32" />

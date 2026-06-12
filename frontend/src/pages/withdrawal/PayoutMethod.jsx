@@ -117,7 +117,7 @@ function PayoutMethod() {
               <div className="lg:w-[150px] w-auto">
                 <button
                   type="button"
-                  className="cstm-btn !bg-white !text-[#555555] !rounded-[10px] !border !border-[#388E3C]"
+                  className="cstm-btn !bg-white !text-[#555555] !rounded-[10px] !border !border-[var(--brand)]"
                 >
                   {item?.title === "M-Pesa" ? "Disconnect" : "Connect"}
                 </button>

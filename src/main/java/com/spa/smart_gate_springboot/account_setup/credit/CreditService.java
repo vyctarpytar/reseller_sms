@@ -139,7 +139,7 @@ public class CreditService {
 
         //log the invoice
 
-//        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_MANAGER_APPROVAL).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
+//        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
 //        invoiceRepository.saveAndFlush(invoice);
 
         Credit save = save(credit);
@@ -185,7 +185,7 @@ public class CreditService {
         String xPlainCode = ug.getUniqueCode();
 
         //log the invoice
-        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_MANAGER_APPROVAL).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
+        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
         invoiceRepository.saveAndFlush(invoice);
 
         response.setData("result", save(credit), response);

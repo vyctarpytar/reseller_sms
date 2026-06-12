@@ -189,21 +189,6 @@ public class InvoiceService {
 
     }
 
-    public StandardJsonResponse markAsPaidCredit(UUID invoId, User user, InvoPaidDto invoPaidDto) {
-        StandardJsonResponse response = new StandardJsonResponse();
-        Invoice invoice = findById(invoId);
-        invoice.setInvoStatus(InvoStatus.valueOf(invoPaidDto.getInvoStatus()));
-        invoice.setInvoMarkedPaidByEmail(user.getEmail());
-        invoice.setInvoMarkedPaidById(user.getUsrId());
-        invoice.setInvoMarkedPaidDate(LocalDateTime.now());
-        invoice.setInvoMarkedPaidReference(invoPaidDto.getInvoMarkedPaidReference());
-        invoice.setInvoMarkedPaidValueDate(invoPaidDto.getInvoMarkedPaidValueDate());
-        invoice.setInvoMarkedPaidAmount(invoPaidDto.getInvoMarkedPaidAmount());
-        response.setData("result", invoiceRepository.saveAndFlush(invoice), response);
-        response.setMessage("message", "Marked as Paid", response);
-        return response;
-    }
-
     public StandardJsonResponse getResellerInvoicesPerYearSummary(UUID rsId) {
         StandardJsonResponse response = new StandardJsonResponse();
         List<Object[]> objectList = invoiceRepository.getResellerInvoicesPerYearSummary(rsId);

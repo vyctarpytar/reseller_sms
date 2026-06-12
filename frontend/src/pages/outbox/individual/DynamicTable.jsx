@@ -193,7 +193,7 @@ const DynamicTable = () => {
         {dataSource?.length > 0 && (
           <div className={`w-[250px]`}>
             <button
-              className={`cstm-btn  !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3`}
+              className={`cstm-btn  !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3`}
               onClick={showModalGroup}
             >
               <img src={svg32} alt="svg32" />
@@ -216,7 +216,7 @@ const DynamicTable = () => {
           }}
           footer={() => (
             <button
-              className="flex items-center gap-x-4 text-darkGreen font-lexendS"
+              className="flex items-center gap-x-4 text-primary font-lexendS"
               onClick={handleAdd}
             >
               <img src={svg44} alt="svg44" />

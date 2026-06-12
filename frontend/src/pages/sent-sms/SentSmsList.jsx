@@ -12,6 +12,7 @@ import {
   dateForHumans,
   formatDate,
   formatDateTime,
+  getStartOfWeek,
 } from "../../utils";
 import noCon from "../../assets/img/noCon.png";
 import svg38 from "../../assets/svg/svg38.svg";
@@ -19,8 +20,12 @@ import FilterModal from "./FilterModal";
 import {
   downloadExcel,
   fetchSavedSms,
+  fetchSentSmsSummary,
   save,
 } from "../../features/save/saveSlice";
+import SentSmsSummary from "./SentSmsSummary";
+import StatusBadge from "../../components/StatusBadge";
+import ExportExcelButton from "../../components/ExportExcelButton";
 import toast from "react-hot-toast";
 
 function SentSmsList() {
@@ -28,9 +33,8 @@ function SentSmsList() {
   const { loading } = useSelector((state) => state.sms);
   const { user } = useSelector((state) => state.auth);
   const { saving } = useSelector((state) => state.save);
-  const { sentSmsData, loadingSms, sentSmsCount } = useSelector(
-    (state) => state.save
-  );
+  const { sentSmsData, loadingSms, sentSmsCount, sentSmsSummary, loadingSummary } =
+    useSelector((state) => state.save);
 
   const [formData, setFormData] = useState({});
   const handleOpenChange = () => {
@@ -103,28 +107,11 @@ function SentSmsList() {
     },
     {
       title: "Status",
-      render: (item) => {
-        return (
-          <div
-            className={`${
-              item?.msgStatus == "SENT"
-                ? "text-[#8884d8]"
-                : item?.msgStatus == "DeliveredToTerminal"
-                ? "text-[#388E3C]"
-                : item?.msgStatus == "Exception sending "
-                ? "text-[#ffa500]"
-                : item?.msgStatus == "InvalidMsisdn"
-                ? "text-[#ff0000]"
-                : item?.msgStatus == "DeliveryImpossible"
-                ? "text-[#808080]"
-                : "text-blk14"
-            }  
-         font-[700] flex items-center justify-center text-center`}
-          >
-            {item?.msgStatus}
-          </div>
-        );
-      },
+      render: (item) => (
+        <div className="flex items-center justify-center">
+          <StatusBadge value={item?.msgStatus} />
+        </div>
+      ),
       width: "10%",
     },
     {
@@ -142,9 +129,7 @@ function SentSmsList() {
     },
     {
       title: "Date",
-      // render: (item) => {
-      //   return <div>{formatDateTime(item)}</div>;
-      // },
+      render: (item) => <div className="whitespace-nowrap">{formatDateTime(item)}</div>,
       dataIndex: "msgCreatedDate",
       width: "10%",
     },
@@ -164,10 +149,14 @@ function SentSmsList() {
 
   const handleClearFilters = async () => {
     await setFormData({});
+    setActiveCard(null);
+    setCardStatuses(null);
+    setPageIndex(0);
     const res = await dispatch(
       fetchSavedSms({
         url: "api/v2/sms",
         msgStatus: null,
+        msgStatusList: null,
         msgCreatedDate: null,
         msgSubmobileNo: null,
         msgMessage: null,
@@ -182,13 +171,20 @@ function SentSmsList() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  async function fetchSentSmsData(page, size) {
+  // Summary-card quick filter: which card is active and the raw statuses it maps
+  // to. Kept separate from `formData` (the modal filters) so toggling a card
+  // doesn't reload the summary strip or touch the filter-count badge.
+  const [activeCard, setActiveCard] = useState(null);
+  const [cardStatuses, setCardStatuses] = useState(null);
+
+  async function fetchSentSmsData(page, size, statuses = cardStatuses) {
     const res = await dispatch(
       fetchSavedSms({
         url: "api/v2/sms",
         limit: size ?? pageSize,
         start: page ?? pageIndex,
         msgStatus: formData?.msgStatus,
+        msgStatusList: statuses?.length ? statuses : null,
         msgCreatedFrom: formData?.msgCreatedFrom,
         msgCreatedTo: formData?.msgCreatedTo,
         msgSubmobileNo: formData?.msgSubmobileNo,
@@ -199,11 +195,42 @@ function SentSmsList() {
     );
   }
 
+  // Clicking a summary card filters the table to that bucket's statuses.
+  // Clicking the active card again (or "Total") clears the bucket filter.
+  const handleCardFilter = (key, statuses) => {
+    const turningOff = activeCard === key || key === "total" || !statuses?.length;
+    const nextStatuses = turningOff ? null : statuses;
+    setActiveCard(turningOff ? null : key);
+    setCardStatuses(nextStatuses);
+    setPageIndex(0);
+    fetchSentSmsData(0, pageSize, nextStatuses);
+  };
+
+  // Server-aggregated per-status summary. Uses the status report endpoint (works
+  // across a reseller's accounts, unlike api/v2/dash which is account-scoped).
+  // Defaults to the current week (Monday → today) — all-time aggregation is
+  // expensive. The user widens/narrows the window via the date filter.
+  function fetchSummary() {
+    const todayStr = formatDate(new Date());
+    const weekStartStr = getStartOfWeek();
+    dispatch(
+      fetchSentSmsSummary({
+        url: "api/v2/rpt/status-sms-usage",
+        msgDateFrom: formData?.msgCreatedFrom ?? weekStartStr,
+        msgDateTo: formData?.msgCreatedTo ?? todayStr,
+        msgAccId: formData?.msgAccId ?? null,
+        limit: 1000,
+        start: 0,
+      })
+    );
+  }
+
   const handleClick = async (item) => {
     const res = await dispatch(
       downloadExcel({
         url: "api/v2/sms/download-excel",
         msgStatus: formData?.msgStatus,
+        msgStatusList: cardStatuses?.length ? cardStatuses : null,
         msgCreatedFrom: formData?.msgCreatedFrom,
         msgCreatedTo: formData?.msgCreatedTo,
         msgSubmobileNo: formData?.msgSubmobileNo,
@@ -234,9 +261,14 @@ function SentSmsList() {
     fetchSentSmsData();
   }, []);
 
+  // Summary is page-independent — refresh it on mount and whenever filters change.
+  useEffect(() => {
+    fetchSummary();
+  }, [formData]);
+
   return (
     <>
-      <div className="w-full overflow-y-scroll h-full">
+      <div className="w-full overflow-y-scroll h-full bg-surface">
         <InsideHeader
           title="Sent SMS"
           subtitle="This is a list of all sms you have sent"
@@ -244,13 +276,26 @@ function SentSmsList() {
         />
 
         <div className="lg:px-10 px-3">
+          <SentSmsSummary
+            summary={sentSmsSummary}
+            loading={loadingSummary}
+            activeKey={activeCard}
+            onCardClick={handleCardFilter}
+            period={
+              formData?.msgCreatedFrom || formData?.msgCreatedTo
+                ? `${formData?.msgCreatedFrom ?? "…"} → ${
+                    formData?.msgCreatedTo ?? "…"
+                  }`
+                : "This week"
+            }
+          />
           <div className="flex flex-col">
             <div className="mt-[1.31rem] flex justify-between items-center gap-x-10">
               <div className="flex justify-start gap-x-10">
                 {user?.layer === "ACCOUNT" && (
                   <div className={`w-[250px]`}>
                     <button
-                      className={`cstm-btn  !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3`}
+                      className={`cstm-btn  !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3`}
                       onClick={handleSendSms}
                     >
                       <img src={svg32} alt="svg32" />
@@ -265,13 +310,13 @@ function SentSmsList() {
                     <button
                       onClick={showModal}
                       type="button"
-                      className={`bg-transparent flex items-center gap-x-'1' ${
+                      className={`flex items-center gap-x-2 rounded-lg border px-4 py-2 text-[14px] font-medium transition-colors ${
                         Object?.keys(formData)?.length > 0
-                          ? "!text-[#5688E5]"
-                          : "inherit"
+                          ? "border-[#69472E] text-[#5A4632] bg-[#F7F5F2]"
+                          : "border-[#E5E0DA] text-[#5A4632] bg-white hover:bg-[#F7F5F2]"
                       }`}
                     >
-                      <MaterialIcon color="#141414" icon="filter_list" />
+                      <MaterialIcon size={20} color="#69472E" icon="filter_list" />
                       Filters
                     </button>
                   </span>
@@ -290,23 +335,7 @@ function SentSmsList() {
 
               {sentSmsData?.length > 0 && (
                 <div className="flex justify-end item-center">
-                  {saving ? (
-                    <Spin className="sms-spin" />
-                  ) : (
-                    <Tooltip placement="top" title={"Download Excel"}>
-                      <button
-                        onClick={handleClick}
-                        className="flex items-center"
-                      >
-                        <MaterialIcon
-                          size={45}
-                          color="#00B050"
-                          icon="article"
-                        />
-                        <span>Export to excel</span>
-                      </button>
-                    </Tooltip>
-                  )}
+                  <ExportExcelButton onClick={handleClick} loading={saving} />
                 </div>
               )}
             </div>
@@ -315,10 +344,10 @@ function SentSmsList() {
           {loadingSms ? (
             <Skeleton />
           ) : (
-            <div>
+            <div className="mt-5 mb-10 card !p-0 overflow-hidden">
               {sentSmsData && sentSmsData?.length > 0 ? (
                 <Table
-                  className="mt-[1.31rem] w-full mb-10"
+                  className="w-full"
                   scroll={{
                     // x: "max-content",
                     x: 1600,
@@ -342,11 +371,14 @@ function SentSmsList() {
                   loading={loadingSms}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center mt-10">
-                  <img src={noCon} alt="noCon" />
-                  <span className="text-black21 text-[18px] font-normal leading-[24px] font-dmSans">
-                    No Sms Found
-                  </span>
+                <div className="card flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto my-10">
+                  <img src={noCon} alt="" className="h-28 w-28 object-contain opacity-90" />
+                  <h3 className="mt-5 text-lg font-medium text-primary">
+                    No SMS found
+                  </h3>
+                  <p className="mt-2 text-sm text-muted">
+                    Sent messages will appear here.
+                  </p>
                 </div>
               )}
             </div>

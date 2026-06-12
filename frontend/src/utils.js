@@ -143,12 +143,10 @@ export const customToast = (toastObj) => {
   ));
 };
 export const numberWithCommas = (money) => {
-  return Number(money)
-    .toLocaleString({
-      style: "currency",
-      currency: "KES",
-    })
-    .toLowerCase();
+  const n = Number(money);
+  // Guard undefined/null/non-numeric so balances render "0" instead of "nan".
+  if (!Number.isFinite(n)) return "0";
+  return n.toLocaleString("en-US");
 };
 
 export function capitalize(s) {
@@ -156,8 +154,10 @@ export function capitalize(s) {
 }
 
 export function cashConverter(money) {
+  let n = Number(money);
+  if (!Number.isFinite(n)) n = 0;
   return capitalize(
-    Number(money).toLocaleString("en-US", {
+    n.toLocaleString("en-US", {
       style: "currency",
       currency: "KES",
     })
@@ -235,7 +235,7 @@ export const formatImgPath = (path) => {
   }
   const host = window.location.host;
   const protocol = window.location.protocol;
-  const domain = "sms.smartgate.co.ke";
+  const domain = "backend.synqafrica.co.ke";
 
   
   if (host === "localhost:3000") {
@@ -355,6 +355,15 @@ export const formatDate = (dateString) => {
   const day = String(date?.getDate())?.padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+// Monday-anchored start of the current week, formatted YYYY-MM-DD.
+export const getStartOfWeek = () => {
+  const today = new Date();
+  const day = today?.getDay(); // 0=Sun … 6=Sat
+  const diffToMonday = (day + 6) % 7; // days elapsed since Monday
+  const monday = new Date(today);
+  monday.setDate(today?.getDate() - diffToMonday);
+  return formatDate(monday);
+};
 export const getDate7DaysAgo=()=>{
   const today = new Date();
   const sevenDaysAgo = new Date(today);
@@ -411,21 +420,24 @@ export const getTomorrowDateAfternoon=()=>{
   return `${year}-${month}-${day} 1:00`; 
 }
 
-export const formatDateTime=(dateTimeStr)=> {
+export const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return "—";
   const date = new Date(dateTimeStr);
+  if (isNaN(date?.getTime())) return "—";
 
-  const datePart = date?.toISOString()?.split('T')[0];
-  let hours = date?.getHours();
-  const minutes = date?.getMinutes()?.toString()?.padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
- 
-  hours = hours % 12;
-  hours = hours ? hours : 12;  
+  // Use local date + time parts consistently (the old version mixed a UTC date
+  // with a local time, which drifted by a day around midnight).
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);
+  const year = date.getFullYear();
 
-  const timePart = `${hours}:${minutes} ${ampm}`;
- 
-  return `${datePart} ${timePart}`;
-}
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+
+  return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+};
 export const normalizeDateToLocalYearWTime = (date) => {
   if (!date) return null;  
   const jsDate = new Date(date); 

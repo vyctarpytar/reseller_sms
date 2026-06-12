@@ -50,7 +50,7 @@ const DashTimeseries = ({ initialLoad }) => {
   return (
     <>
       <div className="graph-card  lg:p-10 p-3 mt-2">
-        <div className="grap-title mb-10 mt-5">Sms Status Graph</div>
+        <div className="sa-title mb-10 mt-5">Sms Status Graph</div>
        
 
         <div style={{ width: "100%", height: 500 }}>

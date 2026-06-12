@@ -25,7 +25,7 @@ function Report() {
     fetchAnalyticsData()
   },[])
   return (
-    <div className="w-full h-full overflow-y-scroll bg-lightBlue lg:px-10 px-3">
+    <div className="w-full h-full overflow-y-scroll bg-surface lg:px-10 px-3">
       <div className="mt-10 flex lg:flex-row flex-col lg:gap-x-10 gap-y-10  items-center">
         <PerformanceGraph />
         <AnalyticsGraph />

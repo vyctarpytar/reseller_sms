@@ -14,7 +14,7 @@ import {
   fetchResellerImage,
 } from "../../features/reseller/resellerSlice";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const ResellerAddModal = ({
   isModalOpen,
@@ -593,7 +593,7 @@ const ResellerAddModal = ({
                 key="back"
                 type="button"
                 onClick={handleCancel}
-                className="cstm-btn !bg-white !text-[#388E3C] !border !border-[#388E3C]"
+                className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)]"
               >
                 Cancel
               </button>

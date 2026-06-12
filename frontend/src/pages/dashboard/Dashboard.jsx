@@ -4,11 +4,9 @@ import DashTimeseries from "./DashTimeseries";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchDash } from "../../features/dashboard/dashboardSlice";
-import noDataDash from "../../assets/img/dashNoData.jpg";
 import { Skeleton } from "antd";
 import MaterialIcon from "material-icons-react";
 import FilterModal from "./FilterModal";
-import svg41 from "../../assets/svg/svg41.svg";
 import { cleanLegendClickStatus } from "../../features/global/globalSlice";
 import { formatDate, getDate30DaysAgo, getDate7DaysAgo } from "../../utils";
 
@@ -142,80 +140,59 @@ function Dashboard() {
 
   return (
     <>
-      <div className="w-full h-full overflow-y-scroll bg-lightBlue lg:px-10 lg:py-10 py-5 px-3">
+      <div className="w-full h-full overflow-y-scroll bg-surface lg:px-10 lg:py-8 py-5 px-3">
         {initialLoad && loading ? (
-          <Skeleton />
+          <Skeleton active />
         ) : (
           <>
-            <div className="grap-title">{balanceHeader?.accName}</div>
-            <div className="mt-[.81rem] mb-[1rem] grap-sub-title flex justify-between">
+            <p className="sa-eyebrow">Overview</p>
+            <h1 className="sa-title text-[26px]">{balanceHeader?.accName}</h1>
+            <p className="text-sm text-muted mt-1 mb-6">
               Total SMS summary in your account
-            </div>
-            <div className="flex lg:flex-row flex-col mb-5 mt-2">
-              <div className="flex items-center gap-x-0">
-                <div className="w-[80px]">
-                  <button
-                    onClick={() => handleClick("DAY")}
-                    className={`${
-                      activeBtn === "DAY"
-                        ? "!bg-darkGreen !text-white"
-                        : "!bg-white !text-darkGreen !border !border-darkGreen"
-                    } cstm-btn !rounded-[4px]`}
-                  >
-                    Day
-                  </button>
-                </div>
-                <div className="w-[80px]">
-                  <button
-                    onClick={() => handleClick("WEEK")}
-                    className={`${
-                      activeBtn === "WEEK"
-                        ? "!bg-darkGreen !text-white"
-                        : "!bg-white !text-darkGreen !border !border-darkGreen"
-                    } cstm-btn !rounded-[4px]`}
-                  >
-                    Week
-                  </button>
-                </div>
-                <div className="w-[80px]">
-                  <button
-                    onClick={() => handleClick("MONTH")}
-                    className={`${
-                      activeBtn === "MONTH"
-                        ? "!bg-darkGreen !text-white"
-                        : "!bg-white !text-darkGreen !border !border-darkGreen"
-                    } cstm-btn !rounded-[4px]`}
-                  >
-                    month
-                  </button>
-                </div>
-              </div>
+            </p>
 
-              <div className="flex lg:ml-[20rem] lg:justify-end justify-start items-center lg:mt-0 mt-5">
-                <div className="w-[220px]">
+            <div className="flex lg:flex-row flex-col lg:items-center justify-between gap-4 mb-7">
+              {/* segmented range control */}
+              <div className="inline-flex items-center rounded-xl border border-border bg-white p-1 shadow-card w-fit">
+                {[
+                  { key: "DAY", label: "Day" },
+                  { key: "WEEK", label: "Week" },
+                  { key: "MONTH", label: "Month" },
+                ].map((b) => (
                   <button
-                    onClick={showModal}
-                    type="button"
-                    className={`cstm-btn !bg-white !text-darkGreen !border !border-darkGreen !rounded-[4px] ${
-                      Object?.keys(formData)?.length > 0
-                        ? "!text-[#5688E5]"
-                        : "inherit"
+                    key={b.key}
+                    onClick={() => handleClick(b.key)}
+                    className={`px-5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      activeBtn === b.key
+                        ? "bg-primary text-white shadow-card"
+                        : "text-ink hover:text-primary"
                     }`}
                   >
-                    <MaterialIcon color="#388E3C" icon="filter_list" />
-                    Advanced Filters
+                    {b.label}
                   </button>
-                </div>
+                ))}
+              </div>
 
-                <div className="lg:ml-10 ml-2">
-                  <span
-                    className="cursor-pointer font-lexendS flex items-center text-darkGreen text-[16px] font-[600]"
-                    onClick={handleClearFilter}
-                  >
-                    <img src={svg41} alt="svg41" />
-                    Clear Filters
-                  </span>
-                </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={showModal}
+                  type="button"
+                  className="btn-outline !py-2"
+                >
+                  <MaterialIcon color="#69472E" icon="filter_list" />
+                  Advanced Filters
+                  {Object?.keys(formData)?.length > 0 && (
+                    <span className="ml-1 h-2 w-2 rounded-full bg-accent" />
+                  )}
+                </button>
+
+                <button
+                  className="btn-ghost text-muted hover:text-primary"
+                  onClick={handleClearFilter}
+                >
+                  <MaterialIcon color="currentColor" icon="close" size={18} />
+                  Clear
+                </button>
               </div>
             </div>
             {dashData?.msgTimeSeries?.length > 0 &&
@@ -225,15 +202,30 @@ function Dashboard() {
                 <DashTimeseries initialLoad={initialLoad} />
               </>
             ) : (
-              <div className="flex flex-col justify-center items-center">
-                <img
-                  className="h-[60vh] object-cover"
-                  src={noDataDash}
-                  alt="noDataDash"
-                />
-                <span className="mt-10 grap-title">
-                  No Dashboard Data Available
-                </span>
+              <div className="card flex flex-col items-center justify-center text-center py-20 px-6">
+                <div
+                  className="h-20 w-20 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(217,108,59,0.10)" }}
+                >
+                  <MaterialIcon
+                    icon="insights"
+                    color="var(--brand-accent)"
+                    size={40}
+                  />
+                </div>
+                <h3 className="mt-6 text-lg font-medium text-primary leading-snug">
+                  No SMS activity yet
+                </h3>
+                <p className="mt-2 max-w-sm text-sm text-muted leading-relaxed">
+                  There's no data for this account in the selected period. Try a
+                  wider range or clear your filters.
+                </p>
+                <button
+                  onClick={handleClearFilter}
+                  className="btn-outline mt-6 !py-2 !px-5"
+                >
+                  Clear filters
+                </button>
               </div>
             )}
           </>

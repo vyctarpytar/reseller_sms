@@ -1,73 +1,46 @@
-# Getting Started with Create React App
+# SynqAfrica — Reseller SMS Front-end
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Multi-tenant reseller SMS platform UI (React 18 + Vite). White-labeled per reseller
+(logos/theme swap by subdomain). The backend is a Java/SMS gateway exposing `/api/v1`
+and `/api/v2`; this repo is UI only.
 
-<!-- dummy change to verify frontend-only deploy trigger -->
-
+> Migrated from Create React App to **Vite** (build tooling only — app code unchanged).
 
 ## Available Scripts
 
 In the project directory, you can run:
 
-### `npm start`
+### `npm run dev` (or `npm start`)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Runs the app in development mode on [http://localhost:3000](http://localhost:3000).
+The page hot-reloads as you edit.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Builds the app for production to the `build/` folder (minified, hashed filenames).
+This is the directory `.github/workflows/react.yml` copies to the VM on deploy.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### `npm run preview`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Serves the already-built `build/` folder locally to smoke-test a production build
+before deploying.
 
-### `npm run eject`
+## Environment
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+`.env` (gitignored) holds Vite env vars — note Vite requires the `VITE_` prefix and
+they are read via `import.meta.env`:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- `VITE_API_BASE_URL` — backend base URL, read as `import.meta.env.VITE_API_BASE_URL`.
+- `VITE_GOOGLE`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The CI build injects no `.env`, so the deployed bundle ships with these `undefined`
+and axios falls back to same-origin requests (nginx on the VM proxies the API).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Notes on the Vite migration
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- JSX is allowed in `.js` files via a small `transformWithEsbuild` plugin in
+  `vite.config.js` (CRA permitted this; esbuild does not by default).
+- Binary templates imported in code (`.xlsx`, `.docx`) are declared in
+  `assetsInclude` in `vite.config.js`.
+- Routing uses `createHashRouter` (`/#/...`), so the static nginx deploy needs no
+  SPA history-fallback config.

@@ -115,7 +115,7 @@ export default function NewLoggedInPassword() {
 												width='15'
 												height='15'
 												rx='3.5'
-												stroke='#388E3C'
+												stroke='var(--brand)'
 											/>
 										</svg>
 									),

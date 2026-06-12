@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { Spin } from "antd";
 import {
   fetchAccountBalance,
   fetchResellerBalance,
@@ -38,7 +39,12 @@ function DashboardMain() {
     }
   }, [user, orgId, accId, navigate]);
 
-  return <div>DashboardMain</div>;
+  return (
+    <div className="w-full h-full min-h-[60vh] flex flex-col items-center justify-center gap-3 bg-surface">
+      <Spin size="large" />
+      <p className="text-sm text-muted">Loading your dashboard…</p>
+    </div>
+  );
 }
 
 export default DashboardMain;

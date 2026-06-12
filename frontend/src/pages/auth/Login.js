@@ -13,8 +13,6 @@ import {
 import axiosInstance from "../../instance";
 import toast from "react-hot-toast";
 import { fetchMenu } from "../../features/menu/menuSlice";
-import weiser from "../../assets/img/weiser-logo.png";
-import sideImage from "../../assets/img/sideImage.jpg";
 import { getSubdomain } from "../../utils";
 import syncLogo from "../../assets/img/sync-logo.png";
 import synctelLogo from "../../assets/img/synqtel-logo-login.png";
@@ -65,10 +63,13 @@ function Login() {
     localStorage.clear();
   }, []);
 
+  const isFuturesoft = subdomain === "futuresoft";
+
   return (
-    <div className="flex h-[100vh] w-full">
+    <div className="flex h-[100vh] w-full bg-white">
+      {/* ── Brand / imagery side ── */}
       <div
-        className={`w-[50%] h-full lg:flex hidden justify-center items-center
+        className={`w-[50%] h-full lg:flex hidden justify-center items-center relative
         ${
           subdomain == "synqafrica"
             ? "login-pic-sync"
@@ -76,96 +77,102 @@ function Login() {
             ? "login-pic-synctel"
             : subdomain == "futuresoft"
             ? "login-pic-futuresoft"
-            : "login-pic"
+            : "login-pic-sync"
         }`}
-      ></div>
-      <div className="bg-[#d9d3d3] lg:w-[50%] w-full flex flex-col  items-center lg:px-[10%] px-3">
-        <div className="image-container">
-          <img
-            loading="lazy"
-            decoding="async"
-            src={
-              subdomain == "synqafrica"
-                ? syncLogo
-                : subdomain == "synqtel"
-                ? synctelLogo
-                : subdomain == "futuresoft"
-                ? futuresoftLogo
-                : weiser
-            }
-            alt="logo"
-            className="w-[450px] animated-image"
-          />
-        </div>
-        <Form
-          layout="vertical"
-          ref={formRef}
-          name="control-ref"
-          onFinish={onFinish}
+      >
+        {/* subtle brand gradient veil for depth + legibility */}
+        <div
+          className="absolute inset-0"
           style={{
-            maxWidth: "100%",
+            background:
+              "linear-gradient(160deg, rgba(105,71,46,0.20) 0%, rgba(19,22,29,0.55) 100%)",
           }}
-          className="w-full mt-1"
-          form={form}
-        >
-          <Form.Item
-            label="Email address"
-            className="login-form-item"
-            name="email"
-            rules={[
-              {
-                required: true,
-                message: "Please input your email",
-              },
-            ]}
-          >
-            <Input type="email" className="input-login" />
-          </Form.Item>
-          <Form.Item
-            label="Password"
-            className="login-form-item"
-            name="password"
-            rules={[
-              {
-                required: true,
-                message: "Please input your password",
-              },
-            ]}
-          >
-            <Input.Password className="input-login" type="password" />
-          </Form.Item>
+        />
+      </div>
 
-          <button
-            disabled={authLoading}
-            className={`cstm-btn ${
-              subdomain == "synqafrica" || subdomain == "synqtel"
-                ? "!bg-syncBtn"
-                : "!bg-darkBlue"
-            }   mt-[3.25rem]`}
-            type="submit"
-          >
-            {authLoading ? <Spin /> : "Login"}
-          </button>
-
-          <div className="w-full flex lg:flex-row flex-col justify-start lg:items-center items-start mt-[1.75rem]">
-            <Link
-              className={`${
-                subdomain == "synqafrica" || subdomain == "synqtel"
-                  ? "!text-syncBtn"
-                  : "text-[#1B47B4]"
-              } forgot_text lg:px-0 px-0`}
-              to="/forgot-password"
-            >
-              Forgot Password ?
-            </Link>
+      {/* ── Form side ── */}
+      <div className="lg:w-[50%] w-full flex flex-col justify-center items-center lg:px-[10%] px-5 bg-surface">
+        <div className="w-full max-w-[420px]">
+          <div className="image-container !justify-start mb-8">
+            <img
+              loading="lazy"
+              decoding="async"
+              src={
+                subdomain == "synqafrica"
+                  ? syncLogo
+                  : subdomain == "synqtel"
+                  ? synctelLogo
+                  : subdomain == "futuresoft"
+                  ? futuresoftLogo
+                  : syncLogo
+              }
+              alt="logo"
+              className="h-[120px] lg:h-[140px] w-auto object-contain animated-image"
+            />
           </div>
 
-          {/* <div className="mt-[6.19rem] flex justify-center items-center">
-            <span className="dnt_have_account_text !text-[#0057E3]">
-              Powered By Smart People Africa
-            </span>
-          </div> */}
-        </Form>
+          <p className="sa-eyebrow">Welcome back</p>
+          <h1 className="text-[28px] font-semibold leading-tight text-primary mb-1">
+            Sign in to your account
+          </h1>
+          <p className="text-sm text-muted mb-8">
+            Enter your credentials to access the dashboard.
+          </p>
+
+          <Form
+            layout="vertical"
+            ref={formRef}
+            name="control-ref"
+            onFinish={onFinish}
+            style={{ maxWidth: "100%" }}
+            className="w-full"
+            form={form}
+            requiredMark={false}
+          >
+            <Form.Item
+              label={<span className="text-sm font-medium text-ink">Email address</span>}
+              className="login-form-item"
+              name="email"
+              rules={[{ required: true, message: "Please input your email" }]}
+            >
+              <Input type="email" size="large" placeholder="you@company.com" />
+            </Form.Item>
+            <Form.Item
+              label={<span className="text-sm font-medium text-ink">Password</span>}
+              className="login-form-item !mb-2"
+              name="password"
+              rules={[{ required: true, message: "Please input your password" }]}
+            >
+              <Input.Password size="large" type="password" placeholder="••••••••" />
+            </Form.Item>
+
+            <div className="w-full flex justify-end mb-6">
+              <Link
+                className="text-sm font-medium hover:underline"
+                style={{ color: isFuturesoft ? "#1B47B4" : "#69472E" }}
+                to="/forgot-password"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <button
+              disabled={authLoading}
+              className="w-full h-[48px] rounded-lg text-white text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 disabled:translate-y-0 flex items-center justify-center"
+              style={{
+                background: isFuturesoft ? "#147CBC" : "#69472E",
+                boxShadow: "0 10px 15px -3px rgba(105,71,46,0.25)",
+              }}
+              type="submit"
+            >
+              {authLoading ? <Spin size="small" /> : "Sign in"}
+            </button>
+
+            <p className="text-center text-xs text-muted mt-8">
+              Powered by Synq Africa
+            </p>
+          </Form>
+        </div>
       </div>
     </div>
   );

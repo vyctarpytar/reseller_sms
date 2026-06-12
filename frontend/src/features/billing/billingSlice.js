@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import axiosInstance from "../../instance";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
   loading: false,
@@ -17,6 +17,13 @@ const initialState = {
   paymentHistoryData: [],
   buying: false,
   buyUnitsResult: {},
+
+  statementData: [],
+  statementCount: 0,
+  statementLoading: false,
+
+  mpesaBalance: null,
+  mpesaBalanceLoading: false,
 };
 
 export const fetchBills = createAsyncThunk(
@@ -110,6 +117,30 @@ export const buyUnitsFromWallet = createAsyncThunk(
 );
 
 
+// Full signed cash-wallet ledger (deposits, unit-purchase debits, withdrawals, reversals).
+export const fetchWalletStatement = createAsyncThunk(
+  "billingSlice/fetchWalletStatement",
+  async (data = {}) => {
+    const res = await axiosInstance
+      .get(`${url}/api/v2/wallet/statement`, {
+        params: { start: data.start ?? 0, limit: data.limit ?? 10 },
+      })
+      .then((res) => res.data);
+    return res;
+  }
+);
+
+// Live Safaricom paybill balance (TOP only) — the platform's actual M-Pesa float.
+export const fetchMpesaBalance = createAsyncThunk(
+  "billingSlice/fetchMpesaBalance",
+  async () => {
+    const res = await axiosInstance
+      .get(`${url}/api/v2/wallet/mpesa-balance`)
+      .then((res) => res.data?.data?.result);
+    return res;
+  }
+);
+
 export const billingSlice = createSlice({
   name: "billing",
   initialState,
@@ -202,6 +233,32 @@ export const billingSlice = createSlice({
       .addCase(buyUnitsFromWallet.rejected, (state) => {
         state.buying = false;
         state.buyUnitsResult = {};
+      })
+
+      .addCase(fetchWalletStatement.pending, (state) => {
+        state.statementLoading = true;
+      })
+      .addCase(fetchWalletStatement.fulfilled, (state, action) => {
+        state.statementLoading = false;
+        state.statementData = action.payload?.data?.result || [];
+        state.statementCount = action.payload?.total || 0;
+      })
+      .addCase(fetchWalletStatement.rejected, (state) => {
+        state.statementLoading = false;
+        state.statementData = [];
+        state.statementCount = 0;
+      })
+
+      .addCase(fetchMpesaBalance.pending, (state) => {
+        state.mpesaBalanceLoading = true;
+      })
+      .addCase(fetchMpesaBalance.fulfilled, (state, action) => {
+        state.mpesaBalanceLoading = false;
+        state.mpesaBalance = action.payload || null;
+      })
+      .addCase(fetchMpesaBalance.rejected, (state) => {
+        state.mpesaBalanceLoading = false;
+        state.mpesaBalance = null;
       })
   },
 });

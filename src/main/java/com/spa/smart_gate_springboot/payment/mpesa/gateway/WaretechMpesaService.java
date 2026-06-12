@@ -95,4 +95,26 @@ public class WaretechMpesaService {
             return null;
         }
     }
+
+    /**
+     * Query the live Safaricom account balance for the B2C paybill (working + utility float).
+     * Returns null if the gateway call fails — callers should treat that as "balance unavailable".
+     */
+    public GatewayBalanceResponse queryBalance() {
+        try {
+            GatewayBalanceRequest req = GatewayBalanceRequest.builder().paybill(b2cPaybill).build();
+            Response<GatewayBalanceResponse> response = gateway.balanceInquiry(req).execute();
+            if (response.isSuccessful() && response.body() != null) {
+                GatewayBalanceResponse body = response.body();
+                log.info("Balance inquiry paybill {} -> working={}, utility={}", b2cPaybill,
+                        body.getWorkingBalance(), body.getUtilityBalance());
+                return body;
+            }
+            log.warn("Balance inquiry failed for paybill {}: HTTP {}", b2cPaybill, response.code());
+            return null;
+        } catch (Exception e) {
+            log.error("Balance inquiry error for paybill {}: {}", b2cPaybill, e.getMessage(), e);
+            return null;
+        }
+    }
 }

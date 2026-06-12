@@ -25,6 +25,7 @@ import Cards from "./Cards";
 import moment from "moment";
 import { fetchReseller } from "../../../features/reseller/resellerSlice";
 import { fetchResellerAccounts } from "../../../features/reseller-account/resellerAccountSlice";
+import ExportExcelButton from "../../../components/ExportExcelButton";
 
 function QuarterlyReport() {
   const [selectId, setSelectId] = useState(new Date().getFullYear());
@@ -324,20 +325,7 @@ function QuarterlyReport() {
 
       <Cards dataCard={dataCard} />
       <div className="flex justify-end item-center w-full mt-[1rem]">
-        <Tooltip placement="top" title={"Download Excel"}>
-          {saving ? (
-            <Spin className="sms-spin" />
-          ) : (
-            <button
-              disabled={saving}
-              onClick={handleClick}
-              className="flex items-center"
-            >
-              <MaterialIcon size={45} color="#00B050" icon="article" />
-              <span>Export to excel</span>
-            </button>
-          )}
-        </Tooltip>
+        <ExportExcelButton onClick={handleClick} loading={saving} />
       </div>
       <Table
         className="mt-[1.31rem] w-full"

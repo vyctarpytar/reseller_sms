@@ -15,11 +15,11 @@ import {
   fetchCreditReseller,
 } from "../../features/credit/creditSlice";
 import CreditAddModal from "./CreditAddModal";
-import CreditAddSelfModal from "./CreditAddSelfModal";
 import FilterModal from "./FilterModal";
 import svg38 from "../../assets/svg/svg38.svg";
 import MaterialIcon from "material-icons-react";
 import svg30 from "../../assets/svg/svg30.svg";
+import ExportExcelButton from "../../components/ExportExcelButton";
 
 function CreditTable() {
   const { loading, creditData, creditCount } = useSelector(
@@ -38,11 +38,6 @@ function CreditTable() {
     setIsModalOpen(true);
   };
 
-  const [isModalOpenSelf, setIsModalOpenSelf] = useState(false);
-  const showModalSelf = () => {
-    setIsModalOpenSelf(true);
-  };
-  //
   const [isModalOpenFilter, setIsModalOpenFilter] = useState(false);
   const showModalFilter = () => {
     setIsModalOpenFilter(true);
@@ -158,7 +153,7 @@ function CreditTable() {
     {
       key: "0",
       label: (
-        <div className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-darkGreen">
+        <div className=" mb-1 flex text-[16px] font-sans items-center justify-center  text-primary">
           View
         </div>
       ),
@@ -166,7 +161,7 @@ function CreditTable() {
     {
       key: "1",
       label: (
-        <div className=" flex  text-[16px] font-sans items-center justify-center text-darkGreen">
+        <div className=" flex  text-[16px] font-sans items-center justify-center text-primary">
           Edit
         </div>
       ),
@@ -247,24 +242,13 @@ function CreditTable() {
       <div className=" flex items-center gap-x-5">
         <div className="w-[250px]">
           <button
-            className="cstm-btn !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3"
+            className="cstm-btn !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3"
             onClick={showModal}
           >
             <img src={svg30} alt="svg30" />
             Load Account Credit
           </button>
         </div>
-        {user?.layer === "RESELLER" && (
-          <div className="w-[250px]">
-            <button
-              className="cstm-btn !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3"
-              onClick={showModalSelf}
-            >
-              <img src={svg30} alt="svg30" />
-              Load Self Credit
-            </button>
-          </div>
-        )}
         <div className="flex items-center">
           <span>
             {" "}
@@ -291,13 +275,8 @@ function CreditTable() {
       </div>
       <div className="flex justify-end">
       {creditData?.length > 0 && (
-                <div className="flex justify-end item-center"> 
-                  <Tooltip placement="top" title={"Download Excel"}>  
-                    <button onClick={handleClick} className="flex items-center"> 
-                      <MaterialIcon size={45} color="#00B050" icon="article" />
-                      <span>Export to excel</span>
-                    </button>
-                  </Tooltip>
+                <div className="flex justify-end item-center">
+                  <ExportExcelButton onClick={handleClick} />
                 </div>
               )}
       </div>
@@ -328,12 +307,6 @@ function CreditTable() {
       <CreditAddModal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
-        prodd={prodd}
-      />
-
-      <CreditAddSelfModal
-        isModalOpen={isModalOpenSelf}
-        setIsModalOpen={setIsModalOpenSelf}
         prodd={prodd}
       />
 

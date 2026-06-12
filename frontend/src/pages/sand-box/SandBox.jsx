@@ -184,7 +184,7 @@ function SandBox() {
             },
             {
               title: (
-                <span className="text-darkGreen font-dmSans">
+                <span className="text-primary font-dmSans">
                   Developer sandbox
                 </span>
               ),

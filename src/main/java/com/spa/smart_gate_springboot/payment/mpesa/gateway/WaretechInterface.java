@@ -18,6 +18,9 @@ public interface WaretechInterface {
     @POST("mpesa/v2/b2c")
     Call<GatewayB2cResponse> b2c(@Body GatewayB2cRequest request);
 
+    @POST("mpesa/v2/balance")
+    Call<GatewayBalanceResponse> balanceInquiry(@Body GatewayBalanceRequest request);
+
     @POST("mpesa/v2/get-transaction-status")
     Call<GatewayStatusResponse> getTransactionStatus(@Query("conversationId") String conversationId);
 }

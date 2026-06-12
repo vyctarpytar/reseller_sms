@@ -61,7 +61,7 @@ function SmsTemplateList() {
       render: (item) => (
         <>
           <button onClick={()=>setProdd(item)}>
-            <div className="text-darkGreen" onClick={()=>showModalEdit()}>Edit</div> 
+            <div className="text-primary" onClick={()=>showModalEdit()}>Edit</div>
           </button>
         </>
       ),
@@ -128,7 +128,7 @@ function SmsTemplateList() {
                       <div className="flex justify-start gap-x-10">
                         <div className={`w-[250px] `}>
                           <button
-                            className={`cstm-btn   !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3`}
+                            className={`cstm-btn   !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3`}
                             onClick={showModal}
                           > 
                               <MaterialIcon color="#fff" icon="article" /> 
@@ -138,7 +138,7 @@ function SmsTemplateList() {
 
                         {/* <div className={`w-[250px]`}>
                           <button
-                            className={`cstm-btn  !rounded-[4px] !bg-[#A3A2A7] !text-[.75rem] flex items-center gap-x-3`}
+                            className={`cstm-btn  !rounded-[4px] !bg-[#69472E] !text-[.75rem] flex items-center gap-x-3`}
                             onClick={showModalGroup}
                           >
                             <img src={svg32} alt="svg32" />
@@ -176,25 +176,21 @@ function SmsTemplateList() {
                 </>
               ) : (
                 <div className="mt-[3.19rem] ">
-                  <h3 className="font-[700] text-[24px] text-black1 dash-title ">
-                    Let’s start by creating your templates
-                  </h3>
-
                   <div
-                    className="mt-[31px] bg-white full h-[471.33px] rounded-[15px] border border-solid
-               border-[#F5F7FF] py-[60px] flex flex-col justify-center items-center cursor-pointer"
+                    className="card flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto my-10 cursor-pointer"
                     onClick={showModal}
                   >
-                    <div>
-                      <img
-                        src={noCon}
-                        alt="noCon"
-                        className="object-contain h-[291.33px] w-[292px]"
-                      />
-                      <div className="empty-desc mt-0 flex items-center justify-center">
-                        Create your custom template to reuse
-                      </div>
-                    </div>
+                    <img
+                      src={noCon}
+                      alt=""
+                      className="h-28 w-28 object-contain opacity-90"
+                    />
+                    <h3 className="mt-5 text-lg font-medium text-primary">
+                      Let’s start by creating your templates
+                    </h3>
+                    <p className="mt-2 text-sm text-muted">
+                      Create your custom template to reuse
+                    </p>
 
                     <div className="mt-[1.63rem] w-[270px">
                       <button className="cstm-btn">

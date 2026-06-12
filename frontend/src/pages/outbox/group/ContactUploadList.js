@@ -13,7 +13,7 @@ import upload from "../../../assets/svg/file_upload-24px.svg";
 import ContactExcelModal from "./modal/ContactExcelModal";
 import toast from "react-hot-toast";
 
-const url = process.env.REACT_APP_API_BASE_URL;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 export default function ContactUploadList() {
   const dispatch = useDispatch();
@@ -214,7 +214,7 @@ export default function ContactUploadList() {
 
               <div className="flex flex-col mt-[20px] justify-center items-center">
                 <div
-                  className="w-[250px] h-[50px] px-[24px] py-3 bg-darkGreen rounded-[28px] justify-center items-center gap-1 inline-flex text-white text-[16px] font-medium cursor-pointer"
+                  className="w-[250px] h-[50px] px-[24px] py-3 bg-primary rounded-[28px] justify-center items-center gap-1 inline-flex text-white text-[16px] font-medium cursor-pointer"
                   onClick={handleClick}
                 >
                   <span className="flex items-center gap-x-[4px]">

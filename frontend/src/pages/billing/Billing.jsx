@@ -67,7 +67,7 @@ function Billing() {
 
       <div className="mt-10 flex flex-col lg:px-10 px-3">
         <div className="product_request_title !text-[31px]">
-          <span className="text-darkGreen">Welcome, </span>
+          <span className="text-primary">Welcome, </span>
           {userProfile?.firstname}
         </div>
         <div className="product_sub mt-[0.5rem]">

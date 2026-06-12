@@ -2,11 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Synq Africa design system (frontend-design skill) ── */
+@layer components {
+	/* Cards */
+	.card        { @apply bg-white rounded-card p-6 border border-border shadow-card; }
+	.card-hover  { @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-lift; }
+
+	/* Buttons */
+	.btn-primary {
+		@apply inline-flex items-center justify-center gap-x-2 px-6 py-3 bg-accent text-white text-sm
+		       font-semibold rounded-md transition-all duration-300
+		       hover:bg-accent-hover hover:-translate-y-0.5 hover:shadow-lift
+		       disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+	}
+	.btn-outline {
+		@apply inline-flex items-center justify-center gap-x-2 px-4 py-2 border border-primary
+		       text-primary text-sm font-medium rounded-md transition-all duration-300
+		       hover:bg-primary hover:text-white disabled:opacity-50;
+	}
+	.btn-ghost {
+		@apply inline-flex items-center justify-center gap-x-2 px-4 py-2 text-sm font-medium text-ink
+		       rounded-md transition-colors disabled:opacity-50;
+		border: 1px solid transparent;
+	}
+	.btn-ghost:hover:not(:disabled) { background-color: rgba(0, 0, 0, 0.05); }
+
+	/* Status badges — explicit colors (project palette replaces Tailwind defaults) */
+	.badge          { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+	.badge-pending  { @apply badge; background:#fffbeb; color:#b45309; box-shadow: inset 0 0 0 1px #fde68a; }
+	.badge-approved { @apply badge; background:#ecfdf5; color:#047857; box-shadow: inset 0 0 0 1px #a7f3d0; }
+	.badge-active   { @apply badge; background:#ecfdf5; color:#047857; box-shadow: inset 0 0 0 1px #a7f3d0; }
+	.badge-rejected { @apply badge; background:#fef2f2; color:#b91c1c; box-shadow: inset 0 0 0 1px #fecaca; }
+	.badge-open     { @apply badge; background:#eff6ff; color:#1d4ed8; box-shadow: inset 0 0 0 1px #bfdbfe; }
+	.badge-neutral  { @apply badge; background:#f8fafc; color:#475569; box-shadow: inset 0 0 0 1px #e2e8f0; }
+	.badge-brand    { @apply badge; background:rgba(217,108,59,0.10); color:#b8562a; box-shadow: inset 0 0 0 1px rgba(217,108,59,0.25); }
+
+	/* Page / section headers — one shared hierarchy across every screen */
+	.sa-eyebrow  { @apply inline-block text-xs font-semibold tracking-widest uppercase text-accent mb-1; }
+	.sa-title    { @apply text-2xl font-semibold text-primary leading-tight capitalize; }
+	.sa-subtitle { @apply text-sm text-muted; }
+}
+
 :root { 
 	--mainBg: #FFFF;
 	--darkBlue: #147cbc;
-	--darkGreen:#388E3C;
-	--blueDark:#1B47B4; 
+	/* Synq Africa brand — single source of truth. Brown is the "Synq" wordmark
+	   color, used for nav/buttons/surfaces/active states (synqafrica.co.ke). */
+	--brand: #69472E;        /* primary brand brown */
+	--brand-accent: #D96C3B; /* terracotta — sparing accent only ("Africa") */
+	--darkGreen:var(--brand);/* legacy alias → resolves to brand brown */
+	--blueDark:#1B47B4;
 	--black1:#222222;
 	background-color: var(--mainBg) !important;
 	font-family: 'DM Sans', sans-serif !important;
@@ -36,13 +81,6 @@ html {
 	align-items: center;
 	border-radius: 1.5rem;
 	background: #ECECEC;
-}
-.login-pic{
-	background-image: url('./assets/img/sideImage.jpg');  
-	height:100%; 
-	background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
 }
 .login-pic-sync{
 	background-image: url('./assets/img/sync-side-image.png');  
