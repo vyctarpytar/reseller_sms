@@ -245,7 +245,11 @@ export default function Header() {
                 subdomain === "synqtel" ? "h-[28px] lg:h-[5vh]" : "h-[34px] lg:h-[7vh]"
               } object-contain shrink-0`}
             />
-            <span className="truncate max-w-[120px] lg:max-w-none">
+            <span
+              className={`truncate max-w-[120px] lg:max-w-none ${
+                user?.layer === "TOP" ? "hidden sm:inline" : ""
+              }`}
+            >
               {user?.layer === "TOP" && subdomain === "synqafrica"
                 ? "Synq Africa"
                 : balanceHeader?.accName}

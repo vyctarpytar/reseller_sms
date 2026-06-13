@@ -32,6 +32,11 @@ const CaretDown = () => (
     <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+const CheckIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-accent">
+    <path d="m5 12 5 5 9-10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 const HeaderCrumb = () => {
   const navigate = useNavigate();
@@ -86,7 +91,7 @@ const HeaderCrumb = () => {
     return found?.accName ?? scopeAccountName ?? null;
   }, [selectedAccount, topResellerAccountData, scopeAccountName]);
 
-  // Shared list panel used by both the reseller and account switchers.
+  // Shared list panel used by both the reseller and account switchers (desktop).
   const listPanel = (placeholder, items, render, empty) => (
     <div className="w-72 rounded-card border border-border bg-white shadow-lift p-2">
       <Input
@@ -151,73 +156,235 @@ const HeaderCrumb = () => {
   const pillClass =
     "inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1 font-semibold transition-colors hover:border-accent/50 hover:text-accent";
 
-  return (
-    <nav className="flex items-center gap-1 text-sm" aria-label="Breadcrumb">
-      {/* Root — clears all context, back to the platform view. */}
+  // ───────────────────────── Mobile scope switcher ─────────────────────────
+  // On phones the 3-part inline breadcrumb (root › reseller › account) collides
+  // with the logo + avatar. Below `lg` we collapse it into ONE compact button
+  // that opens a single sheet: pick reseller, then account. Desktop is unchanged.
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mResellerSearch, setMResellerSearch] = useState("");
+  const [mAccountSearch, setMAccountSearch] = useState("");
+
+  const mFilteredResellers = resellerData?.filter((item) =>
+    item?.rsCompanyName?.toLowerCase()?.includes(mResellerSearch?.toLowerCase())
+  );
+  const mFilteredAccounts = topResellerAccountData?.filter((item) =>
+    item?.accName?.toLowerCase()?.includes(mAccountSearch?.toLowerCase())
+  );
+
+  const mobileLabel = selectedAccountName || selectedOrgName || "All resellers";
+
+  // Pick a reseller: set scope, load its accounts, and KEEP the sheet open so the
+  // user can immediately choose an account in the section that appears below.
+  const mPickReseller = (item) => {
+    setTenantScope({ org: item?.rsId, account: null, accountName: null });
+    setMAccountSearch("");
+    dispatch(fetchTopResellerAccounts({ resellerId: item?.rsId }));
+    navigate("/dashboard-main");
+  };
+  const mPickAccount = (item) => {
+    setTenantScope({ account: item?.accId, accountName: item?.accName });
+    setMobileOpen(false);
+    navigate("/dashboard-main");
+  };
+  const mReset = () => {
+    setMobileOpen(false);
+    handleRemove();
+  };
+
+  const mobilePanel = (
+    // stopPropagation so taps inside the sheet don't bubble up and toggle the dropdown.
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="w-[86vw] max-w-[360px] rounded-card border border-border bg-white shadow-lift p-3"
+    >
+      {/* Reset → platform overview */}
       <button
         type="button"
-        onClick={handleRemove}
-        title="Platform overview"
-        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-muted font-medium hover:text-accent hover:bg-black/5 transition-colors"
+        onClick={mReset}
+        className={`flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+          !selectedOrg ? "bg-accent/10 text-accent" : "text-ink hover:bg-surface"
+        }`}
       >
         <GridIcon />
-        <span className="hidden sm:inline">SMS INST.</span>
+        <span>Platform overview</span>
+        <span className="ml-auto">{!selectedOrg && <CheckIcon />}</span>
       </button>
 
-      <ChevronRight />
+      <div className="border-t border-border my-2.5" />
 
-      {/* Reseller switcher. */}
-      <Dropdown
-        trigger={["click"]}
-        open={orgOpen}
-        placement="bottomLeft"
-        dropdownRender={() => resellerPanel}
-        onOpenChange={(visible) => {
-          setOrgOpen(visible);
-          setSearchValue("");
-          if (visible) dispatch(fetchReseller());
-        }}
-      >
-        <button
-          type="button"
-          className={`${pillClass} ${selectedOrgName ? "text-primary" : "text-muted"}`}
-        >
-          <span className="max-w-[92px] lg:max-w-[180px] truncate">
-            {selectedOrgName ? selectedOrgName : "Select reseller"}
-          </span>
-          <CaretDown />
-        </button>
-      </Dropdown>
+      {/* Reseller picker */}
+      <p className="text-[10px] uppercase tracking-wider text-muted mb-1.5 px-1">
+        Reseller
+      </p>
+      <Input
+        size="middle"
+        allowClear
+        placeholder="Search reseller"
+        value={mResellerSearch}
+        onChange={(e) => setMResellerSearch(e.target.value)}
+        className="mb-2"
+      />
+      <div className="max-h-44 overflow-y-auto flex flex-col gap-1 pr-0.5">
+        {mFilteredResellers?.length > 0 ? (
+          mFilteredResellers.map((item) => {
+            const active = item?.rsId === selectedOrg;
+            return (
+              <button
+                key={item?.rsId}
+                onClick={() => mPickReseller(item)}
+                className={`shrink-0 flex items-center w-full text-left rounded-md px-3 py-2.5 text-sm leading-5 transition-colors ${
+                  active ? "bg-accent/10 text-accent font-medium" : "text-ink hover:bg-surface"
+                }`}
+              >
+                <span className="truncate">{item?.rsCompanyName}</span>
+                {active && <span className="ml-auto pl-2"><CheckIcon /></span>}
+              </button>
+            );
+          })
+        ) : (
+          <div className="px-3 py-6 text-center text-xs text-muted">No resellers found</div>
+        )}
+      </div>
 
-      {/* Account switcher — only once a reseller is chosen. */}
+      {/* Account picker — appears only once a reseller is chosen */}
       {selectedOrg && (
         <>
-          <ChevronRight />
-          <Dropdown
-            trigger={["click"]}
-            open={accOpen}
-            placement="bottomLeft"
-            dropdownRender={() => accountPanel}
-            onOpenChange={(visible) => {
-              setAccOpen(visible);
-              setSearchValue("");
-              if (visible)
-                dispatch(fetchTopResellerAccounts({ resellerId: selectedOrg }));
-            }}
-          >
-            <button
-              type="button"
-              className={`${pillClass} ${selectedAccountName ? "text-primary" : "text-muted"}`}
-            >
-              <span className="max-w-[92px] lg:max-w-[180px] truncate">
-                {selectedAccountName ? selectedAccountName : "Select account"}
-              </span>
-              <CaretDown />
-            </button>
-          </Dropdown>
+          <p className="text-[10px] uppercase tracking-wider text-muted mb-1.5 mt-3.5 px-1">
+            Account
+          </p>
+          <Input
+            size="middle"
+            allowClear
+            placeholder="Search account"
+            value={mAccountSearch}
+            onChange={(e) => setMAccountSearch(e.target.value)}
+            className="mb-2"
+          />
+          <div className="max-h-44 overflow-y-auto flex flex-col gap-1 pr-0.5">
+            {mFilteredAccounts?.length > 0 ? (
+              mFilteredAccounts.map((item) => {
+                const active = item?.accId === selectedAccount;
+                return (
+                  <button
+                    key={item?.accId}
+                    onClick={() => mPickAccount(item)}
+                    className={`shrink-0 flex items-center w-full text-left rounded-md px-3 py-2.5 text-sm leading-5 transition-colors ${
+                      active ? "bg-accent/10 text-accent font-medium" : "text-ink hover:bg-surface"
+                    }`}
+                  >
+                    <span className="truncate">{item?.accName}</span>
+                    {active && <span className="ml-auto pl-2"><CheckIcon /></span>}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-3 py-6 text-center text-xs text-muted">No accounts found</div>
+            )}
+          </div>
         </>
       )}
-    </nav>
+    </div>
+  );
+
+  return (
+    <>
+      {/* ── Desktop: inline breadcrumb (unchanged) ── */}
+      <nav className="hidden lg:flex items-center gap-1 text-sm" aria-label="Breadcrumb">
+        {/* Root — clears all context, back to the platform view. */}
+        <button
+          type="button"
+          onClick={handleRemove}
+          title="Platform overview"
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-muted font-medium hover:text-accent hover:bg-black/5 transition-colors"
+        >
+          <GridIcon />
+          <span className="hidden sm:inline">SMS INST.</span>
+        </button>
+
+        <ChevronRight />
+
+        {/* Reseller switcher. */}
+        <Dropdown
+          trigger={["click"]}
+          open={orgOpen}
+          placement="bottomLeft"
+          dropdownRender={() => resellerPanel}
+          onOpenChange={(visible) => {
+            setOrgOpen(visible);
+            setSearchValue("");
+            if (visible) dispatch(fetchReseller());
+          }}
+        >
+          <button
+            type="button"
+            className={`${pillClass} ${selectedOrgName ? "text-primary" : "text-muted"}`}
+          >
+            <span className="max-w-[92px] lg:max-w-[180px] truncate">
+              {selectedOrgName ? selectedOrgName : "Select reseller"}
+            </span>
+            <CaretDown />
+          </button>
+        </Dropdown>
+
+        {/* Account switcher — only once a reseller is chosen. */}
+        {selectedOrg && (
+          <>
+            <ChevronRight />
+            <Dropdown
+              trigger={["click"]}
+              open={accOpen}
+              placement="bottomLeft"
+              dropdownRender={() => accountPanel}
+              onOpenChange={(visible) => {
+                setAccOpen(visible);
+                setSearchValue("");
+                if (visible)
+                  dispatch(fetchTopResellerAccounts({ resellerId: selectedOrg }));
+              }}
+            >
+              <button
+                type="button"
+                className={`${pillClass} ${selectedAccountName ? "text-primary" : "text-muted"}`}
+              >
+                <span className="max-w-[92px] lg:max-w-[180px] truncate">
+                  {selectedAccountName ? selectedAccountName : "Select account"}
+                </span>
+                <CaretDown />
+              </button>
+            </Dropdown>
+          </>
+        )}
+      </nav>
+
+      {/* ── Mobile: single scope button → combined picker sheet ── */}
+      <div className="flex lg:hidden min-w-0">
+        <Dropdown
+          trigger={["click"]}
+          open={mobileOpen}
+          placement="bottomLeft"
+          dropdownRender={() => mobilePanel}
+          onOpenChange={(visible) => {
+            setMobileOpen(visible);
+            if (visible) {
+              setMResellerSearch("");
+              setMAccountSearch("");
+              dispatch(fetchReseller());
+              if (selectedOrg)
+                dispatch(fetchTopResellerAccounts({ resellerId: selectedOrg }));
+            }
+          }}
+        >
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 min-w-0 max-w-[150px] rounded-md border border-border bg-surface px-2.5 py-1.5 text-[13px] font-semibold text-primary transition-colors hover:border-accent/50 active:border-accent/50"
+          >
+            <span className="text-muted shrink-0"><GridIcon /></span>
+            <span className="truncate">{mobileLabel}</span>
+            <span className="shrink-0"><CaretDown /></span>
+          </button>
+        </Dropdown>
+      </div>
+    </>
   );
 };
 
