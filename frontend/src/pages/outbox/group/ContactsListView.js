@@ -329,6 +329,39 @@ export default function ContactsListView({ handleGraduateOption }) {
             x: 1100,
           }}
           rowKey={(record) => record?.chId}
+          mobileEmptyText="No members found"
+          mobileCard={(item) => (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">
+                    {[item?.chFirstName, item?.chOtherName]
+                      .filter(Boolean)
+                      .join(" ") || "—"}
+                  </p>
+                  <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                    {item?.chTelephone || "No phone"}
+                    {item?.chNationalId ? ` · ${item.chNationalId}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <Dropdown
+                    onOpenChange={() => handleActiveGraduate(item)}
+                    overlayStyle={{
+                      width: "200px",
+                    }}
+                    trigger={"click"}
+                    menu={{ items: settingItems }}
+                    placement="bottomRight"
+                  >
+                    <button onClick={() => setProdd(item)}>
+                      <img src={svg27} alt="svg27" />
+                    </button>
+                  </Dropdown>
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
 

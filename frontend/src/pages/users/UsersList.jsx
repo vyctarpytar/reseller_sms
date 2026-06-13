@@ -311,6 +311,46 @@ function UsersList() {
           columns={columns}
           dataSource={myUsersData}
           loading={usersLoading}
+          mobileEmptyText="No users found"
+          mobileCard={(item) => (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex items-center gap-x-3">
+                  <div className="w-[40px] h-[40px] shrink-0 rounded-full flex items-center justify-center bg-lightBlue text-blue text-[13px]">
+                    {item?.usrLogo ? (
+                      <img src={item?.usrLogo} alt="logo" />
+                    ) : (
+                      getLetterWord(`${item?.firstname} ${item?.lastname}`)
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">
+                      {item?.firstname} {item?.lastname}
+                    </p>
+                    <p className="text-[11px] text-muted mt-0.5 truncate">
+                      {addSpaces(item?.phoneNumber)}
+                      {item?.role ? ` · ${item.role}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 flex items-center gap-x-2">
+                  <StatusBadge value={item?.usrStatus} />
+                  <button onClick={() => setProdd(item)}>
+                    <Dropdown
+                      overlayStyle={{
+                        width: "200px",
+                      }}
+                      trigger={"click"}
+                      menu={{ items: settingItems }}
+                      placement="bottomRight"
+                    >
+                      <img src={svg27} alt="svg27" />
+                    </Dropdown>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         />
         </div>
       </div>

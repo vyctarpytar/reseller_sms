@@ -310,6 +310,44 @@ function CreditTable() {
           showSizeChanger: false,
           hideOnSinglePage: true,
         }}
+        mobileEmptyText="No credit loads found"
+        mobileCard={(record) => {
+          const secondary = [
+            record?.smsAccountName || record?.smsResellerName,
+            record?.smsCreatedByName,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">
+                    {dateForHumans(record?.smsCreatedDate)}
+                  </p>
+                  {secondary && (
+                    <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                      {secondary}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  {record?.crStatus && (
+                    <span className="inline-block font-bold text-[11px]">
+                      {record?.crStatus}
+                    </span>
+                  )}
+                  <p className="font-semibold whitespace-nowrap mt-1">
+                    {cashConverter(record?.smsPayAmount)}
+                  </p>
+                  <p className="text-[11px] text-[#999] whitespace-nowrap mt-0.5">
+                    {cashConverter(record?.smsNewBal)} bal
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }}
       />
       <CreditAddModal
         isModalOpen={isModalOpen}

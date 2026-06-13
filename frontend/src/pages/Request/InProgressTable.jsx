@@ -125,6 +125,37 @@ function InProgressTable() {
         rowKey={(record) => record?.reId}
         columns={columns}
         dataSource={progressData}
+        mobileEmptyText="No requests found"
+        mobileCard={(record) => (
+          <div className="card !p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{record?.reName}</p>
+                <p className="text-[11px] text-muted mt-1.5 truncate">
+                  {dateForHumans(record?.reCreatedDate)}
+                  {record?.reResellerId ? ` · ${record.reResellerId}` : ""}
+                </p>
+              </div>
+              <div className="text-right shrink-0 flex items-start gap-2">
+                <span className="text-[12px] font-medium whitespace-nowrap">
+                  {record?.reStatus}
+                </span>
+                <button onClick={() => setProdd(record)}>
+                  <Dropdown
+                    overlayStyle={{
+                      width: "150px",
+                    }}
+                    trigger={"click"}
+                    menu={{ items: settingItems }}
+                    placement="bottomRight"
+                  >
+                    <img src={svg27} alt="svg27" />
+                  </Dropdown>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       />
 
       <DeleteModal

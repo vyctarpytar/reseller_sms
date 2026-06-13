@@ -222,6 +222,40 @@ function AccountAdminTable() {
         rowKey={(record) => record?.accId}
         columns={columns}
         dataSource={resellerAccountData}
+        mobileEmptyText="No account admins found"
+        mobileCard={(item) => (
+          <div className="card !p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{item?.accName}</p>
+                <p className="text-[11px] text-muted mt-1 truncate">
+                  {item?.accAdminEmail}
+                  {item?.accAdminMobile ? ` · ${item.accAdminMobile}` : ""}
+                </p>
+              </div>
+              <div className="text-right shrink-0 flex items-center gap-x-2">
+                <div className="flex items-center gap-x-2 whitespace-nowrap">
+                  <span
+                    className={`w-[10px] h-[10px] rounded-full ${
+                      item?.accStatus === "ACTIVE" ? "bg-green" : "bg-red"
+                    }`}
+                  ></span>
+                  {item?.accStatus}
+                </div>
+                <button onClick={() => setProdd(item)}>
+                  <Dropdown
+                    overlayStyle={{ width: "150px" }}
+                    trigger={"click"}
+                    menu={{ items: settingItems }}
+                    placement="bottomRight"
+                  >
+                    <MaterialIcon color="#141414" icon="more_vert" />
+                  </Dropdown>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       />
 
       <DeleteModal

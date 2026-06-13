@@ -287,6 +287,43 @@ function ScheduledSmsList() {
                   columns={columns}
                   dataSource={scheduledSmsData}
                   loading={loadingSms}
+                  mobileEmptyText="No scheduled SMS found"
+                  mobileCard={(record) => (
+                    <div className="card !p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-primary truncate">
+                            {truncateText(record?.schMessage, 60) || "—"}
+                          </p>
+                          <p className="text-[11px] text-muted mt-1.5 truncate">
+                            {record?.schSenderid || "—"}
+                            {record?.schGroupName ? ` · ${record.schGroupName}` : ""}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <StatusBadge value={record?.schStatus} />
+                          <p className="text-[11px] text-muted whitespace-nowrap mt-1.5">
+                            {record?.schReleaseTime || "—"}
+                          </p>
+                          {record?.schStatus === "PENDING" && (
+                            <Dropdown
+                              overlayStyle={{ width: "250px" }}
+                              trigger={["click"]}
+                              menu={{ items: settingItems }}
+                              placement="bottomRight"
+                            >
+                              <button
+                                className="mt-1.5"
+                                onClick={() => setProdd(record)}
+                              >
+                                <img src={svg27} alt="svg27" />
+                              </button>
+                            </Dropdown>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 />
               ) : (
                 <div className="card flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto my-10">

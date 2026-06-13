@@ -170,6 +170,31 @@ function StatusSummary() {
             showSizeChanger: false,
             hideOnSinglePage: true,
           }}
+          mobileEmptyText="No status summary found"
+          mobileCard={(record) => {
+            return (
+              <div className="card !p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">
+                      {record?.msgStatus}
+                    </p>
+                    <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                      {numberWithCommas(record?.noOfMessages)} messages
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold whitespace-nowrap">
+                      {numberWithCommas(record?.noOfMessages)}
+                    </p>
+                    <p className="text-[11px] text-[#999] whitespace-nowrap mt-0.5">
+                      {record?.credit} credit
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }}
         />
       )}
 

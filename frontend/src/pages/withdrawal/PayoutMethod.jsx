@@ -96,6 +96,32 @@ function PayoutMethod() {
         }}
         loading={loading}
         rowKey={(record) => record?.tarId}
+        mobileEmptyText="No payout tariffs found"
+        mobileCard={(record) => (
+          <div className="card !p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">
+                  {numberWithCommas(record?.tarFrom)} –{" "}
+                  {numberWithCommas(record?.tarTo)}
+                </p>
+                {record?.tarType === "MPESA" && (
+                  <Tag className="!border-0 !rounded-[6px] !text-[11px] !bg-[#A6CCF5] !text-[#007BFF] mt-1.5">
+                    B2C
+                  </Tag>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-semibold whitespace-nowrap">
+                  {record?.tarCharges}
+                </p>
+                <p className="text-[11px] text-[#999] whitespace-nowrap mt-0.5">
+                  charges
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       />
       {/* {prodItems &&
         prodItems?.map((item) => (

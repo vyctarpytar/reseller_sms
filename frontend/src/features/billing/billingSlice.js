@@ -128,6 +128,7 @@ export const fetchWalletStatement = createAsyncThunk(
     if (data.reseller_id) params.reseller_id = data.reseller_id;
     if (data.account_id) params.account_id = data.account_id;
     if (data.value_type) params.value_type = data.value_type;
+    if (data.owner_type) params.owner_type = data.owner_type;
     const res = await axiosInstance
       .get(`${url}/api/v2/wallet/statement`, { params })
       .then((res) => res.data);

@@ -139,6 +139,37 @@ function PayoutHistory() {
           hideOnSinglePage: true,
         }}
         rowKey={(record) => record?.withDrawId}
+        mobileEmptyText="No payouts found"
+        mobileCard={(record) => (
+          <div className="card !p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">
+                  {dateForHumans(record?.withDrawCreatedDate)}
+                </p>
+                <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                  {record?.withDrawPhoneNumber
+                    ? record.withDrawPhoneNumber
+                    : record?.withDrawCreatedByEmail || ""}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-semibold whitespace-nowrap">
+                  {record?.withDrawAmount}
+                </p>
+                <div
+                  className={`${
+                    record?.withDrawStatus === "FAILED"
+                      ? "bg-[#FFA500]"
+                      : "bg-primary"
+                  } text-[#FFf] inline-block rounded-[5px] px-2 py-1 w-auto mt-1.5 text-[11px]`}
+                >
+                  {record?.withDrawStatus}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       />
       <FilterModal
         isModalOpen={isModalOpen}

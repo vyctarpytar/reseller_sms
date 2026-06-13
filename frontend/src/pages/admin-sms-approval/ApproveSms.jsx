@@ -94,6 +94,29 @@ function ApproveSms() {
           columns={columns}
           dataSource={dataSource}
           //   loading={loadingSms}
+          mobileEmptyText="No broadcasts found"
+          mobileCard={(record) => (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{record?.name}</p>
+                  <p className="text-[11px] text-muted mt-1.5 truncate">
+                    {record?.address}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <button
+                    onClick={() => {
+                      setProdd(record);
+                      showModal();
+                    }}
+                  >
+                    <div className="text-primary whitespace-nowrap">View</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
 

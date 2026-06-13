@@ -241,6 +241,7 @@ public class WalletController {
                                           @RequestParam(required = false) String reseller_id,
                                           @RequestParam(required = false) String account_id,
                                           @RequestParam(required = false) String value_type,
+                                          @RequestParam(required = false) String owner_type,
                                           @RequestParam(defaultValue = "0") int start,
                                           @RequestParam(defaultValue = "10") int limit) {
         User user = userService.getCurrentUser(request);
@@ -262,6 +263,16 @@ public class WalletController {
         UUID accountScope = (account_id != null && !account_id.isBlank()) ? UUID.fromString(account_id) : null;
         WalletValueType valueScope = (value_type != null && !value_type.isBlank())
                 ? WalletValueType.valueOf(value_type.trim().toUpperCase()) : null;
+        // Optional owner-tier filter (Platform/Reseller/Account). Unknown values are ignored rather
+        // than 500-ing the statement.
+        WalletOwnerType ownerScope = null;
+        if (owner_type != null && !owner_type.isBlank()) {
+            try {
+                ownerScope = WalletOwnerType.valueOf(owner_type.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                ownerScope = null;
+            }
+        }
         // A reseller must not see the platform-side legs of its own purchases (the TOP counterparty
         // rows carry this reseller's id). TOP sees everything, including its own legs.
         WalletOwnerType excludeOwnerType = (user.getLayer() == Layers.RESELLER) ? WalletOwnerType.TOP : null;
@@ -269,7 +280,7 @@ public class WalletController {
         Pageable pageable = PageRequest.of(start, limit <= 0 ? 10 : limit,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<WalletTransaction> page = walletTxRepository.findAll(
-                WalletTransactionSpecifications.filter(resellerScope, accountScope, valueScope, excludeOwnerType), pageable);
+                WalletTransactionSpecifications.filter(resellerScope, accountScope, valueScope, ownerScope, excludeOwnerType), pageable);
 
         // Per-page caches so each reseller/account name is resolved once.
         Map<UUID, String> resellerNames = new HashMap<>();

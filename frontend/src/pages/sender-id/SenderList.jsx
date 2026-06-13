@@ -218,6 +218,55 @@ function SenderList() {
           columns={columns}
           dataSource={resellerAccountData}
           loading={loading}
+          mobileEmptyText="No sender IDs found"
+          mobileCard={(item) => (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{item?.accName}</p>
+                  <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                    {item?.accAdminEmail || item?.accAdminMobile}
+                    {item?.accCreatedDate ? ` · ${dateForHumans(item?.accCreatedDate)}` : ""}
+                  </p>
+                  {item?.senderId?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {item?.senderId?.map((acc) => {
+                        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                        return (
+                          <div
+                            key={acc?.shId}
+                            className="rounded-[30px] bg-lightBlue py-1 px-3 text-[12px]"
+                            style={{ color: randomColor }}
+                          >
+                            {acc?.shCode}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-semibold whitespace-nowrap">
+                    {numberWithCommas(item?.accMsgBal)}
+                  </p>
+                  <p className="text-[11px] text-[#999] whitespace-nowrap mt-0.5">
+                    {cashConverter(item?.accSmsPrice)}/sms
+                  </p>
+                  <button
+                    className="mt-2"
+                    onClick={() => {
+                      setProdd(item);
+                      showModalPermission();
+                    }}
+                  >
+                    <Tooltip title="Assign Sender ID">
+                      <img src={svg27} alt="svg27" className="ml-auto" />
+                    </Tooltip>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
 

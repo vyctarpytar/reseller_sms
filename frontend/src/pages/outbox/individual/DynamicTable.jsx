@@ -224,6 +224,39 @@ const DynamicTable = () => {
               New
             </button>
           )}
+          mobileEmptyText="No recipients added"
+          mobileCard={(record) => {
+            const empty = record?.phone === "Click to add contact";
+            return (
+              <div className="card !p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">
+                      {empty ? (
+                        <span className="text-[#aaa]">Click to add contact</span>
+                      ) : (
+                        record?.phone
+                      )}
+                    </p>
+                    <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                      Recipient
+                    </p>
+                  </div>
+                  {dataSource.length >= 1 && (
+                    <div className="text-right shrink-0">
+                      <Popconfirm
+                        title="Sure to delete?"
+                        onConfirm={() => handleDelete(record.key)}
+                        className="cursor-pointer"
+                      >
+                        <img src={svg45} alt="svg45" />
+                      </Popconfirm>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }}
         />
       </div>
 

@@ -362,6 +362,50 @@ export default function ContactFolderTable({
             columns={columns}
             dataSource={filterDataList}
             loading={fldLoading}
+            mobileEmptyText="No contact groups found"
+            mobileCard={(item) => (
+              <div className="card !p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div
+                    className="min-w-0 cursor-pointer"
+                    onClick={() => handleFolderChange(item)}
+                  >
+                    <p className="font-semibold truncate">
+                      {item?.groupName}
+                    </p>
+                    {item?.groupDescription ? (
+                      <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                        {item.groupDescription}
+                      </p>
+                    ) : null}
+                    {item?.groupCreatedByName ? (
+                      <p className="text-[11px] text-[#999] mt-0.5 truncate">
+                        By {item.groupCreatedByName}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="text-right shrink-0 flex items-start gap-2">
+                    {item?.groupCreationDate ? (
+                      <p className="text-[11px] text-[#999] whitespace-nowrap mt-1">
+                        {moment(item.groupCreationDate).format("Do MMM YYYY")}
+                      </p>
+                    ) : null}
+                    <Dropdown
+                      overlayStyle={{
+                        width: "250px",
+                      }}
+                      trigger={"click"}
+                      menu={{ items: settingItems }}
+                      placement="bottomRight"
+                    >
+                      <button onClick={() => setProdd1(item)}>
+                        <img src={svg27} alt="svg27" />
+                      </button>
+                    </Dropdown>
+                  </div>
+                </div>
+              </div>
+            )}
           />
         </section>
       </div>

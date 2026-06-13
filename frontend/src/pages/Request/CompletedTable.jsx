@@ -127,6 +127,41 @@ function CompletedTable() {
         rowKey={(record) => record?.reId}
         columns={columns}
         dataSource={approvedData}
+        mobileEmptyText="No requests found"
+        mobileCard={(record) => (
+          <div className="card !p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">
+                  {record?.reName || record?.reResellerId}
+                </p>
+                <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                  {dateForHumans(record?.reCreatedDate)}
+                  {record?.reResellerId ? ` · ${record.reResellerId}` : ""}
+                </p>
+              </div>
+              <div className="text-right shrink-0 flex items-center gap-2">
+                {record?.reStatus ? (
+                  <span className="inline-block !rounded-[6px] !text-[11px] px-2 py-0.5 bg-[#EAF6EC] text-[#2A662C] whitespace-nowrap">
+                    {record.reStatus}
+                  </span>
+                ) : null}
+                <button onClick={() => setProdd(record)}>
+                  <Dropdown
+                    overlayStyle={{
+                      width: "150px",
+                    }}
+                    trigger={"click"}
+                    menu={{ items: settingItems }}
+                    placement="bottomRight"
+                  >
+                    <img src={svg27} alt="svg27" />
+                  </Dropdown>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       />
 
       <DeleteModal

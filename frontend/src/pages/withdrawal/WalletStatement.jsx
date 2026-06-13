@@ -28,6 +28,7 @@ function WalletStatement() {
   const [resellerId, setResellerId] = useState(null);
   const [accountId, setAccountId] = useState(null);
   const [valueType, setValueType] = useState("KSH");
+  const [ownerType, setOwnerType] = useState(null);
 
   function load(overrides = {}) {
     dispatch(
@@ -37,6 +38,7 @@ function WalletStatement() {
         reseller_id: overrides.reseller_id ?? resellerId,
         account_id: overrides.account_id ?? accountId,
         value_type: overrides.value_type ?? valueType,
+        owner_type: overrides.owner_type ?? ownerType,
       })
     );
   }
@@ -68,6 +70,13 @@ function WalletStatement() {
     setValueType(next);
     setPageIndex(0);
     load({ start: 0, value_type: next });
+  }
+
+  function onOwnerChange(value) {
+    const next = value || null;
+    setOwnerType(next);
+    setPageIndex(0);
+    load({ start: 0, owner_type: next });
   }
 
   const resellerOptions = useMemo(
@@ -205,14 +214,14 @@ function WalletStatement() {
         Money and units movements from purchases — each leg tagged with the wallet/owner it affected.
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mt-3">
+      <div className="flex flex-nowrap items-center gap-3 mt-3 overflow-x-auto pb-1">
         {isTop && (
           <Select
             allowClear
             showSearch
             optionFilterProp="label"
             placeholder="All resellers"
-            className="min-w-[220px]"
+            className="min-w-[200px] shrink-0"
             value={resellerId}
             onChange={onResellerChange}
             options={resellerOptions}
@@ -224,17 +233,31 @@ function WalletStatement() {
             showSearch
             optionFilterProp="label"
             placeholder={resellerId ? "All accounts" : "Select a reseller first"}
-            className="min-w-[220px]"
+            className="min-w-[200px] shrink-0"
             disabled={!resellerId}
             value={accountId}
             onChange={onAccountChange}
             options={accountOptions}
           />
         )}
+        {isTop && (
+          <Select
+            allowClear
+            placeholder="All owners"
+            className="min-w-[170px] shrink-0"
+            value={ownerType}
+            onChange={onOwnerChange}
+            options={[
+              { value: "TOP", label: "Platform (TOP)" },
+              { value: "RESELLER", label: "Reseller" },
+              { value: "ACCOUNT", label: "Account" },
+            ]}
+          />
+        )}
         <Select
           allowClear
           placeholder="All types"
-          className="min-w-[140px]"
+          className="min-w-[140px] shrink-0"
           value={valueType}
           onChange={onTypeChange}
           options={[
@@ -250,6 +273,52 @@ function WalletStatement() {
         loading={statementLoading}
         className="mt-[.81rem] mb-[10rem] w-full"
         scroll={{ x: 1100 }}
+        mobileEmptyText="No movements found"
+        mobileCard={(row) => {
+          const debit = row?.direction === "DEBIT";
+          const unit = isUnit(row);
+          const abs = Math.abs(Number(row?.amount) || 0);
+          const bal = row?.balanceAfter;
+          return (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Tag
+                    className={`!border-0 !rounded-[6px] !text-[11px] ${
+                      debit
+                        ? "!bg-[#FDECEC] !text-[#C0392B]"
+                        : "!bg-[#EAF6EC] !text-[#2A662C]"
+                    }`}
+                  >
+                    {row?.txLabel || row?.txType}
+                  </Tag>
+                  <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                    {dateForHumans(row?.createdAt)}
+                    {row?.ownerName ? ` · ${row.ownerName}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p
+                    className={`font-semibold whitespace-nowrap ${
+                      debit ? "text-[#C0392B]" : "text-[#2A662C]"
+                    }`}
+                  >
+                    {debit ? "−" : "+"}
+                    {unit ? `${numberWithCommas(abs)} u` : cashConverter(abs)}
+                  </p>
+                  <p className="text-[11px] text-[#999] whitespace-nowrap mt-0.5">
+                    {bal == null
+                      ? "—"
+                      : unit
+                      ? `${numberWithCommas(Number(bal) || 0)} u`
+                      : cashConverter(Number(bal) || 0)}{" "}
+                    bal
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }}
         pagination={{
           position: ["bottomCenter"],
           current: pageIndex + 1,

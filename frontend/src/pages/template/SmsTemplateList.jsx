@@ -175,6 +175,36 @@ function SmsTemplateList() {
                     columns={columns}
                     dataSource={templatesData}
                     loading={loading}
+                    mobileEmptyText="No templates found"
+                    mobileCard={(record) => (
+                      <div className="card !p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">
+                              {record?.tmpMessage}
+                            </p>
+                            <p className="text-[11px] text-muted mt-1.5 truncate">
+                              {dateForHumans(record?.tmpCreatedOn)}
+                              {record?.tmpResellerName
+                                ? ` · ${record.tmpResellerName}`
+                                : ""}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <button
+                              onClick={() => {
+                                setProdd(record);
+                                showModalEdit();
+                              }}
+                            >
+                              <div className="text-primary whitespace-nowrap">
+                                Edit
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   />
                 </>
               ) : (

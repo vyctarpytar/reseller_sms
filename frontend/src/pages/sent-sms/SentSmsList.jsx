@@ -376,6 +376,33 @@ function SentSmsList() {
                   columns={columns}
                   dataSource={sentSmsData}
                   loading={loadingSms}
+                  mobileEmptyText="No messages found"
+                  mobileCard={(record) => (
+                    <div className="card !p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">
+                            {addSpaces(record?.msgSubMobileNo)}
+                          </p>
+                          <p className="text-[11px] text-muted mt-1.5 truncate">
+                            {formatDateTime(record?.msgCreatedDate)}
+                            {record?.msgSenderIdName
+                              ? ` · ${record.msgSenderIdName}`
+                              : ""}
+                            {record?.msgMessage
+                              ? ` · ${truncateText(record.msgMessage, 60)}`
+                              : ""}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <StatusBadge value={record?.msgStatus} />
+                          <p className="font-semibold whitespace-nowrap mt-1.5">
+                            {cashConverter(record?.msgCostId)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 />
               ) : (
                 <div className="card flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto my-10">

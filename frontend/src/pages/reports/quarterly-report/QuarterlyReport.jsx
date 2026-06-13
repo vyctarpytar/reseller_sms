@@ -358,6 +358,39 @@ function QuarterlyReport() {
           showSizeChanger: false,
           hideOnSinglePage: true,
         }}
+        mobileEmptyText="No data"
+        mobileCard={(record) => {
+          const active = String(record?.status).toUpperCase() === "ACTIVE";
+          return (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{record?.period}</p>
+                  <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                    {record?.messages ?? 0} msgs
+                    {record?.deliveryRate ? ` · ${record.deliveryRate} delivered` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  {record?.status ? (
+                    <Tag
+                      className={`!border-0 !rounded-[6px] !text-[11px] ${
+                        active
+                          ? "!bg-[#EAF6EC] !text-[#2A662C]"
+                          : "!bg-[#FDECEC] !text-[#C0392B]"
+                      }`}
+                    >
+                      {record.status}
+                    </Tag>
+                  ) : null}
+                  <p className="font-semibold whitespace-nowrap mt-0.5">
+                    {numberWithCommas(Number(record?.revenue) || 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }}
       />
       <FilterModal
         isModalOpen={isModalOpen}

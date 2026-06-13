@@ -253,6 +253,69 @@ function Invoices() {
                   columns={columns}
                   dataSource={invoiceData}
                   loading={loading}
+                  mobileEmptyText="No invoices found"
+                  mobileCard={(record) => {
+                    const receiptable = RECEIPTABLE.includes(
+                      String(record?.invoStatus).toUpperCase()
+                    );
+                    const busy =
+                      docLoadingKey &&
+                      docLoadingKey.startsWith(`${record?.invoId}-`);
+                    const items = [
+                      { key: "invoice", label: "Preview invoice" },
+                      ...(receiptable
+                        ? [{ key: "receipt", label: "Preview receipt" }]
+                        : []),
+                    ];
+                    return (
+                      <div className="card !p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-primary truncate">
+                              {record?.invoCode}
+                            </p>
+                            <p className="text-[11px] text-muted mt-1.5 truncate">
+                              {dateForHumans(record?.invoCreatedDate)}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-semibold whitespace-nowrap">
+                              {cashConverter(record?.invoAmount)}
+                            </p>
+                            <div className="flex items-center justify-end mt-1.5">
+                              <StatusBadge value={record?.invoStatus} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-end mt-3">
+                          <Dropdown
+                            trigger={["click"]}
+                            disabled={!!busy}
+                            menu={{
+                              items,
+                              onClick: ({ key }) => openDoc(record, key),
+                            }}
+                          >
+                            <button
+                              type="button"
+                              className="btn-ghost px-3 py-1"
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              {busy ? (
+                                <Spin size="small" />
+                              ) : (
+                                <MaterialIcon
+                                  icon="picture_as_pdf"
+                                  color="#69472E"
+                                />
+                              )}
+                              <MaterialIcon icon="expand_more" color="#64748b" />
+                            </button>
+                          </Dropdown>
+                        </div>
+                      </div>
+                    );
+                  }}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 px-6">

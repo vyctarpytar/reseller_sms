@@ -98,6 +98,24 @@ function IndividualTable() {
           rowKey={(record) => record?.chId}
           columns={columns}
           dataSource={individualAccData}
+          mobileEmptyText="No recipients found"
+          mobileCard={(record) => (
+            <div className="card !p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{record?.chFullName}</p>
+                  <p className="text-[11px] text-[#777] mt-1.5 truncate">
+                    {record?.chNationalId ? `ID ${record.chNationalId}` : "No ID"}
+                    {record?.chGenderCode ? ` · ${record.chGenderCode}` : ""}
+                    {record?.chDob ? ` · ${record.chDob}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-semibold whitespace-nowrap">{record?.chTelephone}</p>
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
 

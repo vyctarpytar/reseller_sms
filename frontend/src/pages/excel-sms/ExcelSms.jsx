@@ -177,6 +177,22 @@ function ExcelSms() {
                 columns={columns}
                 dataSource={dataSource}
                 pagination={false}
+                mobileEmptyText="No rows"
+                mobileCard={(record) => (
+                  <div className="card !p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{record?.mobile}</p>
+                        <p className="text-[11px] text-muted mt-1.5">Mobile</p>
+                      </div>
+                      <div className="text-right shrink-0 max-w-[60%]">
+                        <p className="text-[12px] text-muted whitespace-pre-wrap break-words">
+                          {record?.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               />
             </div>
 
