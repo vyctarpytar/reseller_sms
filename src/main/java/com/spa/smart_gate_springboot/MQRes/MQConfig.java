@@ -13,7 +13,6 @@ public class MQConfig {
 
     public static final String QUEUE = "SMART_GATE_V2_RECEIVE";
     public static final String OUT_OF_CREDIT_QUEUE_SYNQ = "SMART_GATE_V2_OUT_OF_CREDIT_SYNQ";
-    public static final String BALANCE_UPDATE = "smart.gate.v2.update.account.balance";
     public static final String SYNQ_QUEUE = "SMART_GATE_V2_RECEIVE_SYNQ";
     public static final String WEISER_RESPONSE = "SMART_GATE_V2_WEISER_RESPONSE";
     public static final String ERROR_QUEUE = "SMART_GATE_V2_ERRORS";
@@ -21,7 +20,6 @@ public class MQConfig {
     public static final String FAILED_EXCHANGE = "sgr_message_exchange_dlq";
     public static final String ROUTING_KEY = "sgr_routing_Key";
     public static final String AIRTEL_DNR = "airtel.dnr";
-    public static final String UPDATE_ACCOUNT_BALANCE = "smart.gate.v2.update.account.balance";
     public static final String INCOMING_SMS_DLR = "sdp_gateway.sms.dlr";
 
     @Bean
@@ -44,11 +42,6 @@ public class MQConfig {
         return new Queue(AIRTEL_DNR, true, false, false);
     }
 
-
-    @Bean
-    public Queue balanceUpdate() {
-        return new Queue(BALANCE_UPDATE, true, false, false);
-    }
 
     @Bean
     public Queue outOfCreditQueueSynq() {

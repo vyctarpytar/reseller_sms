@@ -5,6 +5,8 @@ import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safari
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +15,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -20,60 +23,85 @@ import java.io.IOException;
 @EnableScheduling
 public class SafAuthService {
 
-    private static String SMS_GATEWAY_SAF_TOKEN;
+    /** Redis key holding the current Safaricom SDP access token (shared across instances/restarts). */
+    private static final String REDIS_KEY = "safaricom:sdp:access_token";
 
     private final SafaricomProperties safaricomProperties;
     private final SafaricomInterface safaricomInterface;
+    private final StringRedisTemplate redisTemplate;
 
-    public String getTokenFromSafaricom() throws IOException {
+    /** Assumed token validity (the SDP token carries no expires_in). Cached for this minus 2 minutes. */
+    @Value("${safaricom.token.expiry-minutes:60}")
+    private int tokenExpiryMinutes;
 
+    /**
+     * Fetch a fresh token from Safaricom and cache it in Redis. {@code synchronized} + a re-check of
+     * the cache makes concurrent misses collapse into a single login instead of stampeding Safaricom.
+     */
+    public synchronized String getTokenFromSafaricom() throws IOException {
+        String cached = getTokenFromRedis();
+        if (!TextUtils.isEmpty(cached)) {
+            return cached; // another thread refreshed while we waited for the lock
+        }
 
-        SafAuthReq safAuthReq = SafAuthReq.builder().password(safaricomProperties.getSafPassword()).username(safaricomProperties.getSafApiUserName()).build();
+        SafAuthReq safAuthReq = SafAuthReq.builder()
+                .password(safaricomProperties.getSafPassword())
+                .username(safaricomProperties.getSafApiUserName())
+                .build();
 
-        Call<SafTokenResponse> call = safaricomInterface.getToken(String.valueOf(MediaType.APPLICATION_JSON), "XMLHttpRequest", safAuthReq);
-
+        Call<SafTokenResponse> call = safaricomInterface.getToken(
+                String.valueOf(MediaType.APPLICATION_JSON), "XMLHttpRequest", safAuthReq);
         Response<SafTokenResponse> res = call.execute();
 
         if (res.isSuccessful()) {
             assert res.body() != null;
-
-            SMS_GATEWAY_SAF_TOKEN = res.body().getToken();
-
-            return SMS_GATEWAY_SAF_TOKEN;
-
+            String token = res.body().getToken();
+            cacheToken(token);
+            return token;
         }
         throw new RuntimeException("Safaricom Error : could not obtain token");
-
     }
 
-
+    /** Hot path: return the cached token if present, otherwise fetch a fresh one (single-flight). */
     public String getAccessToken() throws IOException {
-        String token = getTokenFromRedis() == null ? getTokenFromSafaricom() : getTokenFromRedis();
-        log.warn(token);
-        return token;
+        String token = getTokenFromRedis();
+        return TextUtils.isEmpty(token) ? getTokenFromSafaricom() : token;
     }
 
-
+    /** Read the token from Redis. On any Redis error, return null so the caller fetches fresh. */
     public String getTokenFromRedis() {
-        String redisToken = SMS_GATEWAY_SAF_TOKEN;
-        log.info("token from redis found : {}", !TextUtils.isEmpty(redisToken));
-        return redisToken;
-    }
-
-
-    @Scheduled(cron = "0 */50 * * * *")
-    public void refreshToken() {
-        log.info("refreshing  token  from Safaricom");
         try {
-            SMS_GATEWAY_SAF_TOKEN = null;
-            getTokenFromSafaricom();
-
+            return redisTemplate.opsForValue().get(REDIS_KEY);
         } catch (Exception e) {
-            SMS_GATEWAY_SAF_TOKEN = null;
-            log.error("Error getting access token", e);
+            log.error("Redis unavailable reading Safaricom token — will fetch fresh: {}", e.getMessage());
+            return null;
         }
     }
 
+    /** Store the token in Redis with a TTL of (configured expiry − 2 minutes). Never fails the send. */
+    private void cacheToken(String token) {
+        if (TextUtils.isEmpty(token)) return;
+        try {
+            Duration ttl = Duration.ofMinutes(Math.max(1, tokenExpiryMinutes - 2));
+            redisTemplate.opsForValue().set(REDIS_KEY, token, ttl);
+        } catch (Exception e) {
+            log.error("Failed to cache Safaricom token in Redis: {}", e.getMessage());
+        }
+    }
 
+    /** Proactively rotate the token before it expires: evict the cache, then re-fetch. */
+    @Scheduled(cron = "0 */50 * * * *")
+    public void refreshToken() {
+        log.info("Refreshing Safaricom token");
+        try {
+            try {
+                redisTemplate.delete(REDIS_KEY);
+            } catch (Exception e) {
+                log.warn("Could not evict Safaricom token from Redis: {}", e.getMessage());
+            }
+            getTokenFromSafaricom();
+        } catch (Exception e) {
+            log.error("Error refreshing Safaricom access token", e);
+        }
+    }
 }
-

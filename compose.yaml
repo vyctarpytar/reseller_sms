@@ -1,0 +1,55 @@
+# Full local stack for the Synq reseller platform: backend (Spring Boot, built
+# image) + frontend (Vite dev server, hot reload). Postgres and RabbitMQ are
+# NOT started here — the backend is pointed at the ones already running on your
+# Mac via host.docker.internal, so you keep your real schema + seed data and can
+# actually log in.
+#
+# Prereqs on the HOST: Postgres on :5432 with db `synq_africa_rds`, RabbitMQ on :5672.
+#
+#   docker compose up --build      # first time / after backend code changes (builds the image)
+#   docker compose up              # subsequent quick fire-ups (image cached)
+#   docker compose up -d           # detached
+#   docker compose logs -f         # tail both services
+#   docker compose down            # stop
+#
+# Frontend:  http://localhost:3000   (hot reload; calls the backend below)
+# Backend:   http://localhost:8443   (plain HTTP; Swagger UI under /swagger-ui)
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: synq-backend:local
+    ports:
+      - "8443:8443"
+    # OS env vars override the values baked into application.properties (Spring
+    # property-source precedence), repointing localhost -> the host's services.
+    # Username/password still come from application.properties.
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synq_africa_rds?options=-c%20TimeZone=Africa/Nairobi
+      - SPRING_RABBITMQ_HOST=host.docker.internal
+    # Lets host.docker.internal resolve on Linux too; no-op on Docker Desktop/Mac.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    image: node:22-bookworm
+    working_dir: /app
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"               # Vite dev server (vite.config.js sets server.port: 3000)
+    volumes:
+      - ./frontend:/app           # live-mounted source for hot reload
+      - frontend_node_modules:/app/node_modules   # keep container's LINUX deps off your mac node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true   # reliable file-watching/HMR across the mac bind mount
+      - BROWSER=none               # no GUI browser in the container -> skip auto-open
+      - VITE_API_BASE_URL=http://localhost:8443   # override .env's prod URL -> the local backend above
+    # Install only if deps are missing, then start the dev server bound to 0.0.0.0
+    # (so it's reachable from the mac, not just inside the container).
+    command: sh -c "[ -x node_modules/.bin/vite ] || npm ci --no-audit --no-fund; npm run dev -- --host 0.0.0.0"
+
+volumes:
+  frontend_node_modules:

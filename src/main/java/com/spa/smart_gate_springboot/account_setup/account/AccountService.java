@@ -1,11 +1,8 @@
 package com.spa.smart_gate_springboot.account_setup.account;
 
 
-import com.spa.smart_gate_springboot.MQRes.MQConfig;
-import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcFilterDto;
-import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.BalanceDto;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
 import com.spa.smart_gate_springboot.dto.Layers;
@@ -21,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -43,8 +39,6 @@ public class AccountService {
     private final ResellerRepo resellerRepo;
     private final GlobalUtils gu;
     private final ApiKeyService apiKeyService;
-
-    private final RMQPublisher rmqPublisher;
 
 
     public Account findByAccId(UUID id) {
@@ -209,19 +203,21 @@ public class AccountService {
         return accountRepository.getAccountBalancesForReseller(rsId);
     }
 
-    public void handleUpdateOfAccountBalance(BigDecimal msgCostId, UUID accId, UUID accResellerId) {
-        AccBalanceUpdate accBalanceUpdate = AccBalanceUpdate.builder().accId(accId).accResellerId(accResellerId).msgCost(msgCostId).build();
-
-        try {
-            rmqPublisher.publishToOutQueue(accBalanceUpdate, MQConfig.UPDATE_ACCOUNT_BALANCE);
-        } catch (Exception e) {
-            log.error("Error queueing update_balance");
-        }
-
-    }
-
     public void refundCostCharged(UUID msgAccId, BigDecimal msgCostId) {
         accountRepository.refundCostCharged(msgAccId, msgCostId);
+    }
+
+    /**
+     * Reserve-then-send: atomically debit {@code cost} units from the account, but only if the
+     * balance can cover it. Returns {@code true} when the units were debited (caller may send the
+     * SMS), {@code false} when there were not enough units (caller must NOT send). This replaces the
+     * old "check the balance, then publish a fire-and-forget debit later" flow, which let many
+     * in-flight messages all pass the check before any of them debited — draining the balance below
+     * zero. The guard + row lock live in {@link AccountRepository#updateAccountMsgBal}.
+     */
+    @Transactional
+    public boolean tryDebitAccountMsgBal(UUID accId, BigDecimal cost) {
+        return accountRepository.updateAccountMsgBal(accId, cost) > 0;
     }
 
     public StandardJsonResponse deleteAccount(UUID accId, User user, AcDelete acDelete) {

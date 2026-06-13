@@ -1,7 +1,6 @@
 package com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp;
 
 
-import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetup;
 import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetupService;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
@@ -46,7 +45,6 @@ public class SafBulkService {
 
     private final Retrofit safComRetrofit;
     private final MsgShortcodeSetupService msgShortcodeSetupService;
-    private final AccountService accountService;
     private final AiretelService airetelService;
     private final SafaricomRestBulkService safaricomRestBulkService;
 
@@ -59,12 +57,13 @@ public class SafBulkService {
 
     public void sendArcSms(MsgMessageQueueArc msg) throws Exception {
 
+        // Units were already reserved (debited) up-front by the gate (MQReceiverSynq.receiver via
+        // AccountService.tryDebitAccountMsgBal) before this method is called, so the send paths here
+        // must NOT debit again. Pass bill=false to Airtel; the SDP/REST branches simply send.
         if (Boolean.parseBoolean(allowForAll)) {
-            airetelService.sendMessageViaAirTel(msg);
+            airetelService.sendMessageViaAirTel(msg, false);
             return;
         }
-
-        accountService.handleUpdateOfAccountBalance(msg.getMsgCostId(), msg.getMsgAccId(), msg.getMsgResellerId());
 
         if ("v2".equalsIgnoreCase(safApiVersion)) {
             log.info("[SAF] Using Daraja REST API (v2) for msgCode={}", msg.getMsgCode());

@@ -1,0 +1,15 @@
+# Backend build context excludes — keep `docker build` fast and the context small.
+# (The Dockerfile only COPYs pom.xml + src, so this mainly trims context transfer.)
+.git
+.idea
+.vscode
+.claude
+.github
+target
+frontend
+cooporate_assets
+*.log
+hs_err_pid*.log
+**/.DS_Store
+*.md
+deploy.sh

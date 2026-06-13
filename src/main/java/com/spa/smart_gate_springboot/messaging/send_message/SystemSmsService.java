@@ -1,10 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
-import com.spa.smart_gate_springboot.MQRes.MQConfig;
-import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
-import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestAuthService;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestInterface;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestProperties;
@@ -41,8 +38,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * account: there is no per-user message-balance debit and no shortcode lookup, and the sender ID is
  * fixed to {@value #SYSTEM_SENDER_ID} on the transactional package. The cost of every system SMS is
  * instead borne by a single dedicated account ({@link #SYSTEM_ACCOUNT_ID} / {@link #SYSTEM_RESELLER_ID}),
- * debited via the same {@code UPDATE_ACCOUNT_BALANCE} queue the bulk pipeline uses. Delivery is
- * fire-and-forget on a background thread so callers never block (or fail) on the SMS gateway.
+ * debited directly with a synchronous, guarded unit debit (best-effort — never blocks delivery).
+ * Delivery is fire-and-forget on a background thread so callers never block (or fail) on the gateway.
  */
 @Service
 @Slf4j
@@ -70,10 +67,9 @@ public class SystemSmsService {
     private final SafaricomRestInterface safaricomRestInterface;
     private final SafaricomRestProperties safaricomRestProperties;
 
-    // Billing — RMQPublisher + repo are used directly (not AccountService) to avoid a circular
-    // dependency: AccountService → UserService → SystemSmsService.
+    // Billing — the repo is used directly (not AccountService) to avoid a circular dependency:
+    // AccountService → UserService → SystemSmsService.
     private final AccountRepository accountRepository;
-    private final RMQPublisher rmqPublisher;
 
     /** Mirrors {@code SafBulkService}: switch between legacy SDP (v1) and Daraja REST (v2). */
     @Value("${safaricom.api.version:v1}")
@@ -103,7 +99,12 @@ public class SystemSmsService {
         }).start();
     }
 
-    /** Debit the system account/reseller for this SMS via the shared UPDATE_ACCOUNT_BALANCE queue. */
+    /**
+     * Debit the dedicated system account for this SMS — synchronous, atomic and guarded (the
+     * {@code acc_msg_bal >= cost} predicate lives in {@code updateAccountMsgBal}) so the balance can
+     * never go negative. Billing is best-effort: a system SMS (OTP, alert) must never be blocked or
+     * fail on a billing hiccup, so we log and proceed regardless of the outcome.
+     */
     private void billSystemAccount(String message) {
         try {
             BigDecimal price = accountRepository.findById(SYSTEM_ACCOUNT_ID)
@@ -115,15 +116,14 @@ public class SystemSmsService {
             if (pages < 1) pages = 1;
             BigDecimal cost = price.multiply(BigDecimal.valueOf(pages));
 
-            AccBalanceUpdate update = AccBalanceUpdate.builder()
-                    .accId(SYSTEM_ACCOUNT_ID)
-                    .accResellerId(SYSTEM_RESELLER_ID)
-                    .msgCost(cost)
-                    .build();
-            rmqPublisher.publishToOutQueue(update, MQConfig.UPDATE_ACCOUNT_BALANCE);
+            int debited = accountRepository.updateAccountMsgBal(SYSTEM_ACCOUNT_ID, cost);
+            if (debited == 0) {
+                log.warn("[SYSTEM-SMS] System account {} has insufficient units for cost {} — sending anyway",
+                        SYSTEM_ACCOUNT_ID, cost);
+            }
         } catch (Exception e) {
             // Never block delivery on a billing hiccup — log and proceed.
-            log.error("[SYSTEM-SMS] Failed to queue balance update for system account: {}", e.getMessage());
+            log.error("[SYSTEM-SMS] Failed to debit system account: {}", e.getMessage());
         }
     }
 

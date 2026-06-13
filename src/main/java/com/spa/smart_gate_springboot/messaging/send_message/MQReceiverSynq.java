@@ -159,10 +159,16 @@ public class MQReceiverSynq {
             if (rsMsgBal.compareTo(BigDecimal.TEN) < 1) {
                 msgQueue.setMsgStatus("RS_CREDIT_ISSUE");
                 rmqPublisher.publishToErrorQueue(msgQueue, MQConfig.OUT_OF_CREDIT_QUEUE_SYNQ);
-            } else if (acc.getAccMsgBal().compareTo(BigDecimal.TEN) < 1) {
+            } else if (!accountService.tryDebitAccountMsgBal(msgQueue.getMsgAccId(), totalCost)) {
+                // Reserve-then-send: atomically debit the account up-front. The debit was refused
+                // because the balance can't cover this message's cost, so do NOT send it — route it
+                // to the out-of-credit queue instead. This (not a plain balance read) is what stops
+                // concurrent sends from draining the account below zero.
                 msgQueue.setMsgStatus("PENDING_CREDIT");
                 rmqPublisher.publishToErrorQueue(msgQueue, MQConfig.OUT_OF_CREDIT_QUEUE_SYNQ);
             } else {
+                // Units are already reserved (debited) above — the send path must NOT debit again
+                // (see SafBulkService.sendArcSms / AiretelService bill flag).
                 msgQueue.setMsgStatus("PENDING_PROCESSING");
 
                 MsgMessageQueueArc msgMessageQueueArc = new MsgMessageQueueArc();

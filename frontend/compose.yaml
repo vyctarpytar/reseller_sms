@@ -1,0 +1,31 @@
+# Local dev for the Synq frontend, running in the SAME environment as the
+# CI runner (node:22-bookworm = Node 22 on Debian/glibc). This keeps your
+# local builds and the production deploy byte-for-byte consistent, and means
+# you never regenerate package-lock.json with the wrong (mac) native deps.
+#
+#   docker compose up            -> start the Vite dev server at http://localhost:3000
+#   docker compose down          -> stop it
+#   docker compose run --rm web npm run build   -> one-off production build
+#   docker compose up -d 
+#   docker compose logs -f web 
+#   docker compose down to stop.
+#
+
+services:
+  web:
+    image: node:22-bookworm
+    working_dir: /app
+    ports:
+      - "3000:3000"          # Vite dev server (vite.config.js sets server.port: 3000)
+    volumes:
+      - .:/app               # your source, live-mounted for hot reload
+      - node_modules:/app/node_modules   # keep container's LINUX deps isolated from your mac node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true   # reliable file-watching/HMR across the mac bind mount
+      - BROWSER=none               # no GUI browser in the container -> skip auto-open (kills the harmless "spawn xdg-open ENOENT")
+    # Install only if deps are missing, then start the dev server bound to 0.0.0.0
+    # (required so the server is reachable from your mac, not just inside the container).
+    command: sh -c "[ -x node_modules/.bin/vite ] || npm ci --no-audit --no-fund; npm run dev -- --host 0.0.0.0"
+
+volumes:
+  node_modules:

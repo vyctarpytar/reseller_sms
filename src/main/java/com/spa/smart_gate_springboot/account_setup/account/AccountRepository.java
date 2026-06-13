@@ -79,10 +79,18 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     @Query("select coalesce(sum(a.accMsgBal), 0) from jsc_accounts a")
     BigDecimal sumAllAccountMsgBal();
 
+    /**
+     * Atomic, guarded unit debit. The {@code acc_msg_bal >= :dedAmt} predicate makes the subtract
+     * refuse to run when it would drive the balance negative, and Postgres takes a row-level write
+     * lock for the duration of the single UPDATE — so two concurrent debits serialise on the row
+     * instead of both reading a stale balance. Returns the number of rows updated: 1 = debited,
+     * 0 = insufficient units (or account not found). Callers MUST treat 0 as "not charged".
+     */
     @Modifying
     @Transactional
     @Query(value = """
-            update js_core.jsc_accounts set acc_msg_bal = acc_msg_bal - :dedAmt where acc_id = :accId
+            update js_core.jsc_accounts set acc_msg_bal = acc_msg_bal - :dedAmt
+            where acc_id = :accId and acc_msg_bal >= :dedAmt
             """, nativeQuery = true)
     int updateAccountMsgBal(@Param("accId") UUID accId, @Param("dedAmt") BigDecimal dedAmt);
 

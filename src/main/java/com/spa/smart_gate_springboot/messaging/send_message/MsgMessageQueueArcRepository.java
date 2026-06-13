@@ -155,13 +155,26 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
     Page<MsgMessageQueueArc> getWeiserPendingDNR(Pageable pageable);
 
 
+    /**
+     * Next batch of failed sends to retry — across ALL tenants in ONE indexed query, oldest first,
+     * bounded by {@code :limit}. Replaces the old per-reseller {@code resendSmsPagable}, which the
+     * cron called once per (reseller × status) every few seconds, each call first loading the
+     * reseller's accounts and then passing them as a giant {@code IN (...)} list — so its cost grew
+     * with tenant count.
+     * <p>
+     * {@code coalesce(msg_sent_retried, true) = false} keeps each message to a single retry, and the
+     * {@code msg_created_date} comparison is left un-cast so Postgres can use an index. Wants a
+     * supporting index — see the prod note on {@code SchedulingConfig.retryFailedMessages}.
+     */
     @Query(value = """
-            SELECT * FROM msg.message_queue_arc m WHERE cast(m.msg_acc_id as UUID) IN :accountIds
-                        AND m.msg_status = :msgStatus
-                        AND cast(m.msg_created_date as date) >= current_date -2
-            and coalesce( m.msg_sent_retried, true) = false
+            SELECT * FROM msg.message_queue_arc
+            WHERE msg_status IN (:statuses)
+              AND coalesce(msg_sent_retried, true) = false
+              AND msg_created_date >= current_date - 2
+            ORDER BY msg_created_date
+            LIMIT :limit
             """, nativeQuery = true)
-    Page<MsgMessageQueueArc> resendSmsPagable(@Param("accountIds") Set<UUID> accountIds, @Param("msgStatus") String msgStatus, Pageable pageable);
+    List<MsgMessageQueueArc> findRetryBatch(@Param("statuses") List<String> statuses, @Param("limit") int limit);
 
 
     @Query(value = """

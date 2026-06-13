@@ -1,6 +1,11 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import rawStorage from 'redux-persist/lib/storage';
+
+// Vite 8 / rolldown's CJS→ESM interop hands back redux-persist's module `exports`
+// object ({ __esModule, default }) instead of unwrapping the default export, so
+// `storage.getItem` is undefined ("storage.getItem is not a function"). Unwrap it.
+const storage = rawStorage?.getItem ? rawStorage : rawStorage?.default;
 import authReducer from '../features/auth/authSlice';
 import globalReducer from '../features/global/globalSlice'; 
 import saveReducer from '../features/save/saveSlice';

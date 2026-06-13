@@ -20,11 +20,22 @@ public class SafaricomRetrofitConfig {
 
     @Bean
     public Retrofit safComRetrofit() {
+        // Sane timeouts: a send must not pin a worker thread for minutes. The old 600s connect / 300s
+        // read meant one hung Safaricom socket held an rmqListener thread for up to 10 minutes — under
+        // load that drains the worker pool. Bound the dispatcher so we never open more concurrent
+        // connections to Safaricom than the worker pool can drive.
+        okhttp3.Dispatcher dispatcher = new okhttp3.Dispatcher();
+        dispatcher.setMaxRequests(32);
+        dispatcher.setMaxRequestsPerHost(32);
+
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(createLoggingInterceptor())  // Add the logging interceptor
-                .connectTimeout(600, TimeUnit.SECONDS) // Increased connection timeout to 5 minutes
-                .readTimeout(300, TimeUnit.SECONDS)    // Increased read timeout to 2 minutes
-                .writeTimeout(300, TimeUnit.SECONDS)   // Increased write timeout to 2 minutes
+                .dispatcher(dispatcher)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .callTimeout(90, TimeUnit.SECONDS)     // hard ceiling on the whole call
+                .retryOnConnectionFailure(true)
                 .build();
 
         return new Retrofit.Builder()

@@ -1,10 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.airtel;
 
-import com.spa.smart_gate_springboot.MQRes.MQConfig;
-import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
-import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import jakarta.validation.Valid;
@@ -25,7 +22,6 @@ import java.util.*;
 public class AiretelService {
 
     private final MsgMessageQueueArcRepository arcRepository;
-    private final RMQPublisher rmqPublisher;
     private final AirtelNumberRepository airtelNumberRepository;
     private final RestTemplate restTemplate;
     private final ObjectProvider<AccountService> accountServiceProvider;
@@ -82,7 +78,20 @@ public class AiretelService {
         return _sms_price == null ? new BigDecimal("1.50") : _sms_price;
     }
 
+    /**
+     * Send via Airtel and bill the account (historic behaviour). Used by callers that did NOT
+     * already reserve the units — the API-sandbox path and the retry cron.
+     */
     public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc) {
+        sendMessageViaAirTel(msgMessageQueueArc, true);
+    }
+
+    /**
+     * @param bill {@code true} to debit the account as part of the send (historic behaviour);
+     *             {@code false} when the caller already reserved the units up-front (the gate ->
+     *             SafBulkService path), so billing here would double-charge.
+     */
+    public void sendMessageViaAirTel(MsgMessageQueueArc msgMessageQueueArc, boolean bill) {
 
         int no_of_msg = getNoOfMessage(msgMessageQueueArc);
 
@@ -108,7 +117,22 @@ public class AiretelService {
         log.info("Sending to Airtel : {}", requestBody);
 
 
-        handleUpdateOfAccountBalance(msgMessageQueueArc.getMsgCostId(), msgMessageQueueArc.getMsgAccId(), msgMessageQueueArc.getMsgResellerId());
+        // Reserve-then-send: when this caller owns billing (bill=true — the API-sandbox and retry
+        // paths), atomically debit the account up-front and skip the send if it can't be covered, so
+        // the balance never goes negative and we never send an SMS we can't bill. bill=false means
+        // the gate (MQReceiverSynq) already reserved the units, so we just send.
+        if (bill) {
+            boolean reserved = accountServiceProvider.getObject()
+                    .tryDebitAccountMsgBal(msgMessageQueueArc.getMsgAccId(), totalCost);
+            if (!reserved) {
+                log.warn("Airtel send skipped — insufficient units for account {} (cost {})",
+                        msgMessageQueueArc.getMsgAccId(), totalCost);
+                msgMessageQueueArc.setMsgStatus("PENDING_CREDIT");
+                msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
+                arcRepository.save(msgMessageQueueArc);
+                return;
+            }
+        }
 
 
         try {
@@ -171,17 +195,6 @@ public class AiretelService {
         }
     }
 
-
-    public void handleUpdateOfAccountBalance(BigDecimal msgCostId, UUID accId, UUID accResellerId) {
-        AccBalanceUpdate accBalanceUpdate = AccBalanceUpdate.builder().accId(accId).accResellerId(accResellerId).msgCost(msgCostId).build();
-
-        try {
-            rmqPublisher.publishToOutQueue(accBalanceUpdate, MQConfig.UPDATE_ACCOUNT_BALANCE);
-        } catch (Exception e) {
-            log.error("Error queueing update_balance");
-        }
-
-    }
 
     private int getNoOfMessage(MsgMessageQueueArc msgQueue) {
         int MSG_LENGTH = msgQueue.getMsgMessage().length();

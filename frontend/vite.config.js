@@ -13,11 +13,25 @@ export default defineConfig({
       name: 'treat-js-files-as-jsx',
       enforce: 'pre',
       async transform(code, id) {
-        if (!id.match(/src\/.*\.js$/)) return null;
-        return transformWithOxc(code, id, {
+        // Only OUR source .js files carry CRA-style JSX. The previous
+        // /src\/.*\.js$/ regex also matched node_modules packages that ship a
+        // src/ dir (d3, internmap, …), needlessly oxc-transforming hundreds of
+        // plain-JS vendor files on every cold start. Scope to the project src
+        // and skip node_modules. (Vite core's oxc can't help here: it infers
+        // lang:'js' from the .js extension and disables JSX parsing.)
+        const [file] = id.split('?');
+        if (
+          id.includes('/node_modules/') ||
+          !file.includes('/src/') ||
+          !file.endsWith('.js')
+        ) {
+          return null;
+        }
+        const { code: transformed, map } = await transformWithOxc(code, id, {
           lang: 'jsx',
           jsx: { runtime: 'automatic' },
         });
+        return { code: transformed, map };
       },
     },
     react(),
