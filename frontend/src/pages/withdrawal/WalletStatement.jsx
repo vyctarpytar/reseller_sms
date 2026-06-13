@@ -26,7 +26,7 @@ function WalletStatement() {
   const [pageSize, setPageSize] = useState(20);
   const [resellerId, setResellerId] = useState(null);
   const [accountId, setAccountId] = useState(null);
-  const [valueType, setValueType] = useState(null);
+  const [valueType, setValueType] = useState("KSH");
 
   function load(overrides = {}) {
     dispatch(
