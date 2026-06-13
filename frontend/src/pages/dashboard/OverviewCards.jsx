@@ -99,38 +99,37 @@ function OverviewCards() {
 
   return (
     <div className="mb-7">
-      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Compact, denser tier (4-up) so the census cards sit lighter under the cash cards. */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c, i) => (
           <div
             key={i}
-            className="card card-hover flex flex-col gap-4 group relative overflow-hidden"
+            className="card card-hover !p-4 flex items-start gap-3 group relative overflow-hidden"
           >
             <span
               className="absolute left-0 top-0 h-full w-1"
               style={{ background: c.color }}
             />
-            <div className="flex items-start justify-between">
-              <div
-                className="h-12 w-12 rounded-xl flex items-center justify-center"
-                style={{ background: c.tint }}
-              >
-                <MaterialIcon icon={c.icon} color={c.color} size={24} />
-              </div>
+            <div
+              className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center"
+              style={{ background: c.tint }}
+            >
+              <MaterialIcon icon={c.icon} color={c.color} size={18} />
             </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+            <div className="min-w-0">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted">
                 {c.label}
               </p>
-              <p className="text-[1.75rem] font-bold leading-none text-primary mt-1.5">
+              <p className="text-xl font-bold leading-none text-primary mt-1">
                 {c.value}
               </p>
-              {c.hint && <p className="text-xs text-muted mt-2">{c.hint}</p>}
+              {c.hint && <p className="text-[11px] text-muted mt-1.5 leading-snug">{c.hint}</p>}
               {c.breakdown && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-2">
                   {c.breakdown.map((b) => (
                     <span
                       key={b.label}
-                      className="inline-flex items-center gap-1.5 text-xs"
+                      className="inline-flex items-center gap-1 text-[11px]"
                     >
                       <span
                         className="h-1.5 w-1.5 rounded-full"

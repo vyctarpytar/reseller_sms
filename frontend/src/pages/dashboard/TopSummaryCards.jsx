@@ -43,36 +43,34 @@ function TopSummaryCards() {
   ];
 
   return (
-    <div className="mb-7">
+    <div className="mb-3">
       {topSummaryLoading && !topSummary ? (
         <Skeleton active paragraph={{ rows: 2 }} />
       ) : (
-        <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((c, i) => (
             <div
               key={i}
-              className="card card-hover flex flex-col gap-4 group relative overflow-hidden"
+              className="card card-hover !p-4 flex items-start gap-3 group relative overflow-hidden"
             >
               <span
                 className="absolute left-0 top-0 h-full w-1"
                 style={{ background: c.color }}
               />
-              <div className="flex items-start justify-between">
-                <div
-                  className="h-12 w-12 rounded-xl flex items-center justify-center"
-                  style={{ background: c.tint }}
-                >
-                  <MaterialIcon icon={c.icon} color={c.color} size={24} />
-                </div>
+              <div
+                className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center"
+                style={{ background: c.tint }}
+              >
+                <MaterialIcon icon={c.icon} color={c.color} size={18} />
               </div>
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted">
                   {c.label}
                 </p>
-                <p className="text-[1.75rem] font-bold leading-none text-primary mt-1.5">
+                <p className="text-xl font-bold leading-none text-primary mt-1">
                   {c.value}
                 </p>
-                <p className="text-xs text-muted mt-2">{c.hint}</p>
+                <p className="text-[11px] text-muted mt-1.5 leading-snug">{c.hint}</p>
               </div>
             </div>
           ))}
