@@ -214,14 +214,16 @@ function WalletStatement() {
         Money and units movements from purchases — each leg tagged with the wallet/owner it affected.
       </div>
 
-      <div className="flex flex-nowrap items-center gap-3 mt-3 overflow-x-auto pb-1">
+      {/* Mobile: filters stack into a 2-col grid so all are visible (no hidden
+          horizontal scroll). Desktop (lg+) keeps the single scroll-row exactly. */}
+      <div className="grid grid-cols-2 gap-3 mt-3 lg:flex lg:flex-nowrap lg:items-center lg:overflow-x-auto lg:pb-1">
         {isTop && (
           <Select
             allowClear
             showSearch
             optionFilterProp="label"
             placeholder="All resellers"
-            className="min-w-[200px] shrink-0"
+            className="w-full min-w-0 lg:w-auto lg:min-w-[200px] lg:shrink-0"
             value={resellerId}
             onChange={onResellerChange}
             options={resellerOptions}
@@ -233,7 +235,7 @@ function WalletStatement() {
             showSearch
             optionFilterProp="label"
             placeholder={resellerId ? "All accounts" : "Select a reseller first"}
-            className="min-w-[200px] shrink-0"
+            className="w-full min-w-0 lg:w-auto lg:min-w-[200px] lg:shrink-0"
             disabled={!resellerId}
             value={accountId}
             onChange={onAccountChange}
@@ -244,7 +246,7 @@ function WalletStatement() {
           <Select
             allowClear
             placeholder="All owners"
-            className="min-w-[170px] shrink-0"
+            className="w-full min-w-0 lg:w-auto lg:min-w-[170px] lg:shrink-0"
             value={ownerType}
             onChange={onOwnerChange}
             options={[
@@ -257,7 +259,7 @@ function WalletStatement() {
         <Select
           allowClear
           placeholder="All types"
-          className="min-w-[140px] shrink-0"
+          className="w-full min-w-0 lg:w-auto lg:min-w-[140px] lg:shrink-0"
           value={valueType}
           onChange={onTypeChange}
           options={[

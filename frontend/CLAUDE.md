@@ -14,7 +14,7 @@ npm run build      # production build to /build (Vite, outDir overridden to buil
 npm run preview    # serve the built /build folder to smoke-test before deploy
 ```
 
-There is no lint or test script (the CRA `react-scripts test`/Jest setup was dropped in the Vite migration; CI only builds). `vite.config.js` carries the migration-specific config: a `transformWithEsbuild` plugin so JSX is allowed in `.js` files, and `assetsInclude` for `.xlsx`/`.docx` imports.
+There is no lint or test script (the CRA `react-scripts test`/Jest setup was dropped in the Vite migration; CI only builds). `vite.config.js` carries the migration-specific config: a `treat-js-files-as-jsx` plugin (`enforce: 'pre'`, using `transformWithOxc`) so JSX is allowed in `.js` files, `optimizeDeps.rolldownOptions.moduleTypes` so the dev dep-scanner also accepts JSX-in-`.js`, and `assetsInclude` for `.xlsx`/`.docx` imports. Vite 8 replaced esbuild with Rolldown/oxc, so neither `transformWithEsbuild` nor `optimizeDeps.esbuildOptions` work anymore.
 
 ### Environment
 

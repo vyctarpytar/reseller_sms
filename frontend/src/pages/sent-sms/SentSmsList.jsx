@@ -1,4 +1,4 @@
-import { Badge, Dropdown, Skeleton, Spin, Tooltip } from "antd";
+import { Badge, Dropdown, Modal, Skeleton, Spin, Tooltip } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import InsideHeader from "../../components/InsideHeader";
@@ -46,6 +46,10 @@ function SentSmsList() {
   const showModal = () => {
     setIsModalOpen(true);
   };
+
+  // Mobile-only: tapping a summary card opens this record in a details/preview
+  // modal (desktop shows the full text inline, so it has no need for this).
+  const [previewRecord, setPreviewRecord] = useState(null);
 
   const truncateText = (text, maxLength) => {
     if (text?.length > maxLength) {
@@ -378,7 +382,18 @@ function SentSmsList() {
                   loading={loadingSms}
                   mobileEmptyText="No messages found"
                   mobileCard={(record) => (
-                    <div className="card !p-4">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setPreviewRecord(record)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setPreviewRecord(record);
+                        }
+                      }}
+                      className="card !p-4 cursor-pointer transition active:opacity-70"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-semibold truncate">
@@ -394,11 +409,18 @@ function SentSmsList() {
                               : ""}
                           </p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <StatusBadge value={record?.msgStatus} />
-                          <p className="font-semibold whitespace-nowrap mt-1.5">
-                            {cashConverter(record?.msgCostId)}
-                          </p>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="text-right">
+                            <StatusBadge value={record?.msgStatus} />
+                            <p className="font-semibold whitespace-nowrap mt-1.5">
+                              {cashConverter(record?.msgCostId)}
+                            </p>
+                          </div>
+                          <MaterialIcon
+                            size={20}
+                            color="#B6ABA0"
+                            icon="chevron_right"
+                          />
                         </div>
                       </div>
                     </div>
@@ -425,6 +447,55 @@ function SentSmsList() {
         formData={formData}
         setFormData={setFormData}
       />
+
+      <Modal
+        open={!!previewRecord}
+        onCancel={() => setPreviewRecord(null)}
+        footer={null}
+        centered
+        title="Message preview"
+      >
+        {previewRecord && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-semibold text-[15px]">
+                {addSpaces(previewRecord?.msgSubMobileNo)}
+              </p>
+              <StatusBadge value={previewRecord?.msgStatus} />
+            </div>
+
+            <div className="rounded-lg border border-[#E5E0DA] bg-[#F7F5F2] p-3 text-[13px] leading-relaxed text-primary whitespace-pre-wrap break-words">
+              {previewRecord?.msgMessage || "—"}
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              {[
+                { label: "Account", value: previewRecord?.msgAccName },
+                { label: "Sender ID", value: previewRecord?.msgSenderIdName },
+                ...(previewRecord?.msgResellerName
+                  ? [{ label: "Reseller", value: previewRecord?.msgResellerName }]
+                  : []),
+                {
+                  label: "Date",
+                  value: formatDateTime(previewRecord?.msgCreatedDate),
+                },
+                { label: "Pages", value: previewRecord?.msgPage },
+                { label: "Cost", value: cashConverter(previewRecord?.msgCostId) },
+                { label: "Sent by", value: previewRecord?.msgCreatedByEmail },
+              ].map((f) => (
+                <div key={f.label}>
+                  <p className="text-[10px] uppercase tracking-wider text-muted">
+                    {f.label}
+                  </p>
+                  <p className="text-[13px] text-primary mt-0.5 break-words">
+                    {f.value ?? "—"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
