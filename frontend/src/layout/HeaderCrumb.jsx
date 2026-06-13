@@ -161,7 +161,7 @@ const HeaderCrumb = () => {
         className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-muted font-medium hover:text-accent hover:bg-black/5 transition-colors"
       >
         <GridIcon />
-        <span>SMS INST.</span>
+        <span className="hidden sm:inline">SMS INST.</span>
       </button>
 
       <ChevronRight />
@@ -182,7 +182,7 @@ const HeaderCrumb = () => {
           type="button"
           className={`${pillClass} ${selectedOrgName ? "text-primary" : "text-muted"}`}
         >
-          <span className="max-w-[180px] truncate">
+          <span className="max-w-[92px] lg:max-w-[180px] truncate">
             {selectedOrgName ? selectedOrgName : "Select reseller"}
           </span>
           <CaretDown />
@@ -209,7 +209,7 @@ const HeaderCrumb = () => {
               type="button"
               className={`${pillClass} ${selectedAccountName ? "text-primary" : "text-muted"}`}
             >
-              <span className="max-w-[180px] truncate">
+              <span className="max-w-[92px] lg:max-w-[180px] truncate">
                 {selectedAccountName ? selectedAccountName : "Select account"}
               </span>
               <CaretDown />

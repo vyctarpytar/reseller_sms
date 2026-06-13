@@ -110,7 +110,7 @@ const ResellerCrumb = () => {
         className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-muted font-medium hover:text-accent hover:bg-black/5 transition-colors"
       >
         <HomeIcon />
-        <span className="max-w-[160px] truncate">
+        <span className="max-w-[96px] lg:max-w-[160px] truncate">
           {balanceHeader?.accName ? balanceHeader?.accName : "My Portal"}
         </span>
       </button>
@@ -133,7 +133,7 @@ const ResellerCrumb = () => {
           type="button"
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1 text-primary font-semibold hover:border-accent/50 hover:text-accent transition-colors"
         >
-          <span className="max-w-[200px] truncate">
+          <span className="max-w-[96px] lg:max-w-[200px] truncate">
             {selectedAccountName ? selectedAccountName : "Select account"}
           </span>
           <CaretDown />

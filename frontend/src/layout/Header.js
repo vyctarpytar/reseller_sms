@@ -212,7 +212,7 @@ export default function Header() {
         className="w-full items-center justify-between sticky top-0 z-[1000] 
         py-[.5rem] lg:px-[1.875rem] px-[10px]"
       >
-        <div className="flex items-center cursor-pointer">
+        <div className="flex items-center cursor-pointer min-w-0">
           <div className="lg:mr-4 mr-0">
             <img
               src={svg19}
@@ -222,11 +222,11 @@ export default function Header() {
             />
           </div>
           <span
-            className={`font-bold text-[25px] ${
+            className={`font-bold text-[15px] lg:text-[25px] ${
               subdomain === "synqafrica" || subdomain == "synqtel"
                 ? "!text-syncBtn"
                 : "text-darkGreen"
-            }  dash-title flex items-center`}
+            }  dash-title flex items-center min-w-0`}
           >
             <img
               loading="lazy"
@@ -242,20 +242,22 @@ export default function Header() {
               }
               alt="logo"
               className={`${
-                subdomain === "synqtel" ? "h-[5vh]" : "h-[7vh]"
-              } object-contain`}
+                subdomain === "synqtel" ? "h-[28px] lg:h-[5vh]" : "h-[34px] lg:h-[7vh]"
+              } object-contain shrink-0`}
             />
-            {user?.layer === "TOP" && subdomain === "synqafrica"
-              ? "Synq Africa"
-              : balanceHeader?.accName}
+            <span className="truncate max-w-[120px] lg:max-w-none">
+              {user?.layer === "TOP" && subdomain === "synqafrica"
+                ? "Synq Africa"
+                : balanceHeader?.accName}
+            </span>
           </span>
           {user?.layer === "TOP" && (
-            <div className="flex items-center ml-10">
+            <div className="flex items-center ml-2 lg:ml-10 min-w-0">
               <HeaderCrumb />
             </div>
           )}
           {user?.layer === "RESELLER" && (
-            <div className="flex items-center ml-10">
+            <div className="flex items-center ml-2 lg:ml-10 min-w-0">
               <ResellerCrumb />
             </div>
           )}
@@ -343,7 +345,7 @@ export default function Header() {
           </div>
         )}
 
-        <div className="gap-x-[1.25rem] flex items-center cursor-pointer ">
+        <div className="gap-x-3 lg:gap-x-[1.25rem] flex items-center cursor-pointer flex-shrink-0">
           <div className="lg:flex hidden gap-x-[20px]">
             <span className="flex  items-center gap-x-3">
               <span
@@ -386,7 +388,7 @@ export default function Header() {
           >
             <div className="lg:pr-[1.25rem] pr-0">
               <img
-                className="w-[3.0625rem] h-[3.0625rem] rounded-full object-contain"
+                className="w-9 h-9 lg:w-[3.0625rem] lg:h-[3.0625rem] rounded-full object-contain"
                 src={
                   "https://simplyilm.com/wp-content/uploads/2017/08/temporary-profile-placeholder-1.jpg"
                 }
