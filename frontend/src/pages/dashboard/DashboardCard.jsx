@@ -1,19 +1,19 @@
 import React from "react";
-import smsSvg from "../../assets/svg/smsDash.svg";
+import MaterialIcon from "material-icons-react";
 import { numberWithCommas } from "../../utils";
 
-// Map an SMS status to an accent palette so each stat card reads at a glance.
+// Map an SMS status to an accent palette + glyph so each stat card reads at a glance.
 const statusStyle = (status = "") => {
   const k = String(status).toUpperCase();
-  if (k.includes("DELIVER"))
-    return { color: "#047857", tint: "rgba(4,120,87,0.10)", badge: "badge-approved" };
-  if (k.includes("FAIL") || k.includes("REJECT") || k.includes("EXPIRE") || k.includes("UNDELIV"))
-    return { color: "#b91c1c", tint: "rgba(185,28,28,0.10)", badge: "badge-rejected" };
+  if (k.includes("DELIVER") || k.includes("SUCCESS"))
+    return { color: "#047857", tint: "rgba(4,120,87,0.12)", badge: "badge-approved", icon: "check_circle" };
+  if (k.includes("FAIL") || k.includes("REJECT") || k.includes("EXPIRE") || k.includes("UNDELIV") || k.includes("INVALID") || k.includes("ABSENT") || k.includes("IMPOSSIBLE"))
+    return { color: "#b91c1c", tint: "rgba(185,28,28,0.12)", badge: "badge-rejected", icon: "cancel" };
   if (k.includes("PEND") || k.includes("QUEUE") || k.includes("SUBMIT") || k.includes("PROCESS"))
-    return { color: "#b45309", tint: "rgba(180,83,9,0.10)", badge: "badge-pending" };
+    return { color: "#b45309", tint: "rgba(180,83,9,0.12)", badge: "badge-pending", icon: "schedule" };
   if (k.includes("SENT"))
-    return { color: "#1d4ed8", tint: "rgba(29,78,216,0.10)", badge: "badge-open" };
-  return { color: "#69472E", tint: "rgba(105,71,46,0.10)", badge: "badge-brand" };
+    return { color: "#1d4ed8", tint: "rgba(29,78,216,0.12)", badge: "badge-open", icon: "send" };
+  return { color: "#69472E", tint: "rgba(105,71,46,0.12)", badge: "badge-brand", icon: "sms" };
 };
 
 function DashboardCard({ dashData }) {
@@ -37,7 +37,7 @@ function DashboardCard({ dashData }) {
                   className="h-12 w-12 rounded-xl flex items-center justify-center"
                   style={{ background: s.tint }}
                 >
-                  <img src={smsSvg} alt="" className="h-6 w-6" />
+                  <MaterialIcon icon={s.icon} color={s.color} size={24} />
                 </div>
                 <span className={s.badge}>{item?.msgPerCent}%</span>
               </div>

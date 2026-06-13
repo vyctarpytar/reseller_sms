@@ -3,20 +3,26 @@ import { useDispatch, useSelector } from "react-redux";
 import { Skeleton } from "antd";
 import MaterialIcon from "material-icons-react";
 import { fetchDashOverview } from "../../features/dashboard/dashboardSlice";
+import { fetchTopSummary } from "../../features/billing/billingSlice";
 import { cashConverter, numberWithCommas } from "../../utils";
 
-// Role-scoped census cards. TOP sees the platform totals (resellers, accounts, sender IDs, total
-// reseller cash, units in circulation); a reseller sees the same shape scoped to itself, with the
-// platform-only cards (reseller census + units in circulation) omitted by the backend `scope`.
+// Unified overview tier. A TOP user at platform level sees all 8 cards (3 platform-cash + 5 census)
+// in one 4-up grid; drilling into a reseller, or a reseller logging in, scopes to that reseller and
+// drops the platform-only cards. The cash cards come from the TOP-only /wallet/top-summary endpoint,
+// so we only fetch it for TOP-layer users — the axios 403 interceptor would log a reseller out.
 function OverviewCards() {
   const dispatch = useDispatch();
   const { overview, overviewLoading } = useSelector((state) => state.dash);
+  const { topSummary } = useSelector((state) => state.billing);
+  const user = useSelector((state) => state.auth?.user);
+  const isTopUser = user?.layer === "TOP";
   // Re-fetch when the selected org changes so a TOP drill-down into a reseller cascades.
   const selectedOrg = localStorage.getItem("selectedOrg");
 
   useEffect(() => {
     dispatch(fetchDashOverview());
-  }, [dispatch, selectedOrg]);
+    if (isTopUser) dispatch(fetchTopSummary());
+  }, [dispatch, isTopUser, selectedOrg]);
 
   if (overviewLoading && !overview) {
     return (
@@ -33,6 +39,36 @@ function OverviewCards() {
   const r = overview?.resellers || {};
 
   const cards = [];
+
+  // Platform money (TOP, platform level only) — leads the grid.
+  if (isTop) {
+    cards.push(
+      {
+        label: "Platform Cash Balance",
+        value: cashConverter(topSummary?.topCashBalance),
+        hint: "Available in the TOP wallet",
+        icon: "account_balance_wallet",
+        color: "#047857",
+        tint: "rgba(4,120,87,0.10)",
+      },
+      {
+        label: "Cash Collected (Units)",
+        value: cashConverter(topSummary?.totalCashCollected),
+        hint: "Total paid by resellers for units",
+        icon: "payments",
+        color: "#1d4ed8",
+        tint: "rgba(29,78,216,0.10)",
+      },
+      {
+        label: "Units Sold",
+        value: numberWithCommas(topSummary?.totalUnitsSold),
+        hint: "Units issued to resellers (no cap)",
+        icon: "local_shipping",
+        color: "#69472E",
+        tint: "rgba(105,71,46,0.10)",
+      }
+    );
+  }
 
   if (isTop) {
     cards.push({
@@ -81,9 +117,9 @@ function OverviewCards() {
     hint: isTop
       ? "Available cash across all resellers"
       : "Your available wallet balance",
-    icon: "account_balance_wallet",
-    color: "#047857",
-    tint: "rgba(4,120,87,0.10)",
+    icon: "savings",
+    color: "#0e7490",
+    tint: "rgba(14,116,144,0.10)",
   });
 
   if (isTop) {
