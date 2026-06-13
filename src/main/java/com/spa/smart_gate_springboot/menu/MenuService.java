@@ -80,7 +80,6 @@ public class MenuService {
         Menu m4c7 = Menu.builder().mnLink("scheduled-sms").mnName("Scheduled Sms").mnOwner(Layers.ACCOUNT).mnParentId(m4.getMnId()).build();
 
         Menu m14a = Menu.builder().mnLink("account-admin").mnName("Manage Clients").mnOwner(Layers.RESELLER).mnParentId(m14.getMnId()).build();
-        Menu m14b = Menu.builder().mnLink("payments").mnName("Payments").mnOwner(Layers.RESELLER).mnParentId(m14.getMnId()).build();
         Menu m14c = Menu.builder().mnLink("invoices").mnName("invoices").mnOwner(Layers.RESELLER).mnParentId(m14.getMnId()).build();
         Menu m14d = Menu.builder().mnLink("withdrawal").mnName("Wallet").mnOwner(Layers.RESELLER).mnIcons("withdrawalSvg").build();
         Menu m14e = Menu.builder().mnLink("withdrawal").mnName("Wallet").mnOwner(Layers.TOP).mnIcons("withdrawalSvg").build();
@@ -94,7 +93,7 @@ public class MenuService {
         Menu m18_c = Menu.builder().mnLink("quartely-Report").mnName("Quartely Report").mnOwner(Layers.TOP).mnParentId(m18.getMnId()).build();
         Menu m18_d = Menu.builder().mnLink("quartely-Report").mnName("Quartely Report").mnOwner(Layers.RESELLER).mnParentId(m18.getMnId()).build();
 
-        menuRepo.saveAllAndFlush(List.of(m4c4, m4c2, m4c3,m4c6,m4c5,m4c7, m4c1, m14a,m14c,m14b,m14d,m14e, m17_a, m17_b, m17_c,m18_a,m18_b,m18_c,m18_d));
+        menuRepo.saveAllAndFlush(List.of(m4c4, m4c2, m4c3,m4c6,m4c5,m4c7, m4c1, m14a,m14c,m14d,m14e, m17_a, m17_b, m17_c,m18_a,m18_b,m18_c,m18_d));
     }
 
 
@@ -104,7 +103,7 @@ public class MenuService {
         List<Menu> flatMenuList = menuRepo.findMenuTreeByOwner(layer);
 
         // The ACCOUNTANT-only gate on the Billing menu has been retired — Billing (and its
-        // Invoices / Payments / Manage Clients children) is now visible to all resellers.
+        // Invoices / Manage Clients children) is now visible to all resellers.
 
         return buildTree(flatMenuList);
     }

@@ -24,6 +24,9 @@ const initialState = {
 
   mpesaBalance: null,
   mpesaBalanceLoading: false,
+
+  topSummary: null,
+  topSummaryLoading: false,
 };
 
 export const fetchBills = createAsyncThunk(
@@ -128,6 +131,18 @@ export const fetchWalletStatement = createAsyncThunk(
     const res = await axiosInstance
       .get(`${url}/api/v2/wallet/statement`, { params })
       .then((res) => res.data);
+    return res;
+  }
+);
+
+// TOP platform summary (TOP only): cash wallet balance + derived units figures
+// (cash collected from unit sales, total units sold). Read-only — TOP units are untracked.
+export const fetchTopSummary = createAsyncThunk(
+  "billingSlice/fetchTopSummary",
+  async () => {
+    const res = await axiosInstance
+      .get(`${url}/api/v2/wallet/top-summary`)
+      .then((res) => res.data?.data?.result);
     return res;
   }
 );
@@ -261,6 +276,18 @@ export const billingSlice = createSlice({
       .addCase(fetchMpesaBalance.rejected, (state) => {
         state.mpesaBalanceLoading = false;
         state.mpesaBalance = null;
+      })
+
+      .addCase(fetchTopSummary.pending, (state) => {
+        state.topSummaryLoading = true;
+      })
+      .addCase(fetchTopSummary.fulfilled, (state, action) => {
+        state.topSummaryLoading = false;
+        state.topSummary = action.payload || null;
+      })
+      .addCase(fetchTopSummary.rejected, (state) => {
+        state.topSummaryLoading = false;
+        state.topSummary = null;
       })
   },
 });

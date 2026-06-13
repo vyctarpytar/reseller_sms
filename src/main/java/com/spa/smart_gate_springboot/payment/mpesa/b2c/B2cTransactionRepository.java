@@ -1,17 +1,14 @@
 package com.spa.smart_gate_springboot.payment.mpesa.b2c;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface B2cTransactionRepository extends JpaRepository<B2cTransaction, UUID> {
+public interface B2cTransactionRepository extends JpaRepository<B2cTransaction, UUID>,
+        JpaSpecificationExecutor<B2cTransaction> {
 
     List<B2cTransaction> findByStatus(B2cTransactionStatus status);
 
@@ -19,17 +16,8 @@ public interface B2cTransactionRepository extends JpaRepository<B2cTransaction, 
 
     boolean existsByExternalRef(String externalRef);
 
-    @Query("""
-            SELECT t FROM B2cTransaction t
-            WHERE (:walletCode IS NULL OR t.walletCode = :walletCode)
-              AND (:status IS NULL OR t.status = :status)
-              AND (:from IS NULL OR t.createdAt >= :from)
-              AND (:to IS NULL OR t.createdAt <= :to)
-            ORDER BY t.createdAt DESC
-            """)
-    Page<B2cTransaction> findFiltered(@Param("walletCode") String walletCode,
-                                      @Param("status") B2cTransactionStatus status,
-                                      @Param("from") LocalDateTime from,
-                                      @Param("to") LocalDateTime to,
-                                      Pageable pageable);
+    // Filtered payout history is built dynamically via B2cTransactionSpecifications.filter(...)
+    // and findAll(Specification, Pageable) from JpaSpecificationExecutor — null filters add no
+    // predicate. We avoid the "(:param IS NULL OR col = :param)" JPQL pattern because a bare bind
+    // param in ":param IS NULL" is untyped and breaks on PostgreSQL (42P18) when the filter is null.
 }

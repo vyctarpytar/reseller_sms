@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardCard from "./DashboardCard";
 import DashTimeseries from "./DashTimeseries";
+import TopSummaryCards from "./TopSummaryCards";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchDash } from "../../features/dashboard/dashboardSlice";
@@ -150,6 +151,9 @@ function Dashboard() {
             <p className="text-sm text-muted mt-1 mb-6">
               Total SMS summary in your account
             </p>
+
+            {/* Platform money + derived units overview (TOP only). */}
+            <TopSummaryCards />
 
             <div className="flex lg:flex-row flex-col lg:items-center justify-between gap-4 mb-7">
               {/* segmented range control */}

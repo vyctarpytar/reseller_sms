@@ -10,6 +10,7 @@ import com.spa.smart_gate_springboot.account_setup.wallet.dto.WithdrawFilter;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransaction;
 import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransactionRepository;
+import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransactionSpecifications;
 import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransactionStatus;
 import com.spa.smart_gate_springboot.payment.mpesa.charge.MpesaB2cCharge;
 import com.spa.smart_gate_springboot.payment.mpesa.charge.MpesaB2cChargeRepository;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -114,6 +116,46 @@ public class WalletController {
         return response;
     }
 
+    /**
+     * TOP platform summary (read-only). TOP units are an untracked, infinite source — this surfaces
+     * cash visibility plus DERIVED units figures from the ledger: cash now held in the platform wallet,
+     * total cash collected from selling units to resellers, and total units sold. No inventory gating.
+     */
+    @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN','ADMIN')")
+    @GetMapping("top-summary")
+    public StandardJsonResponse topSummary(HttpServletRequest request) {
+        User user = userService.getCurrentUser(request);
+        if (user.getLayer() != Layers.TOP) {
+            StandardJsonResponse forbidden = new StandardJsonResponse();
+            forbidden.setSuccess(false);
+            forbidden.setStatus(HttpStatus.FORBIDDEN.value());
+            forbidden.setMessage("message", "Only TOP can view the platform summary", forbidden);
+            return forbidden;
+        }
+
+        Wallet top = walletService.getOrCreateTop();
+        // Cash credited to TOP each time a reseller buys units (positive credits).
+        BigDecimal cashCollected = nz(walletTxRepository.sumAmount(
+                WalletOwnerType.TOP, WalletValueType.KSH, WalletTxType.UNIT_SALE_CREDIT));
+        // TOP unit-sale legs are stored as negative (units leaving the pool) — flip to a positive total.
+        BigDecimal unitsSold = nz(walletTxRepository.sumAmount(
+                WalletOwnerType.TOP, WalletValueType.UNIT, WalletTxType.UNIT_SALE)).abs();
+
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("topCashBalance", top.getAvailableBalance().toPlainString());
+        row.put("totalCashCollected", cashCollected.toPlainString());
+        row.put("totalUnitsSold", unitsSold.toPlainString());
+        row.put("currency", top.getCurrency());
+
+        StandardJsonResponse response = new StandardJsonResponse();
+        response.setData("result", row, response);
+        return response;
+    }
+
+    private static BigDecimal nz(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
     /** M-Pesa charge bands, mapped to the legacy tariff field names the frontend renders. */
     @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN','ADMIN')")
     @GetMapping("rates")
@@ -158,7 +200,7 @@ public class WalletController {
         String walletCode = resolveWalletCode(user, reseller_id);
 
         int limit = filter.getLimit() == 0 ? 10 : filter.getLimit();
-        Pageable pageable = PageRequest.of(filter.getStart(), limit);
+        Pageable pageable = PageRequest.of(filter.getStart(), limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         B2cTransactionStatus status = parseStatus(filter.getWithDrawStatus());
         LocalDateTime from = filter.getWithDrawDateFrom() == null ? null
@@ -166,7 +208,8 @@ public class WalletController {
         LocalDateTime to = filter.getWithDrawDateTo() == null ? null
                 : LocalDateTime.ofInstant(filter.getWithDrawDateTo().toInstant(), ZoneId.systemDefault());
 
-        Page<B2cTransaction> page = b2cRepository.findFiltered(walletCode, status, from, to, pageable);
+        Page<B2cTransaction> page = b2cRepository.findAll(
+                B2cTransactionSpecifications.filter(walletCode, status, from, to), pageable);
         List<Map<String, Object>> rows = new ArrayList<>();
         for (B2cTransaction t : page.getContent()) {
             Map<String, Object> r = new LinkedHashMap<>();

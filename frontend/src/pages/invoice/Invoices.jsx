@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import MaterialIcon from "material-icons-react";
 import { addSpaces, cashConverter, customToast, dateForHumans } from "../../utils";
-import noCon from "../../assets/img/noCon.png";
 import svg38 from "../../assets/svg/svg38.svg";
 import FilterModal from "./FilterModal";
 import {
@@ -251,11 +250,33 @@ function Invoices() {
                   loading={loading}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center mt-10">
-                  <img src={noCon} alt="noCon" />
-                  <span className="text-black21 text-[18px] font-normal leading-[24px] font-dmSans">
-                    No Sms Found
-                  </span>
+                <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+                  <div
+                    className="h-20 w-20 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(217,108,59,0.10)" }}
+                  >
+                    <MaterialIcon
+                      icon="receipt_long"
+                      color="var(--brand-accent)"
+                      size={40}
+                    />
+                  </div>
+                  <h3 className="mt-6 text-lg font-medium text-primary leading-snug">
+                    No invoices yet
+                  </h3>
+                  <p className="mt-2 max-w-sm text-sm text-muted leading-relaxed">
+                    {Object?.keys(formData)?.length > 0
+                      ? "No invoices match the selected filters. Try a wider range or clear your filters."
+                      : "You don't have any invoices yet. They'll appear here once one is created."}
+                  </p>
+                  {Object?.keys(formData)?.length > 0 && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="btn-outline mt-6 !py-2 !px-5"
+                    >
+                      Clear filters
+                    </button>
+                  )}
                 </div>
               )}
             </div>
