@@ -56,8 +56,12 @@ public class DashOverviewService {
                 ? accountRepository.countByStatus()
                 : accountRepository.countByStatusForReseller(resellerId);
         Map<AcStatus, Long> accByStatus = new EnumMap<>(AcStatus.class);
+        AcStatus[] statuses = AcStatus.values();
         for (Object[] row : accRows) {
-            accByStatus.put((AcStatus) row[0], (Long) row[1]);
+            if (row[0] == null) continue; // accounts with no status set — not counted in any bucket
+            int ordinal = ((Number) row[0]).intValue();
+            if (ordinal < 0 || ordinal >= statuses.length) continue; // defensive: unknown ordinal
+            accByStatus.put(statuses[ordinal], ((Number) row[1]).longValue());
         }
         long accActive = accByStatus.getOrDefault(AcStatus.ACTIVE, 0L);
         long accOutOfCredit = accByStatus.getOrDefault(AcStatus.OUT_OF_CREDIT, 0L);

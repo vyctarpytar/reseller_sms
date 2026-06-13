@@ -58,14 +58,20 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     BigDecimal getAccountBalancesForReseller(UUID resellerId);
 
     /**
-     * Account census grouped by status for the overview cards. JPQL (not native) so Hibernate
-     * maps the {@code AcStatus} enum correctly — the column is persisted as ORDINAL.
-     * Returns rows of {@code [AcStatus, count]}.
+     * Account census grouped by status for the overview cards. Native query: {@code acc_status} is
+     * persisted as the enum ORDINAL (an integer column), so each row is {@code [ordinal, count]} and
+     * the caller maps the ordinal back to {@link AcStatus}. (A JPQL projection of the enum + group-by
+     * fails Hibernate 6.1's query validation at boot, hence native.)
      */
-    @Query("select a.accStatus, count(a) from Account a group by a.accStatus")
+    @Query(nativeQuery = true, value = """
+            select acc_status, count(*) from js_core.jsc_accounts group by acc_status
+            """)
     List<Object[]> countByStatus();
 
-    @Query("select a.accStatus, count(a) from Account a where a.accResellerId = :resellerId group by a.accStatus")
+    @Query(nativeQuery = true, value = """
+            select acc_status, count(*) from js_core.jsc_accounts
+            where acc_reseller_id = :resellerId group by acc_status
+            """)
     List<Object[]> countByStatusForReseller(@Param("resellerId") UUID resellerId);
 
     /** Total units held across every account (platform units-in-circulation, account side). */
