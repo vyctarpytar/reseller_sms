@@ -4,14 +4,10 @@ package com.spa.smart_gate_springboot.messaging.send_message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
-import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
-import com.spa.smart_gate_springboot.messaging.operatorPrefix.OperatorPrefix;
-import com.spa.smart_gate_springboot.messaging.operatorPrefix.OperatorPrefixService;
-import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.SafBulkService;
 import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
@@ -23,14 +19,11 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.DuplicateFormatFlagsException;
 import java.util.UUID;
-import java.util.concurrent.RejectedExecutionException;
 
 @Component
 @RequiredArgsConstructor
@@ -38,101 +31,74 @@ import java.util.concurrent.RejectedExecutionException;
 @Slf4j
 public class MQReceiverSynq {
     private final AccountService accountService;
-    private final OperatorPrefixService operatorPrefixService;
-    private final RMQPublisher rmqPublisher;
-    private final MsgMessageQueueArcRepository msgQueueRepository;
     private final ResellerService resellerService;
-    private final ThreadPoolTaskExecutor taskExecutor;
     private final ObjectMapper objectMapper;
     private final UserService userService;
     private final GlobalUtils gu;
-    private final SafBulkService safBulkService;
-    private final MsgMessageQueueArcRepository msgMessageQueueArcRepository;
+    private final SmsDispatchService smsDispatchService;
 
-    private static String getMobilePrefix(String phone) {
-        String s = phone.substring(3, 6).replaceAll("[^a-zA-Z0-9\\s+]", "");
-        s = s.replaceAll("\\.", "");
-        return s;
-    }
-
-    @RabbitListener(queues = {MQConfig.SYNQ_QUEUE,MQConfig.QUEUE}, containerFactory = "rabbitListenerContainerFactory")
+    @RabbitListener(queues = {MQConfig.SYNQ_QUEUE,MQConfig.QUEUE}, containerFactory = "smsListenerContainerFactory")
     public void consumeMessage(Channel channel, Message message) {
-
-        try {
-            taskExecutor.execute(() -> receiver(message, channel));
-        } catch (RejectedExecutionException e) {
-            new Thread(() -> receiver(message, channel)).start(); // Execute in the caller's thread as a last resort
-        }
-
+        // Process SYNCHRONOUSLY on the container consumer thread that owns this Channel. RabbitMQ
+        // Channels are not thread-safe, so the ack must be issued on this very thread — the previous
+        // taskExecutor hand-off acked from a foreign worker thread and, whenever that worker outlived
+        // the channel (a slow carrier send vs. a recycled/closed channel), the `if (channel.isOpen())`
+        // guard silently skipped the ack and the message sat unacked forever. receiver() now issues
+        // exactly one ack in a finally block, on this thread, so a delivery always leaves the broker.
+        // Throughput comes from the container's consumer concurrency (smsListenerContainerFactory),
+        // not from a separate pool; prefetch=1 there gives true backpressure under a slow carrier.
+        receiver(message, channel);
     }
 
 
-
-
-    @RabbitListener(queues = MQConfig.OUT_OF_CREDIT_QUEUE_SYNQ, containerFactory = "rabbitListenerContainerFactory")
-    public void synqHandleOutOfCredit(Channel channel, Message message) {
-
-        try {
-            taskExecutor.execute(() ->{
-                byte[] payload = message.getBody();
-                MsgQueue   msgQueue = null;
-                try {
-                    msgQueue = objectMapper.readValue(payload, MsgQueue.class);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                try {
-                    channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                handleOutOfCredit(msgQueue);
-
-            });
-        } catch (RejectedExecutionException e) {
-            new Thread(() -> receiver(message, channel)).start(); // Execute in the caller's thread as a last resort
+    /**
+     * Build the archive row for a send: copy the payload, stamp the stable idempotency key
+     * ({@code msgDedupKey}, set at publish) and a fresh per-attempt carrier id ({@code msgCode}), and
+     * fill the reseller/sender fields. {@code msgId} is left null so this is an INSERT; the unique index
+     * on {@code msgDedupKey} is what dedupes a redelivery when {@link SmsDispatchService} saves it.
+     */
+    private MsgMessageQueueArc buildArc(MsgQueue msgQueue, Reseller reseller) {
+        MsgMessageQueueArc arc = new MsgMessageQueueArc();
+        BeanUtils.copyProperties(msgQueue, arc, gu.getNullPropertyNames(msgQueue));
+        arc.setMsgId(null);
+        arc.setMsgExternalId(msgQueue.getMsgExternalId());
+        arc.setMsgDedupKey(msgQueue.getMsgDedupKey());
+        arc.setMsgRetryCount(0);
+        arc.setMsgClientDeliveryStatus("PENDING");
+        arc.setMsgSenderIdName(msgQueue.getMsgSenderId());
+        arc.setMsgResellerId(reseller.getRsId());
+        arc.setMsgResellerName(reseller.getRsCompanyName());
+        if (arc.getMsgCreatedBy() != null) {
+            try {
+                arc.setMsgCreatedByEmail(userService.findById(arc.getMsgCreatedBy()).getEmail());
+            } catch (Exception e) {
+                log.error("Error while creating email address : {}", e.getLocalizedMessage());
+            }
         }
-
-    }
-//
-//    @RabbitListener(queues = MQConfig.ERROR_QUEUE)
-//    public void receiverErrorQueue(MsgQueue msgQueue) {
-//        receiver(msgQueue);
-//    }
-
-
-    public void handleOutOfCredit(MsgQueue msgQueue) {
-        MsgMessageQueueArc arcQueue = new MsgMessageQueueArc();
-        BeanUtils.copyProperties(msgQueue, arcQueue);
-        arcQueue.setMsgExternalId(msgQueue.getMsgExternalId());
-        arcQueue.setMsgId(null);
-        arcQueue.setMsgClientDeliveryStatus("PENDING");
-        msgQueueRepository.saveAndFlush(arcQueue);
+        arc.setMsgSenderLevel("WEISER");
+        arc.setMsgCode(new UniqueCodeGenerator().generateSecureApiKey());
+        return arc;
     }
 
 
     private void receiver(Message message, Channel channel) {
+        long deliveryTag = message.getMessageProperties().getDeliveryTag();
         MsgQueue msgQueue = null;
+        MsgMessageQueueArc arc = null;
         try {
             byte[] payload = message.getBody();
             msgQueue = objectMapper.readValue(payload, MsgQueue.class);
 
 
             if (TextUtils.isEmpty(msgQueue.getMsgMessage())) {
-                if (channel.isOpen()) channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-                return;
+                return; // nothing to send; the finally block still acks so it leaves the broker
             }
             if (TextUtils.isEmpty(msgQueue.getMsgSubMobileNo())) {
-                if (channel.isOpen()) channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-                return;
+                return; // no recipient; acked in finally
             }
             msgQueue.setMsgExternalId(String.valueOf(msgQueue.getMsgExternalId()));
-            msgQueue.setMsgStatus("PENDING_PROCESSING");
             msgQueue.setMsgClientDeliveryStatus("PENDING");
             Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
-
 
             //todo handle transactional to not use stop
             if (!msgQueue.getMsgSenderId().contains("WasteCo_Ltd") && !msgQueue.getMsgSenderId().equalsIgnoreCase("WARETECH")){
@@ -144,9 +110,7 @@ public class MQReceiverSynq {
             msgQueue.setMsgAccName(acc.getAccName());
 
             int no_of_msg = getNoOfMessage(msgQueue);
-
-            BigDecimal cost_per_sms = getCostPerSMS(msgQueue.getMsgAccId());
-            BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
+            BigDecimal totalCost = getCostPerSMS(msgQueue.getMsgAccId()).multiply(new BigDecimal(no_of_msg));
             msgQueue.setMsgPage(no_of_msg);
             msgQueue.setMsgCostId(totalCost);
 
@@ -154,89 +118,58 @@ public class MQReceiverSynq {
             msgQueue.setMsgResellerId(reseller.getRsId());
             msgQueue.setMsgResellerName(reseller.getRsCompanyName());
 
-            var rsMsgBal = reseller.getRsAllocatableUnit();
+            arc = buildArc(msgQueue, reseller);
 
-            if (rsMsgBal.compareTo(BigDecimal.TEN) < 1) {
-                msgQueue.setMsgStatus("RS_CREDIT_ISSUE");
-                rmqPublisher.publishToErrorQueue(msgQueue, MQConfig.OUT_OF_CREDIT_QUEUE_SYNQ);
-            } else if (!accountService.tryDebitAccountMsgBal(msgQueue.getMsgAccId(), totalCost)) {
-                // Reserve-then-send: atomically debit the account up-front. The debit was refused
-                // because the balance can't cover this message's cost, so do NOT send it — route it
-                // to the out-of-credit queue instead. This (not a plain balance read) is what stops
-                // concurrent sends from draining the account below zero.
-                msgQueue.setMsgStatus("PENDING_CREDIT");
-                rmqPublisher.publishToErrorQueue(msgQueue, MQConfig.OUT_OF_CREDIT_QUEUE_SYNQ);
-            } else {
-                // Units are already reserved (debited) above — the send path must NOT debit again
-                // (see SafBulkService.sendArcSms / AiretelService bill flag).
-                msgQueue.setMsgStatus("PENDING_PROCESSING");
-
-                MsgMessageQueueArc msgMessageQueueArc = new MsgMessageQueueArc();
-                BeanUtils.copyProperties(msgQueue, msgMessageQueueArc, gu.getNullPropertyNames(msgQueue));
-
-                String msgId = msgQueue.getMsgExternalId();
-                msgMessageQueueArc.setMsgExternalId(msgId);
-                msgMessageQueueArc.setMsgRetryCount(0);
-
-                msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
-                msgMessageQueueArc.setMsgSenderIdName(msgQueue.getMsgSenderId());
-                UUID rsId = accountService.findByAccId(msgQueue.getMsgAccId()).getAccResellerId();
-
-                msgMessageQueueArc.setMsgResellerId(rsId);
-                msgMessageQueueArc.setMsgResellerName(reseller.getRsCompanyName());
-                if(msgMessageQueueArc.getMsgCreatedBy() != null){
-                    try {
-                        msgMessageQueueArc.setMsgCreatedByEmail(userService.findById(msgMessageQueueArc.getMsgCreatedBy()).getEmail());
-                    }catch (Exception e){
-                        log.error("Error while creating email address : {}", e.getLocalizedMessage());
-                    }
+            // Reserve-then-send, made idempotent: reserveAndDebit inserts the arc keyed by its unique
+            // msgDedupKey AND debits in one transaction. A RabbitMQ redelivery of the same message fails
+            // that insert (DataIntegrityViolationException) and is skipped here — no second debit, no
+            // second send. NO_CREDIT persists the arc as PENDING_CREDIT (cost recorded) so the resend-on-
+            // top-up flow can fund and send it in place; we never publish to the out-of-credit queue or
+            // write a second row. The carrier send runs OUTSIDE the reserve transaction.
+            try {
+                SmsDispatchService.Reservation outcome = smsDispatchService.reserveAndDebit(arc);
+                if (outcome == SmsDispatchService.Reservation.RESERVED) {
+                    smsDispatchService.dispatchSend(arc);
+                } else {
+                    log.info("[SMS] insufficient credit acc={} cost={} — persisted PENDING_CREDIT (dedup {})",
+                            arc.getMsgAccId(), totalCost, arc.getMsgDedupKey());
                 }
-                msgMessageQueueArc.setMsgSenderLevel("WEISER");
-                UniqueCodeGenerator ug = new UniqueCodeGenerator();
-                msgMessageQueueArc.setMsgCode(ug.generateSecureApiKey());
-                try {
-                    msgMessageQueueArcRepository.save(msgMessageQueueArc);
-                    safBulkService.sendArcSms(msgMessageQueueArc);
-                } catch (DataIntegrityViolationException die) {
-                    log.error("Dublicate violation : {}",die.getLocalizedMessage());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-
-            }
-
-            if (channel.isOpen()) {
-                channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+            } catch (DataIntegrityViolationException duplicate) {
+                // Redelivery of an already-processed message — the arc already exists for this dedup key.
+                log.info("[SMS] duplicate delivery (dedup {}) — already processed, skipping", arc.getMsgDedupKey());
             }
 
         } catch (Exception em) {
-            em.printStackTrace();
-            try {
-                if (channel.isOpen()) {
-                    channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-                }
-            } catch (Exception eb) {
-                eb.printStackTrace();
-            }
-            rmqPublisher.publishToErrorQueue(msgQueue, MQConfig.ERROR_QUEUE);
+            // Once an arc is persisted, the DB-status retry cron owns the retry. Before that (an
+            // undeserializable payload or a failure during enrichment) there's no row to retry and
+            // nothing useful to requeue — a redelivery would just loop on the same bad payload — so we
+            // log loudly and let the finally block ack it off the broker.
+            log.error("SMS processing failed for delivery {} (arc persisted: {}): {}",
+                    deliveryTag, arc != null, em.getMessage(), em);
+        } finally {
+            // Always ack exactly once, on this consumer thread (which owns the Channel). The design is
+            // "ack-and-record; never requeue" — failures live on as DB rows for the retry cron, so a
+            // requeue would only double-debit/double-send (units are reserved up-front, not idempotent).
+            ack(channel, deliveryTag);
         }
+    }
 
-
+    /** Ack a delivery on the consumer thread that owns the Channel — exactly once, never throwing. */
+    private void ack(Channel channel, long deliveryTag) {
+        try {
+            if (channel.isOpen()) {
+                channel.basicAck(deliveryTag, false);
+            } else {
+                // With synchronous processing the container holds this channel open for the whole
+                // listener invocation, so this should not happen; if it ever does the broker redelivers.
+                log.warn("Channel closed before ack of delivery {} — broker will redeliver", deliveryTag);
+            }
+        } catch (IOException e) {
+            log.error("Failed to ack delivery {}: {}", deliveryTag, e.getMessage());
+        }
     }
 
 
-
-    private boolean checkifAirtelIsAllowed(String msgSubMobileNo, String accActivateNonSaf) {
-        String _prefix = getMobilePrefix(msgSubMobileNo);
-        long opPrefix = _prefix == null ? 1L : Long.parseLong(_prefix);
-        OperatorPrefix operatorPrefix = this.operatorPrefixService.findByOpPrefixAndOpOperator(opPrefix, "Airtel");
-        if (operatorPrefix != null) {
-            if (accActivateNonSaf != null) {
-                return accActivateNonSaf.equalsIgnoreCase("TRUE");
-            }
-        }
-        return false;
-    }
 
     private BigDecimal getCostPerSMS(UUID msgAccId) {
         Account acc = this.accountService.findByAccId(msgAccId);

@@ -46,14 +46,27 @@ public class ClientDeliveryPayload {
     private String requestId;
 
     public static ClientDeliveryPayload from(MsgMessageQueueArc m) {
+        String status = m.getMsgStatus();
+        String statusCode = m.getMsgErrorCode();
+        String statusDescription = m.getMsgErrorDesc();
+
+        // Normalise the internal "never sent" statuses to a clean, documented client-facing failure so
+        // the client receives a stable "Failed" + reason rather than the raw internal enum name. Real
+        // carrier delivery statuses (DeliveredToTerminal, DeliveryImpossible, …) pass through unchanged.
+        if ("PENDING_CREDIT".equals(status) || "RS_CREDIT_ISSUE".equals(status)) {
+            if (statusCode == null) statusCode = "INSUFFICIENT_CREDIT";
+            if (statusDescription == null) statusDescription = "Message not sent: insufficient account credit.";
+            status = "Failed";
+        }
+
         return ClientDeliveryPayload.builder()
                 .messageId(m.getMsgExternalId())
                 .mobileNo(m.getMsgSubMobileNo())
                 .senderId(m.getMsgSenderIdName())
                 .message(m.getMsgMessage())
-                .status(m.getMsgStatus())
-                .statusCode(m.getMsgErrorCode())
-                .statusDescription(m.getMsgErrorDesc())
+                .status(status)
+                .statusCode(statusCode)
+                .statusDescription(statusDescription)
                 .deliveredAt(m.getMsgDeliveredDate())
                 .requestId(m.getMsgRequestId())
                 .build();

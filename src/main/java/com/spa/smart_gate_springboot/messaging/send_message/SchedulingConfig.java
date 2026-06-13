@@ -1,11 +1,8 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
-import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.util.TextUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,9 +19,8 @@ import java.util.List;
 @Slf4j
 public class SchedulingConfig {
     private final MsgMessageQueueArcRepository arcRepository;
-    private final AccountService accountService;
-    private final QueueMsgService queueMsgService;
     private final AiretelService airetelService;
+    private final SmsDispatchService smsDispatchService;
 
     /** Statuses that mean "the send failed — try again". */
     private static final List<String> RETRYABLE_STATUSES =
@@ -73,29 +69,18 @@ public class SchedulingConfig {
     }
 
     private void retryOne(MsgMessageQueueArc m) {
-        String status = m.getMsgStatus();
-
-        MsgQueue msgQueue = new MsgQueue();
-        BeanUtils.copyProperties(m, msgQueue);
-        arcRepository.delete(m);
-
-        // Historic semantics: a message that actually went out (error code 200) has its charge
-        // returned before the resend re-charges it. Now an ATOMIC refund (no read-modify-write race —
-        // mirrors the reserve-then-send debit).
-        if (!TextUtils.isEmpty(m.getMsgErrorCode()) && m.getMsgErrorCode().equalsIgnoreCase("200")) {
-            accountService.refundCostCharged(m.getMsgAccId(), m.getMsgCostId());
-        }
-
-        msgQueue.setMsgSentRetried(true);   // one retry per message — keeps poison messages from looping
-        msgQueue.setMsgCreatedDate(new Date());
-        msgQueue.setMsgSenderId(m.getMsgSenderIdName());
-
-        if (DELIVERY_IMPOSSIBLE.equalsIgnoreCase(status)) {
+        // In-place retry: the arc is the source of truth and is NEVER deleted (it's an archive row). Units
+        // were already reserved on the first attempt (reserve-then-send), so a retry re-sends WITHOUT
+        // re-debiting. Setting msgSentRetried=true bounds it to ONE retry per message — findRetryBatch
+        // excludes it afterwards — so a permanently failing message can't loop.
+        if (DELIVERY_IMPOSSIBLE.equalsIgnoreCase(m.getMsgStatus())) {
             log.info("Saf failed :- Now Sending to Airtel");
-            airetelService.sendMessageViaAirTel(m);
+            m.setMsgSentRetried(true);
+            arcRepository.save(m);
+            airetelService.sendMessageViaAirTel(m, false); // bill=false: already reserved on the Saf attempt
             airetelService.saveAirtelNumberWithRetry(m.getMsgSubMobileNo());
         } else {
-            queueMsgService.publishNewMessageSynq(msgQueue);
+            smsDispatchService.resendBilled(m); // fresh msgCode + re-send the existing arc; no delete, no re-debit
         }
     }
 
@@ -106,19 +91,8 @@ public class SchedulingConfig {
         try {
             PageRequest pageRequest = PageRequest.of(0, 100);
             Page<MsgMessageQueueArc> pagedData = arcRepository.resendSentStatusAfter4hrs(pageRequest);
-            List<MsgMessageQueueArc> resend = pagedData.getContent();
-            resend.forEach(m -> {
-                new Thread(() -> {
-                    MsgQueue msgQueue = new MsgQueue();
-                    BeanUtils.copyProperties(m, msgQueue);
-                    arcRepository.delete(m);
-
-                    accountService.refundCostCharged(msgQueue.getMsgAccId(), msgQueue.getMsgCostId());
-                    msgQueue.setMsgCreatedDate(new Date());
-                    msgQueue.setMsgSentRetried(true);
-                    queueMsgService.publishNewMessage(msgQueue);
-                }).start();
-            });
+            // In-place re-send (no delete, no re-debit) — same model as retryOne.
+            pagedData.getContent().forEach(smsDispatchService::resendBilled);
         } catch (Exception e) {
             log.error(e.getLocalizedMessage());
         }

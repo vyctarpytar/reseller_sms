@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -185,9 +186,26 @@ public class ApiKeyService {
         MsgQueue msgQueue = MsgQueue.builder().msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING").msgExternalId(msgApiDto.getMsgExternalId()).msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo()).msgCallbackUrl(msgApiDto.getCallbackUrl()).msgCreatedBy(null)// dont set thid
                 .msgCreatedByEmail("API_USER").build();
 
+        // API idempotency: when the caller supplies a msgExternalId, derive a stable dedup key from it
+        // (scoped by account so external ids can't collide across tenants) so a client retry with the
+        // same external id is deduped to at-most-once debit/send. Without one the publisher assigns a
+        // random key — still dedupes a RabbitMQ redelivery, just not a client-side retry.
+        // The recipient number is part of the key: a bulk request reuses ONE msgExternalId across every
+        // number, so a per-(externalId) key would make numbers 2..N collide on the unique index — the
+        // funded path would drop them as duplicates and the out-of-credit path would throw. Keying on
+        // (account, externalId, number) keeps each number distinct while still deduping a true retry.
+        if (msgApiDto.getMsgExternalId() != null && !msgApiDto.getMsgExternalId().isBlank()) {
+            msgQueue.setMsgDedupKey("api:" + apikey.getApiAccId() + ":" + msgApiDto.getMsgExternalId()
+                    + ":" + msgApiDto.getMsgMobileNo());
+        }
+
         MsgMessageQueueArc arcQueue = new MsgMessageQueueArc();
         BeanUtils.copyProperties(msgQueue, arcQueue);
         arcQueue.setMsgExternalId(msgQueue.getMsgExternalId());
+        // msgSenderIdName (not msgSenderId) is the field the delivery-callback payload reports as
+        // senderId; copyProperties only carries msgSenderId, so set it explicitly or the PENDING_CREDIT
+        // callback would send senderId=null. (MQReceiverSynq.buildArc does the same for the queue path.)
+        arcQueue.setMsgSenderIdName(msgQueue.getMsgSenderId());
 
         Account acc = accountRepo.findById(msgQueue.getMsgAccId()).orElseThrow(() -> new RuntimeException("Account Does Not Exist :" + msgQueue.getMsgAccId()));
         arcQueue.setMsgResellerId(acc.getAccResellerId());
@@ -200,8 +218,31 @@ public class ApiKeyService {
                 log.warn(" msg id should be null here ---{}", arcQueue.getMsgId());
                 arcQueue.setMsgId(null);
             }
+            // The arc was copied from msgQueue (above) while its status was still PENDING_PROCESSING,
+            // so set the out-of-credit status ON THE ARC too — not just on msgQueue. The client-callback
+            // cron (ClientDeliveryResponses.findStuckClientCallbacks) only selects rows whose
+            // msg_status IN (PENDING_CREDIT, RS_CREDIT_ISSUE); without this the persisted row keeps
+            // PENDING_PROCESSING and the API caller's msgCallbackUrl is never notified of the credit issue.
+            arcQueue.setMsgStatus("PENDING_CREDIT");
             arcQueue.setMsgClientDeliveryStatus("PENDING");
-            arcRepository.save(arcQueue);
+            // Record the cost on the persisted PENDING_CREDIT arc (pages × account SMS price, same
+            // formula as MQReceiverSynq). The resend-on-top-up flow debits this stored cost in place
+            // (SmsDispatchService.debitAndResend); without it the arc would carry a null cost and the
+            // later debit would fail. (The funded path below lets the receiver compute the cost instead.)
+            int pages = (int) Math.ceil((double) msgQueue.getMsgMessage().length() / 160);
+            BigDecimal price = acc.getAccSmsPrice() == null ? new BigDecimal("1.50") : acc.getAccSmsPrice();
+            arcQueue.setMsgPage(pages);
+            arcQueue.setMsgCostId(price.multiply(BigDecimal.valueOf(pages)));
+            try {
+                arcRepository.save(arcQueue);
+            } catch (DataIntegrityViolationException duplicate) {
+                // Idempotent retry: a row with this dedup key already exists (the client re-sent the same
+                // externalId+number while still out of credit). The PENDING_CREDIT arc is already recorded
+                // and will be funded+sent by the resend-on-top-up flow — treat the retry as a no-op, not a
+                // 500. Mirrors the async dedup guard in MQReceiverSynq.receiver.
+                log.info("[API] duplicate out-of-credit send (dedup {}) — already recorded PENDING_CREDIT, skipping",
+                        arcQueue.getMsgDedupKey());
+            }
         } else {
 
 

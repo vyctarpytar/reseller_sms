@@ -51,8 +51,15 @@ public class ClientDeliveryResponses {
     @Value("${sms.callback.max-retries:10}")
     private int maxRetries;
 
-    /** Grace period before a never-delivered message is reported to the client as not-sent. */
-    @Value("${sms.callback.stuck-grace-minutes:360}")
+    /**
+     * Grace period before a never-sent message (PENDING_CREDIT / RS_CREDIT_ISSUE) is reported to the
+     * client as failed. Its only purpose is the top-up window: if the account funds within this window
+     * the message is auto-resent in place (CreditService.loadCredit -> resendPendingSMSAccountCredit ->
+     * SmsDispatchService.debitAndResend), which flips it out of PENDING_CREDIT so it leaves this query
+     * and the client gets a real delivery callback instead of a premature failure. Kept short (15 min)
+     * so a genuine out-of-credit failure reaches the client quickly rather than after hours.
+     */
+    @Value("${sms.callback.stuck-grace-minutes:15}")
     private long stuckGraceMinutes;
 
     /** Statuses that mean a message was never sent and won't progress on its own. */

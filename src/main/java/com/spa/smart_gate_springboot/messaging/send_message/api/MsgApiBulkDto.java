@@ -15,6 +15,9 @@ public class MsgApiBulkDto {
     @NotNull(message = "msg cannot be null")
     private String msgSenderId;
 
+    /** Optional API key supplied in the body; used as a fallback when the X-API-KEY header is absent. */
+    private String apiKey;
+
     /**
      * Optional client server URL. Delivery reports for every number in this bulk
      * request are POSTed back to this URL by the {@code ClientDeliveryResponses} cron.

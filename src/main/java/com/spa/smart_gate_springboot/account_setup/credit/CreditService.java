@@ -342,8 +342,6 @@ public class CreditService {
         recordResellerFromTopUnitLegs(rs.getRsId(), rs.getRsCompanyName(), divide, rsAllocatableUnits,
                 credit.getSmsPaymentRef(), credit.getSmsCreatedBy());
 
-        queueMsgService.resendPendingSMSResellerCredit(rs.getRsId());
-
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Balance : " + newBal, response);
 
     }
@@ -380,8 +378,6 @@ public class CreditService {
         credit.setSmsCreatedDate(LocalDateTime.now());
         credit.setCrStatus(CrStatus.PROCESSED);
         Credit saved = save(credit);
-
-        queueMsgService.resendPendingSMSResellerCredit(rs.getRsId());
         return saved;
     }
 
@@ -490,7 +486,6 @@ public class CreditService {
         recordResellerFromTopUnitLegs(reseller.getRsId(), reseller.getRsCompanyName(), unitsLoaded,
                 rsAllocatableUnits, credit.getSmsPaymentRef(), credit.getSmsCreatedBy());
 
-        queueMsgService.resendPendingSMSResellerCredit(reseller.getRsId());
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Ballocatable Balance : " + rsAllocatableUnits, response);
 
     }

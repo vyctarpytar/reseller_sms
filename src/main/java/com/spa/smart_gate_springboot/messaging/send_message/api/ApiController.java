@@ -31,6 +31,8 @@ public class ApiController {
     @PostMapping("/bulk-sms")
     public StandardJsonResponse apiBulkSms(@RequestBody @Valid MsgApiBulkDto msgQueueBulk, HttpServletRequest request) {
         String apiKey = request.getHeader("X-API-KEY");
+        if(apiKey == null) apiKey = msgQueueBulk.getApiKey();
+        if(apiKey == null) throw new RuntimeException("API KEY missing!!!");
         for (String phone : msgQueueBulk.getMsgMobileNos()) {
             MsgApiDto msgApiDto =  new MsgApiDto();
             BeanUtils.copyProperties(msgQueueBulk, msgApiDto);

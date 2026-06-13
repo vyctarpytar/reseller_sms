@@ -132,14 +132,6 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
                                                       Pageable pageable);
 
     @Query(value = """
-            SELECT * FROM msg.message_queue_arc m WHERE cast(m.msg_acc_id as UUID) IN :accountIds
-                        AND m.msg_status = :msgStatus
-                        AND cast(m.msg_created_date as date) > current_date - 3
-            """, nativeQuery = true)
-    List<MsgMessageQueueArc> getMsgPendingCreditForReseller(@Param("accountIds") Set<UUID> accountIds, @Param("msgStatus") String msgStatus);
-
-
-    @Query(value = """
             SELECT * FROM msg.message_queue_arc m WHERE cast(m.msg_acc_id as UUID) = cast( :accountId as UUID)
                         AND m.msg_status = :msgStatus
                         AND cast(m.msg_created_date as date) > current_date - 3

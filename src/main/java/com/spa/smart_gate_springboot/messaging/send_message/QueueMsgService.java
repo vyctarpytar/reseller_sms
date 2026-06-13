@@ -40,7 +40,6 @@ import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +54,7 @@ public class QueueMsgService {
     private final GlobalUtils globalUtils;
     private final AccountService accountService;
     private final MsgDeliveryRepository msgDeliveryRepository;
+    private final SmsDispatchService smsDispatchService;
 
     public static boolean isValidPhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
@@ -302,25 +302,12 @@ public class QueueMsgService {
         }
     }
 
-    public void resendPendingSMSResellerCredit(UUID rsId) {
-        Set<UUID> accountList = accountService.findAccountByResellerId(rsId).stream().map(Account::getAccId).collect(Collectors.toSet());
-        List<MsgMessageQueueArc> pdRsCredit = arcRepository.getMsgPendingCreditForReseller(accountList, "RS_CREDIT_ISSUE");
-        pdRsCredit.forEach(m -> {
-            MsgQueue msgQueue = new MsgQueue();
-            BeanUtils.copyProperties(m, msgQueue);
-            arcRepository.delete(m);
-            publishNewMessage(msgQueue);
-        });
-    }
-
     public void resendPendingSMSAccountCredit(UUID accId) {
-        List<MsgMessageQueueArc> pdRsCredit = arcRepository.getMsgPendingCreditForAccount(accId, "PENDING_CREDIT");
-        pdRsCredit.forEach(m -> {
-            MsgQueue msgQueue = new MsgQueue();
-            BeanUtils.copyProperties(m, msgQueue);
-            arcRepository.delete(m);
-            publishNewMessage(msgQueue);
-        });
+        List<MsgMessageQueueArc> pending = arcRepository.getMsgPendingCreditForAccount(accId, "PENDING_CREDIT");
+        // In-place top-up resend: debit the existing PENDING_CREDIT arc and, if now funded, send it.
+        // No delete + republish (which destroyed the archive row, re-inserted, and re-debited); the arc
+        // is the source of truth. debitAndResend leaves it pending if credit still can't cover it.
+        pending.forEach(smsDispatchService::debitAndResend);
     }
 
 

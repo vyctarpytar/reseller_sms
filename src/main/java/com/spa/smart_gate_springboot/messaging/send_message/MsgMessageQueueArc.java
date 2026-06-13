@@ -21,6 +21,20 @@ public class MsgMessageQueueArc {
     @GeneratedValue
     private UUID msgId;
     private String msgExternalId;
+    /**
+     * Stable idempotency key for one logical send (set at publish time, carried in {@link MsgQueue}).
+     * The unique index on this column is what makes processing idempotent: a redelivered message fails
+     * the insert ({@code DataIntegrityViolationException}) and is skipped instead of re-debited/re-sent.
+     * <p>
+     * ddl-auto adds this column automatically, but NOT the unique index — create it manually per env:
+     * <pre>
+     * CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS uq_mqa_dedup_key
+     *   ON msg.message_queue_arc (msg_dedup_key) WHERE msg_dedup_key IS NOT NULL;
+     * </pre>
+     * Partial (non-null) so the legacy rows that predate this column (all NULL) never collide.
+     */
+    @Column(length = 200)
+    private String msgDedupKey;
     @Column(nullable = false)
     @NotNull(message = "field cannot be null")
     private UUID msgAccId;

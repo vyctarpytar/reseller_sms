@@ -31,6 +31,9 @@ public class SafAuthService {
     private final SafaricomInterface safaricomInterface;
     private final StringRedisTemplate redisTemplate;
 
+    @Value("${safaricom.api.version:v1}")
+    private String safaricomApiVersion;
+
     /** Assumed token validity (the SDP token carries no expires_in). Cached for this minus 2 minutes. */
     @Value("${safaricom.token.expiry-minutes:60}")
     private int tokenExpiryMinutes;
@@ -94,6 +97,11 @@ public class SafAuthService {
     /** Proactively rotate the token before it expires: evict the cache, then re-fetch. */
     @Scheduled(cron = "0 */50 * * * *")
     public void refreshToken() {
+        // Only pre-warm the SDP (v1) token when v1 is the selected provider; on v2 this would
+        // otherwise hammer the legacy SDP login endpoint every 50 min for a token we never use.
+        if (!"v1".equalsIgnoreCase(safaricomApiVersion)) {
+            return;
+        }
         log.info("Refreshing Safaricom token");
         try {
             try {

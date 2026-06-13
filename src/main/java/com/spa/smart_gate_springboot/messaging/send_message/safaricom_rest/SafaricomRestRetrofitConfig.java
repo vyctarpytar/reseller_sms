@@ -21,9 +21,15 @@ public class SafaricomRestRetrofitConfig {
     public Retrofit safComRestRetrofit() {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(createLoggingInterceptor())
+                // Per-phase timeouts kept generous (unchanged from the original) so legitimate slow
+                // carrier responses don't fail; the whole-call ceiling below is what actually bounds the
+                // thread-hold time now that the send runs synchronously on the RabbitMQ consumer thread.
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
+                // Hard whole-call ceiling. Without it the per-phase timeouts could stack to ~180s and pin
+                // a consumer thread (and its prefetch slot) that long. 90s bounds it like the SDP v1 client.
+                .callTimeout(90, TimeUnit.SECONDS)
                 .build();
 
         return new Retrofit.Builder()

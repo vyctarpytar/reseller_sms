@@ -46,7 +46,8 @@ public class Account {
 
     @Column(nullable = false)
     @NotNull(message = "accMsgBal cannot be null")
-    private BigDecimal accMsgBal;
+    @Builder.Default
+    private BigDecimal accMsgBal = BigDecimal.ZERO;
     private String accUsername;
     private String accPhysicalAddress;
     @Column(nullable = false)

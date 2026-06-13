@@ -66,6 +66,53 @@ public class RabbitMQConfig {
     }
 
 
+    /**
+     * Dedicated factory for the heavy SMS-send listener (MQReceiverSynq.consumeMessage). That listener
+     * now processes each message SYNCHRONOUSLY on the consumer thread (no hand-off to a worker pool),
+     * so the manual ack is issued on the thread that owns the Channel — fixing the cross-thread ack that
+     * left messages stuck unacked. Consequences of the synchronous model, encoded here:
+     *  - concurrency == consumer threads, so concurrent/maxConcurrent IS the concurrent-send count
+     *    (kept near the prior ~16 worker sweet spot, still well under the 25-conn Hikari pool because a
+     *    send holds no DB connection during the carrier HTTP call);
+     *  - prefetch=1 gives true backpressure: a slow/stalled carrier pins only its own consumer and never
+     *    hoards a backlog of unacked messages behind it;
+     *  - defaultRequeueRejected=false so a delivery is never requeue-looped — failures are re-driven by
+     *    the DB-status retry cron (SchedulingConfig), not by AMQP redelivery (which would double-debit).
+     * The DLR + out-of-credit listeners stay on rabbitListenerContainerFactory, untouched.
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory smsListenerContainerFactory(ConnectionFactory connectionFactory) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setConcurrentConsumers(8);
+        factory.setMaxConcurrentConsumers(16);
+        factory.setPrefetchCount(1);
+        factory.setTaskExecutor(smsListenerTaskExecutor());
+        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        factory.setDefaultRequeueRejected(false);
+        factory.setRecoveryBackOff(new ExponentialBackOff(1000, 2.0));
+        factory.setContainerCustomizer(container -> container.setShutdownTimeout(5000));
+        factory.setErrorHandler(t -> log.error("Error in SMS RMQ listener", t));
+        return factory;
+    }
+
+    @Bean
+    public ThreadPoolTaskExecutor smsListenerTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        // Supplies the SMS send container's consumer threads ONLY (receiver() runs inline on these, no
+        // tasks are queued onto this pool). Sized to hold up to maxConcurrentConsumers long-lived
+        // consumer threads with a little headroom; queueCapacity=0 because these are threads, not tasks.
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(18);
+        executor.setQueueCapacity(0);
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("smsListener-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+
     @Bean
     public ThreadPoolTaskExecutor rabbitListenerTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

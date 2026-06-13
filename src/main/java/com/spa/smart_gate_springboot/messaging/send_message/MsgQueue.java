@@ -28,6 +28,13 @@ public class MsgQueue {
     private UUID msgAccId;
     private String msgCode;
     private String msgExternalId;
+    /**
+     * Stable idempotency key for one logical send, stamped once at publish time (see QueueMsgService).
+     * Survives RabbitMQ redelivery and is the unique key the consumer inserts on, so a redelivered
+     * message is deduped (no double-debit / double-send) rather than reprocessed. Distinct from
+     * {@link #msgCode}, which is a per-send-attempt key used for carrier DLR matching.
+     */
+    private String msgDedupKey;
     private BigDecimal msgUsrId;
     private Date msgCreatedDate;
     private String msgStatus;
