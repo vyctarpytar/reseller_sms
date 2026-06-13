@@ -18,7 +18,7 @@ const statusStyle = (status = "") => {
 
 function DashboardCard({ dashData }) {
   return (
-    <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:gap-5 grid-cols-2 lg:grid-cols-4">
       {dashData?.ststusSummary &&
         dashData?.ststusSummary?.map((item, i) => {
           const s = statusStyle(item?.msgStatus);
@@ -46,7 +46,7 @@ function DashboardCard({ dashData }) {
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
                   {item?.msgStatus}
                 </p>
-                <p className="text-[2rem] font-bold leading-none text-primary mt-1.5">
+                <p className="text-2xl sm:text-[2rem] font-bold leading-none text-primary mt-1.5">
                   {numberWithCommas(item?.msgCount)}
                 </p>
               </div>

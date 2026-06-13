@@ -112,7 +112,7 @@ function SentSmsSummary({ summary, loading, period = "Today", onCardClick, activ
 
   if (loading) {
     return (
-      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-5">
+      <div className="grid gap-3 sm:gap-5 grid-cols-2 lg:grid-cols-4 mt-5">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="card">
             <Skeleton active paragraph={{ rows: 1 }} title={{ width: "40%" }} />
@@ -130,7 +130,7 @@ function SentSmsSummary({ summary, loading, period = "Today", onCardClick, activ
         </p>
         <span className="badge-neutral">{period}</span>
       </div>
-      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-5 grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => {
           const isActive = activeKey === c.key;
           return (
@@ -163,7 +163,7 @@ function SentSmsSummary({ summary, loading, period = "Today", onCardClick, activ
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
               {c.label}
             </p>
-            <p className="text-[2rem] font-bold leading-none text-primary mt-1.5">
+            <p className="text-2xl sm:text-[2rem] font-bold leading-none text-primary mt-1.5">
               {numberWithCommas(c.value || 0)}
             </p>
             <p className="text-xs text-muted mt-1.5">

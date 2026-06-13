@@ -136,7 +136,7 @@ function OverviewCards() {
   return (
     <div className="mb-7">
       {/* Compact, denser tier (4-up) so the census cards sit lighter under the cash cards. */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {cards.map((c, i) => (
           <div
             key={i}

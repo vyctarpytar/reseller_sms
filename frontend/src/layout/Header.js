@@ -10,6 +10,7 @@ import {
   cleanResellerId,
   handleSideMenuCollapse,
 } from "../features/global/globalSlice";
+import { clearTenantScope } from "../custom_hooks/useTenantScope";
 import MobileDrawer from "./MobileDrawer";
 import logo from "../assets/img/spa_logo.png";
 import { cleanCurrent } from "../features/sms-request/smsRequestSlice";
@@ -71,6 +72,13 @@ export default function Header() {
 
   const handleSideCollapse = () => {
     dispatch(handleSideMenuCollapse(!sideMenuCollapsed));
+  };
+
+  // Clicking the brand logo clears the active reseller/account scope and returns
+  // home (dashboard-main re-routes to the right dashboard for the user's layer).
+  const handleLogoReset = () => {
+    clearTenantScope();
+    navigate("/dashboard-main");
   };
 
   const showDrawer = () => {
@@ -231,6 +239,10 @@ export default function Header() {
             <img
               loading="lazy"
               decoding="async"
+              onClick={handleLogoReset}
+              role="button"
+              aria-label="Back to overview — clears reseller/account selection"
+              title="Back to overview"
               src={
                 subdomain === "synqafrica"
                   ? syncLogo
@@ -243,7 +255,7 @@ export default function Header() {
               alt="logo"
               className={`${
                 subdomain === "synqtel" ? "h-[28px] lg:h-[5vh]" : "h-[34px] lg:h-[7vh]"
-              } object-contain shrink-0`}
+              } object-contain shrink-0 cursor-pointer`}
             />
             <span
               className={`truncate max-w-[120px] lg:max-w-none ${

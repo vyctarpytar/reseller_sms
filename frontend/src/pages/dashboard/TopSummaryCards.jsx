@@ -47,7 +47,7 @@ function TopSummaryCards() {
       {topSummaryLoading && !topSummary ? (
         <Skeleton active paragraph={{ rows: 2 }} />
       ) : (
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
           {cards.map((c, i) => (
             <div
               key={i}
