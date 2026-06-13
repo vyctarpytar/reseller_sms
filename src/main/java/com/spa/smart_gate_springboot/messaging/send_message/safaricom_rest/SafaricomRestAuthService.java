@@ -22,9 +22,10 @@ import java.util.Base64;
 @Slf4j
 public class SafaricomRestAuthService {
 
-    /** Redis keys holding the current DSDP tokens (shared across instances/restarts). */
-    private static final String ACCESS_KEY = "safaricom:dsdp:access_token";
-    private static final String REFRESH_KEY = "safaricom:dsdp:refresh_token";
+    /** Redis keys holding the current DSDP (v2) tokens (shared across instances/restarts).
+     *  Version-namespaced so they never collide with the v1 SDP key (safaricom:sdp:access_token). */
+    private static final String ACCESS_KEY = "safaricom:v2:dsdp:access_token";
+    private static final String REFRESH_KEY = "safaricom:v2:dsdp:refresh_token";
 
     /** Margin subtracted from a token's JWT {@code exp} so we rotate before the carrier expires it. */
     private static final Duration EXPIRY_MARGIN = Duration.ofMinutes(2);

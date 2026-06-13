@@ -23,8 +23,9 @@ import java.time.Duration;
 @EnableScheduling
 public class SafAuthService {
 
-    /** Redis key holding the current Safaricom SDP access token (shared across instances/restarts). */
-    private static final String REDIS_KEY = "safaricom:sdp:access_token";
+    /** Redis key holding the current Safaricom SDP (v1) access token (shared across instances/restarts).
+     *  Version-namespaced so it never collides with the v2 DSDP keys (safaricom:v2:dsdp:*). */
+    private static final String REDIS_KEY = "safaricom:v1:sdp:access_token";
 
     private final SafaricomProperties safaricomProperties;
     private final SafaricomInterface safaricomInterface;
