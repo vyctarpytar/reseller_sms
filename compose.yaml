@@ -23,12 +23,11 @@ services:
     image: synq-backend:local
     ports:
       - "8443:8443"
-    # OS env vars override the values baked into application.properties (Spring
-    # property-source precedence), repointing localhost -> the host's services.
-    # Username/password still come from application.properties.
+    # Activate the `dev` Spring profile (src/main/resources/application-dev.properties),
+    # which repoints datasource/RabbitMQ/Redis at host.docker.internal (the host's
+    # services) and applies dev-friendly tweaks. Credentials stay in application.properties.
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/synq_africa_rds?options=-c%20TimeZone=Africa/Nairobi
-      - SPRING_RABBITMQ_HOST=host.docker.internal
+      - SPRING_PROFILES_ACTIVE=dev
     # Lets host.docker.internal resolve on Linux too; no-op on Docker Desktop/Mac.
     extra_hosts:
       - "host.docker.internal:host-gateway"

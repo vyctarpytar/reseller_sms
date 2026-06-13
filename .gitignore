@@ -32,3 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 .DS_Store
+
+### Local-only dev profile (contains local Mac creds — never commit) ###
+src/main/resources/application-dev.properties
