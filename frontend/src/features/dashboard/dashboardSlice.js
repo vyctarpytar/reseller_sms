@@ -11,7 +11,9 @@ const initialState = {
 	dailySmsData: [],
 	daiySmsCount: 0,	
 	statusSmsData: [],
-	statusSmsCount: 0,	
+	statusSmsCount: 0,
+	overview: null,
+	overviewLoading: false,
 };
 
  
@@ -26,6 +28,20 @@ const initialState = {
 		return response.data;
 	} catch (error) { 
 		return rejectWithValue(error.response.data);
+	}
+  });
+
+  // Role-scoped overview cards (reseller/account/sender-ID census, wallet balance, units). GET — the
+  // axios interceptor injects reseller_id from the selected org, so this cascades TOP -> reseller.
+  export const fetchDashOverview = createAsyncThunk('saveSlice/fetchDashOverview', async (_, { rejectWithValue }) => {
+	try {
+		const response = await axiosInstance.get(`${url}/api/v2/dash/overview`)
+		if (!response.data.success) {
+			return rejectWithValue(response.data);
+		}
+		return response.data?.data?.result;
+	} catch (error) {
+		return rejectWithValue(error.response?.data);
 	}
   });
 
@@ -91,6 +107,18 @@ export const dashboardSlice = createSlice({
 		  .addCase(fetchDash.rejected, (state) => {
 			state.loading = false;
 			state.dashData = []; 
+		  })
+
+		  .addCase(fetchDashOverview.pending, (state) => {
+			state.overviewLoading = true;
+		  })
+		  .addCase(fetchDashOverview.fulfilled, (state, action) => {
+			state.overviewLoading = false;
+			state.overview = action.payload || null;
+		  })
+		  .addCase(fetchDashOverview.rejected, (state) => {
+			state.overviewLoading = false;
+			state.overview = null;
 		  })
 
 		  .addCase(fetchReport.pending, (state) => {

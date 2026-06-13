@@ -172,15 +172,6 @@ public class CreditService {
         }
 
 
-        //todo  disabled this
-//        UniqueCodeGenerator ug = new UniqueCodeGenerator();
-//        String xPlainCode = ug.getUniqueCode();
-
-        //log the invoice
-
-//        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
-//        invoiceRepository.saveAndFlush(invoice);
-
         Credit save = save(credit);
         response.setData("result", save, response);
         return response;

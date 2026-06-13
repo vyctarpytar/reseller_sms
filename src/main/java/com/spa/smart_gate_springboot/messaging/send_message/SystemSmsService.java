@@ -1,5 +1,10 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.MQRes.MQConfig;
+import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
+import com.spa.smart_gate_springboot.account_setup.account.Account;
+import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
+import com.spa.smart_gate_springboot.account_setup.account.dtos.AccBalanceUpdate;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestAuthService;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestInterface;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.SafaricomRestProperties;
@@ -22,7 +27,9 @@ import org.springframework.stereotype.Service;
 import retrofit2.Call;
 import retrofit2.Response;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -30,9 +37,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  * Sends internal/system SMS (OTPs, password notifications, admin alerts) through the same Safaricom
  * integration that powers the bulk-SMS product — replacing the retired third-party OTP gateway.
  *
- * Unlike the billable {@code QueueMsgService} path, these messages are NOT tied to a customer account:
- * there is no message-balance debit, no reseller credit check, and no shortcode lookup. The sender ID
- * is fixed to {@value #SYSTEM_SENDER_ID} and the transactional package is always used. Delivery is
+ * Unlike the billable {@code QueueMsgService} path, these messages are not tied to the recipient's
+ * account: there is no per-user message-balance debit and no shortcode lookup, and the sender ID is
+ * fixed to {@value #SYSTEM_SENDER_ID} on the transactional package. The cost of every system SMS is
+ * instead borne by a single dedicated account ({@link #SYSTEM_ACCOUNT_ID} / {@link #SYSTEM_RESELLER_ID}),
+ * debited via the same {@code UPDATE_ACCOUNT_BALANCE} queue the bulk pipeline uses. Delivery is
  * fire-and-forget on a background thread so callers never block (or fail) on the SMS gateway.
  */
 @Service
@@ -41,7 +50,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class SystemSmsService {
 
     /** Fixed sender ID for all system-originated SMS. */
-    public static final String SYSTEM_SENDER_ID = "DoNotReply";
+    public static final String SYSTEM_SENDER_ID = "SYNQSMS";
+
+    /** Account / reseller that bears the cost of every system SMS. */
+    public static final UUID SYSTEM_ACCOUNT_ID = UUID.fromString("c40f39a1-3fe4-465f-a0c7-4df1a372ee8c");
+    public static final UUID SYSTEM_RESELLER_ID = UUID.fromString("9918cd85-6cde-4bd2-a04d-3c3aaca8d009");
+
+    /** Fallback per-SMS price (KES) when the system account has no rate configured. */
+    private static final BigDecimal DEFAULT_SMS_PRICE = new BigDecimal("1.50");
+    private static final int CHARS_PER_SMS = 160;
 
     // v1 (legacy SDP)
     private final SafAuthService safAuthService;
@@ -52,6 +69,11 @@ public class SystemSmsService {
     private final SafaricomRestAuthService safaricomRestAuthService;
     private final SafaricomRestInterface safaricomRestInterface;
     private final SafaricomRestProperties safaricomRestProperties;
+
+    // Billing — RMQPublisher + repo are used directly (not AccountService) to avoid a circular
+    // dependency: AccountService → UserService → SystemSmsService.
+    private final AccountRepository accountRepository;
+    private final RMQPublisher rmqPublisher;
 
     /** Mirrors {@code SafBulkService}: switch between legacy SDP (v1) and Daraja REST (v2). */
     @Value("${safaricom.api.version:v1}")
@@ -66,6 +88,10 @@ public class SystemSmsService {
 
         new Thread(() -> {
             try {
+                // Bill the dedicated system account first (mirrors the bulk pipeline, which debits
+                // before sending and does not refund on gateway failure).
+                billSystemAccount(cleanMessage);
+
                 if ("v2".equalsIgnoreCase(safApiVersion)) {
                     sendViaRest(cleanMsisdn, cleanMessage);
                 } else {
@@ -75,6 +101,30 @@ public class SystemSmsService {
                 log.error("[SYSTEM-SMS] Failed to send to {}: {}", cleanMsisdn, e.getMessage());
             }
         }).start();
+    }
+
+    /** Debit the system account/reseller for this SMS via the shared UPDATE_ACCOUNT_BALANCE queue. */
+    private void billSystemAccount(String message) {
+        try {
+            BigDecimal price = accountRepository.findById(SYSTEM_ACCOUNT_ID)
+                    .map(Account::getAccSmsPrice)
+                    .orElse(DEFAULT_SMS_PRICE);
+            if (price == null) price = DEFAULT_SMS_PRICE;
+
+            int pages = (int) Math.ceil((double) message.length() / CHARS_PER_SMS);
+            if (pages < 1) pages = 1;
+            BigDecimal cost = price.multiply(BigDecimal.valueOf(pages));
+
+            AccBalanceUpdate update = AccBalanceUpdate.builder()
+                    .accId(SYSTEM_ACCOUNT_ID)
+                    .accResellerId(SYSTEM_RESELLER_ID)
+                    .msgCost(cost)
+                    .build();
+            rmqPublisher.publishToOutQueue(update, MQConfig.UPDATE_ACCOUNT_BALANCE);
+        } catch (Exception e) {
+            // Never block delivery on a billing hiccup — log and proceed.
+            log.error("[SYSTEM-SMS] Failed to queue balance update for system account: {}", e.getMessage());
+        }
     }
 
     private void sendViaSdp(String msisdn, String message) throws Exception {

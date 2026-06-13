@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,11 @@ import java.util.UUID;
 public interface WalletRepository extends JpaRepository<Wallet, UUID> {
 
     Optional<Wallet> findByWalletCode(String walletCode);
+
+    /** Sum of available cash (balance − locked) held across every reseller wallet. */
+    @Query("select coalesce(sum(w.balance - w.lockedBalance), 0) from Wallet w "
+            + "where w.ownerType = com.spa.smart_gate_springboot.account_setup.wallet.WalletOwnerType.RESELLER")
+    BigDecimal sumResellerAvailableBalance();
 
     boolean existsByWalletCode(String walletCode);
 

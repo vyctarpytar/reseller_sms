@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import DashboardCard from "./DashboardCard";
+import OverviewCards from "../dashboard/OverviewCards";
 import DashTimeseries from "./DashTimeseries";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -164,6 +165,10 @@ function DashboardReseller() {
             <p className="text-sm text-muted mt-1 mb-6">
               Total SMS summary in your account
             </p>
+
+            {/* Account/sender-ID census + wallet balance, scoped to this reseller. */}
+            <OverviewCards />
+
             <div className="flex lg:flex-row flex-col mb-5 mt-2">
               <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-white p-1 shadow-card">
                 {[

@@ -33,4 +33,35 @@ public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
             """, nativeQuery = true)
     Page<ShortCode> findAllShortCodes(@Param("usrResellerId") UUID usrResellerId, @Param("shCode") String shCode, @Param("shStatus") String shStatus, Pageable pageable);
 
+
+    /**
+     * Sender-ID breakdown for the overview cards. Returns a single row of
+     * {@code [promotional, transactional, mapped, pending, total]}. "Mapped" = sender IDs already
+     * mapped to an account ({@code ShStatus.ACTIVE}); "pending" = created but not yet mapped
+     * ({@code ShStatus.PENDING_MAPPING}). Sender type is a free-text string, so anything starting
+     * with PROMOT counts as promotional.
+     */
+    @Query("""
+            select
+              coalesce(sum(case when upper(s.shSenderType) like 'PROMOT%' then 1 else 0 end), 0),
+              coalesce(sum(case when upper(s.shSenderType) = 'TRANSACTIONAL' then 1 else 0 end), 0),
+              coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.ACTIVE then 1 else 0 end), 0),
+              coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.PENDING_MAPPING then 1 else 0 end), 0),
+              count(s)
+            from ShortCode s
+            """)
+    List<Object[]> senderIdStats();
+
+    @Query("""
+            select
+              coalesce(sum(case when upper(s.shSenderType) like 'PROMOT%' then 1 else 0 end), 0),
+              coalesce(sum(case when upper(s.shSenderType) = 'TRANSACTIONAL' then 1 else 0 end), 0),
+              coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.ACTIVE then 1 else 0 end), 0),
+              coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.PENDING_MAPPING then 1 else 0 end), 0),
+              count(s)
+            from ShortCode s
+            where s.shResellerId = :resellerId
+            """)
+    List<Object[]> senderIdStatsForReseller(@Param("resellerId") UUID resellerId);
+
 }

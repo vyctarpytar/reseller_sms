@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import DashboardCard from "./DashboardCard";
 import DashTimeseries from "./DashTimeseries";
 import TopSummaryCards from "./TopSummaryCards";
+import OverviewCards from "./OverviewCards";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchDash } from "../../features/dashboard/dashboardSlice";
@@ -154,6 +155,9 @@ function Dashboard() {
 
             {/* Platform money + derived units overview (TOP only). */}
             <TopSummaryCards />
+
+            {/* Reseller/account/sender-ID census + balances (cascades to the selected reseller). */}
+            <OverviewCards />
 
             <div className="flex lg:flex-row flex-col lg:items-center justify-between gap-4 mb-7">
               {/* segmented range control */}
