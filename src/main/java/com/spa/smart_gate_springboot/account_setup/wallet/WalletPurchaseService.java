@@ -110,6 +110,15 @@ public class WalletPurchaseService {
 
         Credit credit = creditService.allocateResellerUnitsFromWallet(rs, units, cost, user);
 
+        // UNIT legs (statement double-entry): units leave the TOP pool and land on the reseller.
+        // Money legs were recorded above; reseller allocatable balance already reflects the +units.
+        walletService.recordUnitLeg(WalletOwnerType.RESELLER, rs.getRsId(), rs.getRsId(), null,
+                units, rs.getRsAllocatableUnit(), WalletTxType.UNIT_PURCHASE,
+                idem + "_U_RS", "Units purchased from TOP (wallet)", user.getUsrId());
+        walletService.recordUnitLeg(WalletOwnerType.TOP, null, rs.getRsId(), null,
+                units.negate(), null, WalletTxType.UNIT_SALE,
+                idem + "_U_TOP", "Units sold to reseller " + rs.getRsCompanyName(), user.getUsrId());
+
         response.setMessage("message", "Bought " + units + " units for KES " + cost
                 + ". New allocatable balance: " + rs.getRsAllocatableUnit(), response);
         response.setData("result", credit, response);

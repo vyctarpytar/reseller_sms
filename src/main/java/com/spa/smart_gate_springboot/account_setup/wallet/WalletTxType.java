@@ -22,5 +22,9 @@ public enum WalletTxType {
     /** Compensation credit for the charge leg when a B2C payout is rejected/failed. */
     MPESA_CHARGE_REVERSAL,
     /** Manual admin correction. */
-    ADJUSTMENT
+    ADJUSTMENT,
+    /** Units acquired by the owner on a purchase/allocation (reseller buys from TOP, account buys from reseller). */
+    UNIT_PURCHASE,
+    /** Units leaving the owner on a sale/allocation (TOP allocates to reseller, reseller sells to account). */
+    UNIT_SALE
 }

@@ -89,7 +89,7 @@ function PayoutMethod() {
         }}
         pagination={{
           position: ["bottomCenter"],
-          pageSize: 5,
+          pageSize: 20,
         }}
         loading={loading}
         rowKey={(record) => record?.tarId}

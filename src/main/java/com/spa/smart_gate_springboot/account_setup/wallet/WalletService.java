@@ -10,6 +10,9 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -71,9 +74,37 @@ public class WalletService {
         return getOrCreate(WalletOwnerType.TOP, null, TOP_WALLET_CODE);
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    /**
+     * Available cash-wallet balance keyed by owner id, fetched in one query. Used to enrich a
+     * reseller listing without N+1 lookups; owners with no wallet yet are simply absent from the map
+     * (callers default those to zero).
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, BigDecimal> availableBalancesByOwner(Collection<UUID> ownerIds) {
+        if (ownerIds == null || ownerIds.isEmpty()) return Map.of();
+        Map<UUID, BigDecimal> balances = new HashMap<>();
+        for (Wallet wallet : walletRepository.findByOwnerIdIn(ownerIds)) {
+            if (wallet.getOwnerId() != null) {
+                balances.put(wallet.getOwnerId(), wallet.getAvailableBalance());
+            }
+        }
+        return balances;
+    }
+
     public WalletTransaction credit(String walletCode, BigDecimal amount, WalletTxType txType,
                                     String externalRef, String narration, UUID createdBy) {
+        return credit(walletCode, amount, txType, externalRef, narration, createdBy, null, null);
+    }
+
+    /**
+     * Credit a cash wallet, carrying statement context: {@code resellerId} (defaults to the wallet's
+     * owner when it is a reseller; pass explicitly to tag the reseller counterparty on a TOP credit)
+     * and the triggering {@code accountId}.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public WalletTransaction credit(String walletCode, BigDecimal amount, WalletTxType txType,
+                                    String externalRef, String narration, UUID createdBy,
+                                    UUID resellerId, UUID accountId) {
         WalletTransaction existing = findExisting(externalRef);
         if (existing != null) {
             log.warn("Duplicate credit skipped — externalRef {} already processed", externalRef);
@@ -86,6 +117,11 @@ public class WalletService {
 
         WalletTransaction tx = WalletTransaction.builder()
                 .walletCode(walletCode)
+                .valueType(WalletValueType.KSH)
+                .ownerType(wallet.getOwnerType())
+                .ownerId(wallet.getOwnerId())
+                .resellerId(resellerContext(wallet, resellerId))
+                .accountId(accountId)
                 .txType(txType)
                 .amount(amount)
                 .balanceAfter(wallet.getBalance())
@@ -98,9 +134,15 @@ public class WalletService {
         return saved;
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
     public WalletTransaction debit(String walletCode, BigDecimal amount, WalletTxType txType,
                                    String externalRef, String narration, UUID createdBy) {
+        return debit(walletCode, amount, txType, externalRef, narration, createdBy, null, null);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public WalletTransaction debit(String walletCode, BigDecimal amount, WalletTxType txType,
+                                   String externalRef, String narration, UUID createdBy,
+                                   UUID resellerId, UUID accountId) {
         WalletTransaction existing = findExisting(externalRef);
         if (existing != null) {
             log.warn("Duplicate debit skipped — externalRef {} already processed", externalRef);
@@ -118,6 +160,11 @@ public class WalletService {
 
         WalletTransaction tx = WalletTransaction.builder()
                 .walletCode(walletCode)
+                .valueType(WalletValueType.KSH)
+                .ownerType(wallet.getOwnerType())
+                .ownerId(wallet.getOwnerId())
+                .resellerId(resellerContext(wallet, resellerId))
+                .accountId(accountId)
                 .txType(txType)
                 .amount(amount.negate())
                 .balanceAfter(wallet.getBalance())
@@ -128,6 +175,46 @@ public class WalletService {
         WalletTransaction saved = persistLedger(tx, externalRef);
         log.info("Debited {} from wallet {} ({}), new balance {}", amount, walletCode, txType, wallet.getBalance());
         return saved;
+    }
+
+    /**
+     * Records a UNIT statement leg (SMS-unit movement). Append-only — NO cash-wallet mutation or lock,
+     * since units have no cash wallet. {@code signedUnits} is positive for units in, negative for units
+     * out; {@code balanceAfter} is the owner's unit balance after the move (null when not tracked, e.g.
+     * the TOP unit pool). Idempotent on {@code externalRef}.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public WalletTransaction recordUnitLeg(WalletOwnerType ownerType, UUID ownerId, UUID resellerId,
+                                           UUID accountId, BigDecimal signedUnits, BigDecimal balanceAfter,
+                                           WalletTxType txType, String externalRef, String narration,
+                                           UUID createdBy) {
+        WalletTransaction existing = findExisting(externalRef);
+        if (existing != null) {
+            log.warn("Duplicate unit leg skipped — externalRef {} already processed", externalRef);
+            return existing;
+        }
+
+        WalletTransaction tx = WalletTransaction.builder()
+                .valueType(WalletValueType.UNIT)
+                .ownerType(ownerType)
+                .ownerId(ownerId)
+                .resellerId(resellerId)
+                .accountId(accountId)
+                .txType(txType)
+                .amount(signedUnits)
+                .balanceAfter(balanceAfter)
+                .externalRef(externalRef)
+                .narration(narration)
+                .createdBy(createdBy)
+                .build();
+        WalletTransaction saved = persistLedger(tx, externalRef);
+        log.info("Recorded {} units ({}) for {}/{}", signedUnits, txType, ownerType, ownerId);
+        return saved;
+    }
+
+    private static UUID resellerContext(Wallet wallet, UUID explicit) {
+        if (explicit != null) return explicit;
+        return wallet.getOwnerType() == WalletOwnerType.RESELLER ? wallet.getOwnerId() : null;
     }
 
     @Transactional(readOnly = true)

@@ -88,18 +88,21 @@ const HeaderCrumb = () => {
 
   // Shared list panel used by both the reseller and account switchers.
   const listPanel = (placeholder, items, render, empty) => (
-    <div className="w-64 rounded-card border border-border bg-white shadow-lift p-2">
+    <div className="w-72 rounded-card border border-border bg-white shadow-lift p-2">
       <Input
-        size="small"
+        autoFocus
+        size="middle"
         allowClear
         placeholder={placeholder}
         value={searchValue}
         onChange={(e) => setSearchValue(e.target.value)}
         className="mb-2"
       />
-      <div className="max-h-60 overflow-y-auto flex flex-col gap-0.5">
+      {/* shrink-0 on each row is essential: without it the flex column compresses
+          rows vertically to fit max-h, clipping the text (the "congested" look). */}
+      <div className="max-h-72 overflow-y-auto flex flex-col gap-1 pr-0.5">
         {items?.length > 0 ? items.map(render) : (
-          <div className="px-3 py-6 text-center text-xs text-muted">{empty}</div>
+          <div className="px-3 py-8 text-center text-xs text-muted">{empty}</div>
         )}
       </div>
     </div>
@@ -114,7 +117,7 @@ const HeaderCrumb = () => {
         <button
           key={item?.rsId}
           onClick={() => handleOrgClick(item)}
-          className={`text-left rounded-md px-3 py-2 text-sm transition-colors truncate ${
+          className={`shrink-0 block w-full text-left rounded-md px-3 py-2 text-sm leading-5 truncate transition-colors ${
             active ? "bg-accent/10 text-accent font-medium" : "text-ink hover:bg-surface"
           }`}
         >
@@ -134,7 +137,7 @@ const HeaderCrumb = () => {
         <button
           key={item?.accId}
           onClick={() => handleAccClick(item)}
-          className={`text-left rounded-md px-3 py-2 text-sm transition-colors truncate ${
+          className={`shrink-0 block w-full text-left rounded-md px-3 py-2 text-sm leading-5 truncate transition-colors ${
             active ? "bg-accent/10 text-accent font-medium" : "text-ink hover:bg-surface"
           }`}
         >
@@ -171,6 +174,7 @@ const HeaderCrumb = () => {
         dropdownRender={() => resellerPanel}
         onOpenChange={(visible) => {
           setOrgOpen(visible);
+          setSearchValue("");
           if (visible) dispatch(fetchReseller());
         }}
       >
@@ -196,6 +200,7 @@ const HeaderCrumb = () => {
             dropdownRender={() => accountPanel}
             onOpenChange={(visible) => {
               setAccOpen(visible);
+              setSearchValue("");
               if (visible)
                 dispatch(fetchTopResellerAccounts({ resellerId: selectedOrg }));
             }}

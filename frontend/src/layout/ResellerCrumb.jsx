@@ -60,16 +60,17 @@ const ResellerCrumb = () => {
   );
 
   const accountPanel = (
-    <div className="w-64 rounded-card border border-border bg-white shadow-lift p-2">
+    <div className="w-72 rounded-card border border-border bg-white shadow-lift p-2">
       <Input
-        size="small"
+        autoFocus
+        size="middle"
         allowClear
         placeholder="Search account"
         value={searchValue}
         onChange={(e) => setSearchValue(e.target.value)}
         className="mb-2"
       />
-      <div className="max-h-60 overflow-y-auto flex flex-col gap-0.5">
+      <div className="max-h-72 overflow-y-auto flex flex-col gap-1 pr-0.5">
         {filteredAccounts?.length > 0 ? (
           filteredAccounts.map((item) => {
             const active = item?.accId === selectedAccount;
@@ -77,7 +78,7 @@ const ResellerCrumb = () => {
               <button
                 key={item?.accId}
                 onClick={() => handleAccClick(item)}
-                className={`text-left rounded-md px-3 py-2 text-sm transition-colors truncate ${
+                className={`shrink-0 block w-full text-left rounded-md px-3 py-2 text-sm leading-5 truncate transition-colors ${
                   active
                     ? "bg-accent/10 text-accent font-medium"
                     : "text-ink hover:bg-surface"
@@ -88,7 +89,7 @@ const ResellerCrumb = () => {
             );
           })
         ) : (
-          <div className="px-3 py-6 text-center text-xs text-muted">
+          <div className="px-3 py-8 text-center text-xs text-muted">
             No accounts found
           </div>
         )}
@@ -124,6 +125,7 @@ const ResellerCrumb = () => {
         dropdownRender={() => accountPanel}
         onOpenChange={(visible) => {
           setOpen(visible);
+          setSearchValue("");
           if (visible) dispatch(fetchResellerAccounts());
         }}
       >

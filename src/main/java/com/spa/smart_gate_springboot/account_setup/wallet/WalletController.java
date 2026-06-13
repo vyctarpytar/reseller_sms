@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.wallet;
 
+import com.spa.smart_gate_springboot.account_setup.account.Account;
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
 import com.spa.smart_gate_springboot.account_setup.wallet.dto.BuyUnitsRequest;
@@ -28,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,8 @@ public class WalletController {
     private final B2cTransactionRepository b2cRepository;
     private final UserService userService;
     private final ResellerService resellerService;
+    private final AccountService accountService;
+    private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTxRepository;
     private final com.spa.smart_gate_springboot.payment.mpesa.gateway.WaretechMpesaService mpesaService;
 
@@ -182,22 +187,45 @@ public class WalletController {
     }
 
     /**
-     * Wallet statement — the full signed cash ledger (deposits, unit-purchase debits, withdrawals,
-     * reversals, adjustments) newest-first, with the running balanceAfter stored on each row.
-     * This is the only view of wallet movements other than withdrawals; paged via start/limit.
+     * Wallet statement — the hierarchy-aware double-entry journal of both money (KSH) and units (UNIT)
+     * movements from purchases/allocations, newest-first, each row tagged with the owner it affected.
+     * TOP sees the whole platform (every owner); narrow with {@code reseller_id}. A RESELLER is locked
+     * to their own reseller. {@code account_id} narrows to one account; {@code value_type} to KSH/UNIT.
      */
     @PreAuthorize("hasAnyRole('ACCOUNTANT','SUPER_ADMIN','ADMIN','MANAGER')")
     @GetMapping("statement")
     public StandardJsonResponse statement(HttpServletRequest request,
                                           @RequestParam(required = false) String reseller_id,
+                                          @RequestParam(required = false) String account_id,
+                                          @RequestParam(required = false) String value_type,
                                           @RequestParam(defaultValue = "0") int start,
                                           @RequestParam(defaultValue = "10") int limit) {
         User user = userService.getCurrentUser(request);
-        String walletCode = resolveWalletCode(user, reseller_id);
+
+        // Scope by hierarchy: TOP = platform-wide (resellerId null) unless a reseller is selected;
+        // a RESELLER is locked to their own reseller; anyone else is forbidden.
+        UUID resellerScope;
+        if (user.getLayer() == Layers.TOP) {
+            resellerScope = (reseller_id != null && !reseller_id.isBlank()) ? UUID.fromString(reseller_id) : null;
+        } else if (user.getLayer() == Layers.RESELLER && user.getUsrResellerId() != null) {
+            resellerScope = user.getUsrResellerId();
+        } else {
+            StandardJsonResponse forbidden = new StandardJsonResponse();
+            forbidden.setSuccess(false);
+            forbidden.setStatus(HttpStatus.FORBIDDEN.value());
+            forbidden.setMessage("message", "Only resellers / TOP can view the wallet statement", forbidden);
+            return forbidden;
+        }
+        UUID accountScope = (account_id != null && !account_id.isBlank()) ? UUID.fromString(account_id) : null;
+        WalletValueType valueScope = (value_type != null && !value_type.isBlank())
+                ? WalletValueType.valueOf(value_type.trim().toUpperCase()) : null;
 
         Pageable pageable = PageRequest.of(start, limit <= 0 ? 10 : limit);
-        Page<WalletTransaction> page =
-                walletTxRepository.findByWalletCodeOrderByCreatedAtDesc(walletCode, pageable);
+        Page<WalletTransaction> page = walletTxRepository.search(resellerScope, accountScope, valueScope, pageable);
+
+        // Per-page caches so each reseller/account name is resolved once.
+        Map<UUID, String> resellerNames = new HashMap<>();
+        Map<UUID, String> accountNames = new HashMap<>();
 
         List<Map<String, Object>> rows = new ArrayList<>();
         for (WalletTransaction t : page.getContent()) {
@@ -205,12 +233,21 @@ public class WalletController {
             r.put("txId", t.getTxId());
             r.put("txType", t.getTxType() != null ? t.getTxType().name() : null);
             r.put("txLabel", t.getTxType() != null ? labelFor(t.getTxType()) : null);
+            r.put("valueType", t.getValueType() != null ? t.getValueType().name() : WalletValueType.KSH.name());
             r.put("amount", t.getAmount());                 // signed: + credit, − debit
             r.put("direction", t.getAmount() != null && t.getAmount().signum() < 0 ? "DEBIT" : "CREDIT");
-            r.put("balanceAfter", t.getBalanceAfter());
+            r.put("balanceAfter", t.getBalanceAfter());     // null for untracked unit balances → UI shows —
             r.put("narration", t.getNarration());
             r.put("reference", t.getExternalRef());
             r.put("createdAt", t.getCreatedAt());
+            // Owner (whose ledger line this is) + reseller/account context for the hierarchy view.
+            r.put("ownerType", t.getOwnerType() != null ? t.getOwnerType().name() : null);
+            r.put("ownerId", t.getOwnerId());
+            r.put("ownerName", ownerName(t, resellerNames, accountNames));
+            r.put("resellerId", t.getResellerId());
+            r.put("resellerName", t.getResellerId() != null ? resellerNames.computeIfAbsent(t.getResellerId(), this::resellerNameSafe) : null);
+            r.put("accountId", t.getAccountId());
+            r.put("accountName", t.getAccountId() != null ? accountNames.computeIfAbsent(t.getAccountId(), this::accountNameSafe) : null);
             rows.add(r);
         }
 
@@ -218,6 +255,36 @@ public class WalletController {
         response.setData("result", rows, response);
         response.setTotal((int) page.getTotalElements());
         return response;
+    }
+
+    /** Display name for the owner of a ledger row: "TOP (Platform)" / reseller company / account name. */
+    private String ownerName(WalletTransaction t, Map<UUID, String> resellerNames, Map<UUID, String> accountNames) {
+        if (t.getOwnerType() == WalletOwnerType.TOP) return "TOP (Platform)";
+        if (t.getOwnerType() == WalletOwnerType.ACCOUNT && t.getOwnerId() != null) {
+            return accountNames.computeIfAbsent(t.getOwnerId(), this::accountNameSafe);
+        }
+        if (t.getOwnerType() == WalletOwnerType.RESELLER && t.getOwnerId() != null) {
+            return resellerNames.computeIfAbsent(t.getOwnerId(), this::resellerNameSafe);
+        }
+        return null;
+    }
+
+    private String resellerNameSafe(UUID id) {
+        try {
+            Reseller rs = resellerService.findById(id);
+            return rs != null ? rs.getRsCompanyName() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String accountNameSafe(UUID id) {
+        try {
+            Account a = accountService.findByAccId(id);
+            return a != null ? a.getAccName() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @GetMapping("/distinct-status")
@@ -292,6 +359,8 @@ public class WalletController {
             case WITHDRAWAL_REVERSAL: return "Withdrawal reversal";
             case MPESA_CHARGE_REVERSAL: return "Charge reversal";
             case ADJUSTMENT: return "Adjustment";
+            case UNIT_PURCHASE: return "Units in";
+            case UNIT_SALE: return "Units out";
             default: return type.name();
         }
     }

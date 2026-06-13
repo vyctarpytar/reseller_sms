@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -232,6 +233,7 @@ public class InvoiceService {
      * it silently lapses). Flips PENDING_PAYMENT invoices past their due date to EXPIRED. Driven by
      * {@link com.spa.smart_gate_springboot.account_setup.invoice.InvoiceExpiryCron}.
      */
+    @Transactional
     public int expireStalePending() {
         return invoiceRepository.expireStalePending(LocalDateTime.now());
     }

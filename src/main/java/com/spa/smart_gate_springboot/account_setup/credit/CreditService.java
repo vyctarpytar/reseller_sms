@@ -9,6 +9,7 @@ import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceRepository;
 import com.spa.smart_gate_springboot.account_setup.request.ReStatus;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
+import com.spa.smart_gate_springboot.account_setup.wallet.WalletOwnerType;
 import com.spa.smart_gate_springboot.account_setup.wallet.WalletService;
 import com.spa.smart_gate_springboot.account_setup.wallet.WalletTxType;
 import com.spa.smart_gate_springboot.dto.Layers;
@@ -61,7 +62,9 @@ public class CreditService {
                     WalletTxType.UNIT_SALE_CREDIT,
                     credit.getSmsPaymentRef(),
                     "SMS units purchased by account " + credit.getSmsAccountName(),
-                    credit.getSmsCreatedBy());
+                    credit.getSmsCreatedBy(),
+                    rs.getRsId(),
+                    credit.getSmsAccId());
         } catch (Exception e) {
             log.error("Failed to credit reseller {} cash wallet on unit sale (ref {}): {}",
                     rs.getRsId(), credit.getSmsPaymentRef(), e.getMessage());
@@ -82,12 +85,48 @@ public class CreditService {
                     WalletTxType.UNIT_SALE_CREDIT,
                     credit.getSmsPaymentRef(),
                     "SMS units purchased by reseller " + credit.getSmsResellerName(),
-                    credit.getSmsCreatedBy());
+                    credit.getSmsCreatedBy(),
+                    credit.getSmsResellerId(),
+                    null);
         } catch (Exception e) {
             log.error("Failed to credit TOP cash wallet on reseller unit sale (ref {}): {}",
                     credit.getSmsPaymentRef(), e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * UNIT statement legs for an account buying units (real money): the units leave the reseller and
+     * land on the account. The money leg is recorded separately as the reseller cash credit. Legs use
+     * the payment ref (+ leg suffix) for idempotency; null ref (manual grant) → always inserted.
+     */
+    private void recordAccountPurchaseUnitLegs(Credit credit, Reseller rs, BigDecimal unitsLoaded,
+                                               BigDecimal resellerUnitsAfter, BigDecimal accountUnitsAfter) {
+        String ref = credit.getSmsPaymentRef();
+        walletService.recordUnitLeg(WalletOwnerType.RESELLER, rs.getRsId(), rs.getRsId(), credit.getSmsAccId(),
+                unitsLoaded.negate(), resellerUnitsAfter, WalletTxType.UNIT_SALE,
+                ref == null ? null : ref + "_U_RS",
+                "Units sold to account " + credit.getSmsAccountName(), credit.getSmsCreatedBy());
+        walletService.recordUnitLeg(WalletOwnerType.ACCOUNT, credit.getSmsAccId(), rs.getRsId(), credit.getSmsAccId(),
+                unitsLoaded, accountUnitsAfter, WalletTxType.UNIT_PURCHASE,
+                ref == null ? null : ref + "_U_ACC",
+                "Units purchased from reseller " + rs.getRsCompanyName(), credit.getSmsCreatedBy());
+    }
+
+    /**
+     * UNIT statement legs for a reseller acquiring units from TOP (STK top-up, manual grant or wallet
+     * purchase): units leave the TOP pool and land on the reseller. The TOP unit balance is not tracked
+     * here so its {@code balanceAfter} is null. {@code baseRef} null (manual grant) → legs always inserted.
+     */
+    private void recordResellerFromTopUnitLegs(UUID resellerId, String resellerName, BigDecimal units,
+                                               BigDecimal resellerUnitsAfter, String baseRef, UUID createdBy) {
+        walletService.recordUnitLeg(WalletOwnerType.RESELLER, resellerId, resellerId, null,
+                units, resellerUnitsAfter, WalletTxType.UNIT_PURCHASE,
+                baseRef == null ? null : baseRef + "_U_RS", "Units purchased from TOP", createdBy);
+        walletService.recordUnitLeg(WalletOwnerType.TOP, null, resellerId, null,
+                units.negate(), null, WalletTxType.UNIT_SALE,
+                baseRef == null ? null : baseRef + "_U_TOP",
+                "Units sold to reseller " + resellerName, createdBy);
     }
 
     public Credit save(Credit credit) {
@@ -271,6 +310,8 @@ public class CreditService {
 
         // Real money paid by the account becomes the reseller's cash (units inventory left the reseller).
         creditResellerCashOnUnitSale(credit, rs);
+        recordAccountPurchaseUnitLegs(credit, rs, unitsLoaded, rs.getRsAllocatableUnit(),
+                gu.getDivide(newBal, accSmsPrice));
 
         queueMsgService.resendPendingSMSAccountCredit(account.getAccId());
 
@@ -312,6 +353,8 @@ public class CreditService {
 
         // Reseller bought units from TOP with real money via STK — TOP receives the cash.
         creditTopCashOnUnitSale(credit);
+        recordResellerFromTopUnitLegs(rs.getRsId(), rs.getRsCompanyName(), divide, rsAllocatableUnits,
+                credit.getSmsPaymentRef(), credit.getSmsCreatedBy());
 
         queueMsgService.resendPendingSMSResellerCredit(rs.getRsId());
 
@@ -403,6 +446,8 @@ public class CreditService {
 
         // Same economic event as accountLoadCredit: account units funded by real money → reseller gets the cash.
         creditResellerCashOnUnitSale(credit, rs);
+        recordAccountPurchaseUnitLegs(credit, rs, unitsLoaded, rs.getRsAllocatableUnit(),
+                gu.getDivide(newBal, accSmsPrice));
 
         queueMsgService.resendPendingSMSAccountCredit(account.getAccId());
 
@@ -455,6 +500,9 @@ public class CreditService {
         reseller.setRsStatus("ACTIVE");
         reseller.setRsAllocatableUnit(rsAllocatableUnits);
         resellerService.save(reseller);
+
+        recordResellerFromTopUnitLegs(reseller.getRsId(), reseller.getRsCompanyName(), unitsLoaded,
+                rsAllocatableUnits, credit.getSmsPaymentRef(), credit.getSmsCreatedBy());
 
         queueMsgService.resendPendingSMSResellerCredit(reseller.getRsId());
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Ballocatable Balance : " + rsAllocatableUnits, response);

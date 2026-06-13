@@ -119,11 +119,22 @@ public class ResellerService {
         StandardJsonResponse resp = new StandardJsonResponse();
         if (user.getLayer().equals(Layers.TOP)) {
             List<Reseller> list = resellerRepo.findAll();
+            attachWalletBalances(list);
             resp.setData("result", list, resp);
         }
 
         resp.setMessage("message", "ok", resp);
         return resp;
+    }
+
+    /** Populates each reseller's transient cash-wallet balance (KES) in one query; 0 when no wallet yet. */
+    private void attachWalletBalances(List<Reseller> resellers) {
+        if (resellers.isEmpty()) return;
+        List<UUID> ids = resellers.stream().map(Reseller::getRsId).toList();
+        var balances = walletService.availableBalancesByOwner(ids);
+        for (Reseller reseller : resellers) {
+            reseller.setRsWalletBalance(balances.getOrDefault(reseller.getRsId(), BigDecimal.ZERO));
+        }
     }
 
 

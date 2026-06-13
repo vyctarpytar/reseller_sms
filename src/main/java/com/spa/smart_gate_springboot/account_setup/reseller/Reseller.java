@@ -70,7 +70,14 @@ public class Reseller {
     private String rsKraPin;
     private String rsReorderLevel;
     private BigDecimal rsAllocatableUnit;
-    
+
+    /**
+     * Available cash-wallet balance (KES) for this reseller — populated on listing from the separate
+     * {@code cash_wallet} table (keyed RS_&lt;rsId&gt;). Not persisted on the reseller row.
+     */
+    @Transient
+    private BigDecimal rsWalletBalance;
+
     // Deletion tracking fields
     private LocalDateTime rsDeletedDate;
     private String rsDeletedByName;

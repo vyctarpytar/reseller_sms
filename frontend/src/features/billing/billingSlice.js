@@ -121,10 +121,12 @@ export const buyUnitsFromWallet = createAsyncThunk(
 export const fetchWalletStatement = createAsyncThunk(
   "billingSlice/fetchWalletStatement",
   async (data = {}) => {
+    const params = { start: data.start ?? 0, limit: data.limit ?? 10 };
+    if (data.reseller_id) params.reseller_id = data.reseller_id;
+    if (data.account_id) params.account_id = data.account_id;
+    if (data.value_type) params.value_type = data.value_type;
     const res = await axiosInstance
-      .get(`${url}/api/v2/wallet/statement`, {
-        params: { start: data.start ?? 0, limit: data.limit ?? 10 },
-      })
+      .get(`${url}/api/v2/wallet/statement`, { params })
       .then((res) => res.data);
     return res;
   }

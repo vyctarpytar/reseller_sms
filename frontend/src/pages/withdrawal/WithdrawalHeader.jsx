@@ -37,6 +37,7 @@ function WithdrawalHeader() {
   const unitPrice = Number(wallet?.walUnitPrice) || 0;
   const affordableUnits = unitPrice > 0 ? Math.floor(walAmount / unitPrice) : 0;
   const mpesaWorking = mpesaBalance?.workingBalance;
+  const mpesaUtility = mpesaBalance?.utilityBalance;
 
   return (
     <div
@@ -101,7 +102,21 @@ function WithdrawalHeader() {
                   : "Unavailable"}
               </div>
               <div className="text-[11px] tracking-[0.08em] uppercase text-[#8a8f99] mt-0.5">
-                M-Pesa Paybill Balance
+                M-Pesa Working Balance
+              </div>
+            </div>
+          )}
+          {isTop && (
+            <div>
+              <div className="text-white font-[600] text-[15px]">
+                {mpesaBalanceLoading
+                  ? "…"
+                  : mpesaUtility != null
+                  ? cashConverter(mpesaUtility)
+                  : "Unavailable"}
+              </div>
+              <div className="text-[11px] tracking-[0.08em] uppercase text-[#8a8f99] mt-0.5">
+                M-Pesa Utility Balance
               </div>
             </div>
           )}

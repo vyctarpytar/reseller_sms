@@ -11,7 +11,7 @@ import { fetchReseller } from "../../features/reseller/resellerSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { Dropdown, Skeleton } from "antd";
-import { addSpaces, formatMoney } from "../../utils";
+import { addSpaces, cashConverter, formatMoney } from "../../utils";
 import { setResellerId } from "../../features/global/globalSlice";
 import { setTenantScope } from "../../custom_hooks/useTenantScope";
 import useModalToggle from "../../custom_hooks/useModalToggle";
@@ -200,6 +200,9 @@ function ResellersList() {
                             <div className="reseller_card_sub_title">
                               Unit price: {formatMoney(item?.rsSmsUnitPrice)} -
                               Balance:{formatMoney(item?.rsMsgBal)}
+                            </div>
+                            <div className="reseller_card_sub_title">
+                              Wallet: {cashConverter(item?.rsWalletBalance)}
                             </div>
                           </div>
                         </div>

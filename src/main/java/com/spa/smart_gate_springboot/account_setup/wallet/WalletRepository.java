@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +18,9 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
     boolean existsByWalletCode(String walletCode);
 
     Optional<Wallet> findByOwnerId(UUID ownerId);
+
+    /** All wallets for the given owner ids (used to enrich a reseller list with cash balances). */
+    List<Wallet> findByOwnerIdIn(Collection<UUID> ownerIds);
 
     /** Acquires a row-level exclusive lock — must be called inside a @Transactional method. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
