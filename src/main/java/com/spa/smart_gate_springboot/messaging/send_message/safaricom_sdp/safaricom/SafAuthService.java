@@ -44,6 +44,7 @@ public class SafAuthService {
         if (!TextUtils.isEmpty(cached)) {
             return cached; // another thread refreshed while we waited for the lock
         }
+        
 
         SafAuthReq safAuthReq = SafAuthReq.builder()
                 .password(safaricomProperties.getSafPassword())
