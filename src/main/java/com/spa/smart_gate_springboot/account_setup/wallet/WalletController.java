@@ -263,8 +263,10 @@ public class WalletController {
         WalletValueType valueScope = (value_type != null && !value_type.isBlank())
                 ? WalletValueType.valueOf(value_type.trim().toUpperCase()) : null;
 
-        Pageable pageable = PageRequest.of(start, limit <= 0 ? 10 : limit);
-        Page<WalletTransaction> page = walletTxRepository.search(resellerScope, accountScope, valueScope, pageable);
+        Pageable pageable = PageRequest.of(start, limit <= 0 ? 10 : limit,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<WalletTransaction> page = walletTxRepository.findAll(
+                WalletTransactionSpecifications.filter(resellerScope, accountScope, valueScope), pageable);
 
         // Per-page caches so each reseller/account name is resolved once.
         Map<UUID, String> resellerNames = new HashMap<>();

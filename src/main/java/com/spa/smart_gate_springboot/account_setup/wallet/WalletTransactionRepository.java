@@ -3,6 +3,7 @@ package com.spa.smart_gate_springboot.account_setup.wallet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -10,7 +11,8 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, UUID> {
+public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, UUID>,
+        JpaSpecificationExecutor<WalletTransaction> {
 
     boolean existsByExternalRef(String externalRef);
 
@@ -18,19 +20,11 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
 
     Page<WalletTransaction> findByWalletCodeOrderByCreatedAtDesc(String walletCode, Pageable pageable);
 
-    /**
-     * Hierarchy-aware statement search. Any null filter is ignored (platform-wide for TOP). Filters:
-     * reseller context, triggering account, and value type (KSH/UNIT). Newest first.
-     */
-    @Query("select t from WalletTransaction t where "
-            + "(:resellerId is null or t.resellerId = :resellerId) and "
-            + "(:accountId is null or t.accountId = :accountId) and "
-            + "(:valueType is null or t.valueType = :valueType) "
-            + "order by t.createdAt desc")
-    Page<WalletTransaction> search(@Param("resellerId") UUID resellerId,
-                                   @Param("accountId") UUID accountId,
-                                   @Param("valueType") WalletValueType valueType,
-                                   Pageable pageable);
+    // Hierarchy-aware statement search is built dynamically via WalletTransactionSpecifications.filter(...)
+    // and findAll(Specification, Pageable) from JpaSpecificationExecutor — null filters add no predicate
+    // (platform-wide for TOP). We avoid the "(:param IS NULL OR col = :param)" JPQL pattern because a bare
+    // bind param in ":param IS NULL" is untyped and breaks on PostgreSQL (42P18) when the filter is null.
+    // Newest-first ordering is supplied by the caller via the Pageable's Sort.
 
     /**
      * Signed sum of {@code amount} across ledger rows matching owner/value/tx type — used for the TOP
