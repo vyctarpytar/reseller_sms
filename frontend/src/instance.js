@@ -24,11 +24,16 @@ axiosInstance.interceptors.request.use((config) => {
   const selectedOrg = localStorage.getItem("selectedOrg") || null;
   const selectedAccount = localStorage.getItem("selectedAccount") || null;
 
-  config.params = {
-    ...(config.params || {}),
-    reseller_id: selectedOrg,
-    account_id: selectedAccount,
-  };
+  // Stamp every request with the globally selected tenant (reseller_id / account_id)
+  // as a DEFAULT only. A caller that sets these explicitly — e.g. the wallet
+  // statement's own reseller/account filters — must win, so we don't overwrite a
+  // value the caller already provided. (Overwriting was why those filters never
+  // reached the backend: localStorage was empty, so the explicit ids became null
+  // and axios dropped the null query params.)
+  const params = { ...(config.params || {}) };
+  if (params.reseller_id == null && selectedOrg) params.reseller_id = selectedOrg;
+  if (params.account_id == null && selectedAccount) params.account_id = selectedAccount;
+  config.params = params;
 
   return config;
 });

@@ -366,12 +366,14 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
             </Form.Item>
           )}
 
-          <div className="mt-4 rounded-[6px] border border-[#E0A800]/40 bg-[#FFF8E1] px-4 py-3">
-            <p className="text-[.8rem] text-[#8A6D00] m-0">
-              <span className="font-semibold">Note:</span> This amount will not
-              reflect on your wallet balance.
-            </p>
-          </div>
+          {user?.layer === "RESELLER" && (
+            <div className="mt-4 rounded-[6px] border border-[#E0A800]/40 bg-[#FFF8E1] px-4 py-3">
+              <p className="text-[.8rem] text-[#8A6D00] m-0">
+                <span className="font-semibold">Note:</span> This amount will not
+                reflect on your wallet balance.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-between mt-[48px] ">
             <div className="justify-start"></div>

@@ -220,12 +220,17 @@ public class CreditService {
             throw new RuntimeException("Layer not Mapped" + layers.name());
         }
 
-        UniqueCodeGenerator ug = new UniqueCodeGenerator();
-        String xPlainCode = ug.getUniqueCode();
+        // Log an invoice only for manual loads (no pre-existing invoice). Payment-settled credits
+        // (smsPaymentId != null) already have an invoice created upfront at create-invoice time by
+        // InvoiceService — re-creating one here produced a duplicate PENDING_PAYMENT row on the
+        // account's invoice list (one PAID + one phantom PENDING for the same top-up).
+        if (credit.getSmsPaymentId() == null) {
+            UniqueCodeGenerator ug = new UniqueCodeGenerator();
+            String xPlainCode = ug.getUniqueCode();
 
-        //log the invoice
-        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
-        invoiceRepository.saveAndFlush(invoice);
+            Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
+            invoiceRepository.saveAndFlush(invoice);
+        }
 
         response.setData("result", save(credit), response);
         return response;

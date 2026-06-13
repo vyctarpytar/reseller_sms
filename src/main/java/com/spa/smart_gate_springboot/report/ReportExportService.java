@@ -31,7 +31,9 @@ public class ReportExportService {
 
     public void pdfInvoice(Invoice inv, HttpServletResponse resp) throws Exception {
         BrandedPdf.preparePdf(resp, "invoice-" + safeCode(inv));
-        Document doc = BrandedPdf.openPortrait(resp, "Invoice", BrandedPdf.CONFIDENTIAL);
+        Document doc = BrandedPdf.openPortrait(resp, "Invoice", BrandedPdf.CONFIDENTIAL,
+                "Payable via M-Pesa using invoice reference " + BrandedPdf.s(inv.getInvoCode())
+                        + ". This invoice was generated electronically and is valid without a signature.");
 
         BrandedPdf.addDocHeader(doc, "Billed To", payer(inv), mobileLine(inv),
                 new String[]{"Invoice No.", "Issue Date", "Due Date"},
@@ -41,19 +43,30 @@ public class ReportExportService {
         BigDecimal base = nz(inv.getInvoAmount());
         BigDecimal afterTax = afterTax(inv);
         BigDecimal vat = afterTax.subtract(base);
+        boolean showVat = vat.signum() != 0;
 
-        BrandedPdf.addSummary(doc,
-                new String[]{"Subtotal (KES)", vatLabel(inv), "Total Due (KES)"},
-                new BigDecimal[]{base, vat, afterTax});
+        if (showVat) {
+            BrandedPdf.addSummary(doc,
+                    new String[]{"Subtotal (KES)", vatLabel(inv), "Total Due (KES)"},
+                    new BigDecimal[]{base, vat, afterTax});
+        } else {
+            BrandedPdf.addSummary(doc,
+                    new String[]{"Total Due (KES)"},
+                    new BigDecimal[]{afterTax});
+        }
 
-        addLineItems(doc, inv, base, vat, afterTax);
+        addLineItems(doc, inv, base, vat, afterTax, showVat);
 
-        BrandedPdf.addTotals(doc,
-                new String[]{"Subtotal", vatLabel(inv), "Total Due"},
-                new BigDecimal[]{base, vat, afterTax});
+        if (showVat) {
+            BrandedPdf.addTotals(doc,
+                    new String[]{"Subtotal", vatLabel(inv), "Total Due"},
+                    new BigDecimal[]{base, vat, afterTax});
+        } else {
+            BrandedPdf.addTotals(doc,
+                    new String[]{"Total Due"},
+                    new BigDecimal[]{afterTax});
+        }
 
-        BrandedPdf.addNote(doc, "Payable via M-Pesa using invoice reference " + BrandedPdf.s(inv.getInvoCode())
-                + ". This invoice was generated electronically and is valid without a signature.");
         doc.close();
     }
 
@@ -63,30 +76,43 @@ public class ReportExportService {
 
     public void pdfReceipt(Invoice inv, HttpServletResponse resp) throws Exception {
         BrandedPdf.preparePdf(resp, "receipt-" + safeCode(inv));
-        Document doc = BrandedPdf.openPortrait(resp, "Payment Receipt", BrandedPdf.CONFIDENTIAL);
+        Document doc = BrandedPdf.openPortrait(resp, "Payment Receipt", BrandedPdf.CONFIDENTIAL,
+                "This is a system-generated payment receipt for invoice "
+                        + BrandedPdf.s(inv.getInvoCode()) + ". Thank you for your payment.");
 
         BigDecimal base = nz(inv.getInvoAmount());
         BigDecimal afterTax = afterTax(inv);
         BigDecimal vat = afterTax.subtract(base);
         BigDecimal paid = inv.getInvoMarkedPaidAmount() != null ? inv.getInvoMarkedPaidAmount() : afterTax;
+        boolean showVat = vat.signum() != 0;
 
         BrandedPdf.addDocHeader(doc, "Received From", payer(inv), mobileLine(inv),
                 new String[]{"Receipt No.", "Payment Date", "Reference"},
                 new String[]{BrandedPdf.s(inv.getInvoCode()), paymentDate(inv), reference(inv)},
                 statusText(inv));
 
-        BrandedPdf.addSummary(doc,
-                new String[]{"Amount Paid (KES)", vatLabel(inv), "Total Invoiced (KES)"},
-                new BigDecimal[]{paid, vat, afterTax});
+        if (showVat) {
+            BrandedPdf.addSummary(doc,
+                    new String[]{"Amount Paid (KES)", vatLabel(inv), "Total Invoiced (KES)"},
+                    new BigDecimal[]{paid, vat, afterTax});
+        } else {
+            BrandedPdf.addSummary(doc,
+                    new String[]{"Amount Paid (KES)", "Total Invoiced (KES)"},
+                    new BigDecimal[]{paid, afterTax});
+        }
 
-        addLineItems(doc, inv, base, vat, afterTax);
+        addLineItems(doc, inv, base, vat, afterTax, showVat);
 
-        BrandedPdf.addTotals(doc,
-                new String[]{"Subtotal", vatLabel(inv), "Total Invoiced", "Amount Paid"},
-                new BigDecimal[]{base, vat, afterTax, paid});
+        if (showVat) {
+            BrandedPdf.addTotals(doc,
+                    new String[]{"Subtotal", vatLabel(inv), "Total Invoiced", "Amount Paid"},
+                    new BigDecimal[]{base, vat, afterTax, paid});
+        } else {
+            BrandedPdf.addTotals(doc,
+                    new String[]{"Total Invoiced", "Amount Paid"},
+                    new BigDecimal[]{afterTax, paid});
+        }
 
-        BrandedPdf.addNote(doc, "This is a system-generated payment receipt for invoice "
-                + BrandedPdf.s(inv.getInvoCode()) + ". Thank you for your payment.");
         doc.close();
     }
 
@@ -94,14 +120,22 @@ public class ReportExportService {
     //  Shared
     // =======================================================================================
 
-    private void addLineItems(Document doc, Invoice inv, BigDecimal base, BigDecimal vat, BigDecimal afterTax)
-            throws Exception {
-        PdfPTable table = BrandedPdf.table(new float[]{4f, 1.8f, 1.8f, 2f});
-        BrandedPdf.headerRow(table, ITEM_ALIGNS, "Description", "Subtotal", vatLabel(inv), "Amount (KES)");
-        BrandedPdf.bodyRow(table, 0, ITEM_ALIGNS,
-                "SMS credit purchase — " + BrandedPdf.s(inv.getInvoCode()),
-                BrandedPdf.money(base), BrandedPdf.money(vat), BrandedPdf.money(afterTax));
-        doc.add(table);
+    private void addLineItems(Document doc, Invoice inv, BigDecimal base, BigDecimal vat, BigDecimal afterTax,
+                              boolean showVat) throws Exception {
+        String desc = "SMS credit purchase — " + BrandedPdf.s(inv.getInvoCode());
+        if (showVat) {
+            PdfPTable table = BrandedPdf.table(new float[]{4f, 1.8f, 1.8f, 2f});
+            BrandedPdf.headerRow(table, ITEM_ALIGNS, "Description", "Subtotal", vatLabel(inv), "Amount (KES)");
+            BrandedPdf.bodyRow(table, 0, ITEM_ALIGNS, desc,
+                    BrandedPdf.money(base), BrandedPdf.money(vat), BrandedPdf.money(afterTax));
+            doc.add(table);
+        } else {
+            int[] aligns = {BrandedPdf.L, BrandedPdf.R};
+            PdfPTable table = BrandedPdf.table(new float[]{4f, 2f});
+            BrandedPdf.headerRow(table, aligns, "Description", "Amount (KES)");
+            BrandedPdf.bodyRow(table, 0, aligns, desc, BrandedPdf.money(afterTax));
+            doc.add(table);
+        }
     }
 
     private static BigDecimal nz(BigDecimal v) {

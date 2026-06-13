@@ -103,35 +103,47 @@ public final class BrandedPdf {
     }
 
     public static Document openPortrait(HttpServletResponse resp, String title) throws DocumentException, IOException {
-        return open(resp, title, false, false);
+        return open(resp, title, false, false, null);
     }
 
     public static Document openPortrait(HttpServletResponse resp, String title, boolean confidential)
             throws DocumentException, IOException {
-        return open(resp, title, false, confidential);
+        return open(resp, title, false, confidential, null);
+    }
+
+    /**
+     * Portrait document with a short note pinned to the footer band of every page (e.g. payment
+     * instructions / "system-generated" disclaimers). Use this instead of a body {@link #addNote}
+     * when the note belongs at footer level rather than floating after the content.
+     */
+    public static Document openPortrait(HttpServletResponse resp, String title, boolean confidential, String footerNote)
+            throws DocumentException, IOException {
+        return open(resp, title, false, confidential, footerNote);
     }
 
     public static Document openLandscape(HttpServletResponse resp, String title) throws DocumentException, IOException {
-        return open(resp, title, true, false);
+        return open(resp, title, true, false, null);
     }
 
     public static Document openLandscape(HttpServletResponse resp, String title, boolean confidential)
             throws DocumentException, IOException {
-        return open(resp, title, true, confidential);
+        return open(resp, title, true, confidential, null);
     }
 
-    private static Document open(HttpServletResponse resp, String title, boolean landscape, boolean confidential)
+    private static Document open(HttpServletResponse resp, String title, boolean landscape, boolean confidential,
+                                 String footerNote)
             throws DocumentException, IOException {
         Rectangle size = landscape ? PageSize.A4.rotate() : PageSize.A4;
         float pw = size.getWidth();
         float headerH = pw * HEADER_RATIO;
         float footerH = pw * FOOTER_RATIO;
         float top = headerH + 18;
-        float bottom = footerH + 20 + (confidential ? 14 : 0);
+        boolean hasNote = footerNote != null && !footerNote.trim().isEmpty();
+        float bottom = footerH + 20 + (confidential ? 14 : 0) + (hasNote ? 26 : 0);
 
         Document doc = new Document(size, 40, 40, top, bottom);
         PdfWriter writer = PdfWriter.getInstance(doc, resp.getOutputStream());
-        writer.setPageEvent(new Chrome(confidential));
+        writer.setPageEvent(new Chrome(confidential, footerNote));
         doc.open();
 
         if (title != null && !title.isEmpty()) {
@@ -510,11 +522,13 @@ public final class BrandedPdf {
     /** Page chrome: header + footer bands, watermark, page number, optional confidentiality notice. */
     private static final class Chrome extends PdfPageEventHelper {
         private final boolean confidential;
+        private final String footerNote;
         private PdfTemplate total;
         private BaseFont bf;
 
-        Chrome(boolean confidential) {
+        Chrome(boolean confidential, String footerNote) {
             this.confidential = confidential;
+            this.footerNote = footerNote;
         }
 
         @Override
@@ -556,6 +570,20 @@ public final class BrandedPdf {
                 ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
                         new Phrase("Confidential — intended solely for the named recipient. Please do not redistribute.", NOTE),
                         pw / 2f, footerH + 5, 0);
+            }
+
+            // Document-specific footer note (e.g. payment instructions), pinned just above the
+            // footer band — and above the confidentiality line when both are present. Wraps to a
+            // second line if it doesn't fit; the bottom margin was widened to reserve the space.
+            if (footerNote != null && !footerNote.trim().isEmpty()) {
+                float noteBottom = footerH + 5 + (confidential ? 14 : 0);
+                ColumnText ct = new ColumnText(cb);
+                ct.setSimpleColumn(40, noteBottom, pw - 40, noteBottom + 24, 10, Element.ALIGN_CENTER);
+                ct.setText(new Phrase(footerNote, NOTE));
+                try {
+                    ct.go();
+                } catch (DocumentException ignored) {
+                }
             }
         }
 

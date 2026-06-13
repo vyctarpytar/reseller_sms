@@ -68,13 +68,14 @@ public class InvoiceService {
         }
         UniqueCodeGenerator ug = new UniqueCodeGenerator();
         String xPlainCode = ug.getUniqueCode();
-        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoAccId(user.getUsrAccId()).invoResellerId(user.getUsrResellerId()).invoPayerMobileNumber(credit.getSmsPayerMobileNumber()).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).build();
+        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoAccId(user.getUsrAccId()).invoResellerId(user.getUsrResellerId()).invoPayerMobileNumber(credit.getSmsPayerMobileNumber()).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).build();
 
         BigDecimal amountToLaunch  = credit.getSmsPayAmount();
         if(credit.getSmsLoadingMethod().equalsIgnoreCase("UNITS")){
             Account account = accountService.findByAccId(user.getUsrAccId());
             amountToLaunch = credit.getSmsPayAmount().multiply(account.getAccSmsPrice());
             invoice.setInvoAmount(amountToLaunch);
+            invoice.setInvoAmountAfterTax(amountToLaunch); // no tax — after-tax tracks the money amount
         }
 
         response.setMessage("message", "STK pop for amount " + amountToLaunch + " to code " + invoice.getInvoCode(), response);
@@ -96,7 +97,7 @@ public class InvoiceService {
         Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoPayerMobileNumber(credit.getSmsPayerMobileNumber())
                 .invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail())
                 .invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId())
-                .invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.valueOf(0.16)).invoAmountAfterTax(new BigDecimal("1.16").multiply(credit.getSmsPayAmount())).build();
+                .invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).build();
         response.setMessage("message", "STK pop for amount " + credit.getSmsPayAmount() + " to code " + invoice.getInvoCode(), response);
         launchSDkResellerSelf(invoice);
         response.setData("result", invoiceRepository.saveAndFlush(invoice), response);
