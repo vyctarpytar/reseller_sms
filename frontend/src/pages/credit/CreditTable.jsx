@@ -1,4 +1,4 @@
-import { Dropdown, Table, Tooltip } from "antd";
+import { Dropdown, Tooltip } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -20,6 +20,7 @@ import svg38 from "../../assets/svg/svg38.svg";
 import MaterialIcon from "material-icons-react";
 import svg30 from "../../assets/svg/svg30.svg";
 import ExportExcelButton from "../../components/ExportExcelButton";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 
 function CreditTable() {
   const { loading, creditData, creditCount } = useSelector(
@@ -66,6 +67,7 @@ function CreditTable() {
       ? [
           {
             title: "Reseller Name",
+            ...hideBelow(),
             render: (item) => {
               return <div>{item}</div>;
             },
@@ -77,6 +79,7 @@ function CreditTable() {
       ? [
           {
             title: "Account Name",
+            ...hideBelow(),
             render: (item) => {
               return <div>{item}</div>;
             },
@@ -87,6 +90,7 @@ function CreditTable() {
 
     {
       title: "Previous Balance",
+      ...hideBelow(),
       render: (item) => {
         return <div>{cashConverter(item)}</div>;
       },
@@ -94,6 +98,7 @@ function CreditTable() {
     },
     {
       title: "Sms Rate",
+      ...hideBelow(),
       dataIndex: "smsRate",
     },
 
@@ -107,6 +112,7 @@ function CreditTable() {
 
     {
       title: "Loaded Unit",
+      ...hideBelow(),
       render: (item) => {
         return <div>{numberWithCommas(item)}</div>;
       },
@@ -121,6 +127,7 @@ function CreditTable() {
     },
     {
       title: "Created By",
+      ...hideBelow(),
       dataIndex: "smsCreatedByName",
     },
     {
@@ -281,7 +288,7 @@ function CreditTable() {
               )}
       </div>
       </div>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{
           x: 800,

@@ -1,4 +1,4 @@
-import { Dropdown, Input, Table } from "antd";
+import { Dropdown, Input } from "antd";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,6 +15,7 @@ import SmsGroupModal from "./SmsGroupModal";
 import SmsManyGroupModal from "./SmsManyGroupModal";
 import ConfirmModal from "../../../components/ConfirmModal";
 import { deleteRequest } from "../../../features/save/saveSlice";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 
 export default function ContactFolderTable({
   handleFetchData,
@@ -139,17 +140,20 @@ export default function ContactFolderTable({
     {
       title: "Group description",
       dataIndex: "groupDescription",
+      ...hideBelow(),
       sorter: (a, b) => a.groupDescription.localeCompare(b.groupDescription),
     },
     {
       title: "Creator",
       dataIndex: "groupCreatedByName",
+      ...hideBelow(),
       sorter: (a, b) =>
         a.groupCreatedByName.localeCompare(b.groupCreatedByName),
     },
     {
       title: "Date Created",
       dataIndex: "groupCreationDate",
+      ...hideBelow(),
       sorter: (a, b) => a.groupCreationDate.localeCompare(b.groupCreationDate),
       render: (item) => <span>{moment(item).format("Do MMMM YYYY")}</span>,
     },
@@ -348,7 +352,7 @@ export default function ContactFolderTable({
 
       <div className="dash-inner-page mt-[24px] max-w-full w-full overflow-x-auto">
         <section>
-          <Table
+          <ResponsiveTable
             rowSelection={rowSelection}
             className="mt-[1.31rem] w-full"
             scroll={{

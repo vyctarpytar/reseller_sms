@@ -1,5 +1,6 @@
-import { Select, Table, Tag } from "antd";
+import { Select, Tag } from "antd";
 import React, { useEffect, useMemo, useState } from "react";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchWalletStatement } from "../../features/billing/billingSlice";
 import { fetchReseller } from "../../features/reseller/resellerSlice";
@@ -105,6 +106,7 @@ function WalletStatement() {
     {
       title: "Owner",
       dataIndex: "ownerName",
+      ...hideBelow(),
       render: (name, row) => (
         <div className="flex flex-col gap-0.5">
           <span className="text-[#222] font-[600] whitespace-nowrap">
@@ -121,11 +123,13 @@ function WalletStatement() {
     {
       title: "Account",
       dataIndex: "accountName",
+      ...hideBelow(),
       render: (v) => <div className="text-[#555] whitespace-nowrap">{v || "—"}</div>,
     },
     {
       title: "Type",
       dataIndex: "valueType",
+      ...hideBelow(),
       render: (v) => (
         <Tag
           className={`!border-0 !rounded-[6px] ${
@@ -156,6 +160,7 @@ function WalletStatement() {
     {
       title: "Description",
       dataIndex: "narration",
+      ...hideBelow(),
       render: (v) => <div className="text-[#555] max-w-[240px]">{v || "—"}</div>,
     },
     {
@@ -239,7 +244,7 @@ function WalletStatement() {
         />
       </div>
 
-      <Table
+      <ResponsiveTable
         dataSource={statementData}
         columns={columns}
         loading={statementLoading}
@@ -265,3 +270,4 @@ function WalletStatement() {
 }
 
 export default WalletStatement;
+

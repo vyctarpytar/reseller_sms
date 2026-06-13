@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table } from "antd";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 import svg32 from "../../../assets/svg/svg32.svg";
 import toast from "react-hot-toast";
 import SmsIndividualModal from "./SmsIndividualModal";
@@ -17,19 +17,22 @@ function IndividualTable() {
     },
     {
       title: "Gender",
-      dataIndex: "chGenderCode", 
+      dataIndex: "chGenderCode",
+      ...hideBelow(),
     },
     {
       title: "Date of Birth",
-      dataIndex: "chDob", 
+      dataIndex: "chDob",
+      ...hideBelow(),
     },
     {
       title: "National ID",
-      dataIndex: "chNationalId", 
+      dataIndex: "chNationalId",
+      ...hideBelow(),
     },
     {
       title: "Telephone Number",
-      dataIndex: "chTelephone", 
+      dataIndex: "chTelephone",
     },
   ];
   const dispatch = useDispatch();
@@ -86,7 +89,7 @@ function IndividualTable() {
         </div>
       </div>
       <div>
-        <Table
+        <ResponsiveTable
           rowSelection={rowSelection}
           className="mt-[1px] w-full"
           scroll={{

@@ -454,3 +454,34 @@
 .wallet-tabs .ant-tabs-ink-bar {
 	background: var(--brand);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Mobile-only overrides. Everything below is gated under the desktop
+   breakpoint, so the web (>= 1024px) render is completely unaffected.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Modals: many screens hardcode width={800|900}. On small screens that forces
+   a horizontal scroll / off-canvas dialog. Cap to the viewport with a small
+   gutter — no per-page edits needed. */
+@media (max-width: 1023px) {
+	.ant-modal {
+		max-width: calc(100vw - 24px) !important;
+		margin: 8px auto !important;
+		top: 12px !important;
+	}
+	.ant-modal-body { padding: 16px 14px !important; }
+	.ant-modal .ant-modal-title { font-size: 18px !important; padding: 16px 14px; }
+}
+
+/* Phones: tighten table density a touch so the surviving columns breathe, and
+   guarantee comfortable tap targets on pagination / action buttons. */
+@media (max-width: 640px) {
+	.ant-table { font-size: 13px !important; }
+	.ant-table-thead > tr > th,
+	.ant-table-tbody > tr > td {
+		padding: 10px 10px !important;
+	}
+	.ant-pagination-item,
+	.ant-pagination-prev,
+	.ant-pagination-next { min-width: 34px; height: 34px; line-height: 32px; }
+}

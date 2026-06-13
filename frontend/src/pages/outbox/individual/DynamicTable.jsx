@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Button, Form, Input, Popconfirm, Table } from "antd";
+import { Button, Form, Input, Popconfirm } from "antd";
 import PhoneInput from "react-phone-input-2";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 import InsideHeader from "../../../components/InsideHeader";
 import SmsGroupModal from "../group/SmsGroupModal";
 import svg32 from "../../../assets/svg/svg32.svg";
@@ -202,7 +203,7 @@ const DynamicTable = () => {
           </div>
         )}
 
-        <Table
+        <ResponsiveTable
           className="mt-5"
           components={components}
           rowClassName={() => "editable-row"}

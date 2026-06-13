@@ -1,6 +1,7 @@
-import { Dropdown, Table } from "antd";
+import { Dropdown } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { dateForHumans } from "../../utils";
 import { fetchApprovedProductRequest, fetchNewProductRequest } from "../../features/product-request/productRequestSlice";
 import { useNavigate } from "react-router-dom";
@@ -23,11 +24,13 @@ function ActiveCodeTable() {
     },
     {
       title: "Telcos",
-      dataIndex: "reTelcos", 
+      dataIndex: "reTelcos",
+      ...hideBelow(),
     },
     {
       title: "Type",
-      dataIndex: "reServiceType", 
+      dataIndex: "reServiceType",
+      ...hideBelow(),
     },
     {
       title: "Status",
@@ -101,11 +104,11 @@ function ActiveCodeTable() {
  
   return (
     <>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{
           x: 800,
-        }} 
+        }}
         rowKey={(record) => record?.reId}
         columns={columns}
         dataSource={activeData}

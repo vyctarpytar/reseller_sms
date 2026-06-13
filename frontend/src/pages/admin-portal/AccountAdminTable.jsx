@@ -1,4 +1,4 @@
-import { Dropdown, Table } from "antd";
+import { Dropdown } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { dateForHumans } from "../../utils"; 
@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
 import FilterModal from "./FilterModal";
 import svg38 from "../../assets/svg/svg38.svg";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 
 function AccountAdminTable() { 
   const { refetchKey } = useSelector((state) => state.resellerCodes);
@@ -34,26 +35,32 @@ function AccountAdminTable() {
     },
     {
       title: "Email Address",
-      dataIndex: "accAdminEmail", 
+      dataIndex: "accAdminEmail",
+      ...hideBelow(),
     },
     {
       title: "Admin Mobile",
-      dataIndex: "accAdminMobile", 
+      dataIndex: "accAdminMobile",
+      ...hideBelow(),
     },
     {
       title: "Office Mobile",
-      dataIndex: "accOfficeMobile", 
+      dataIndex: "accOfficeMobile",
+      ...hideBelow(),
     },
     {
       title: "City",
-      dataIndex: "accCity", 
+      dataIndex: "accCity",
+      ...hideBelow(),
     },
     {
       title: "Country",
-      dataIndex: "accCountry", 
-    }, 
+      dataIndex: "accCountry",
+      ...hideBelow(),
+    },
     {
       title: "Created Date",
+      ...hideBelow(),
       render: (item) => {
         return <div>{dateForHumans(item)}</div>;
       },
@@ -194,7 +201,7 @@ function AccountAdminTable() {
                   </span>
                 )}
               </div>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{
           x: 800,

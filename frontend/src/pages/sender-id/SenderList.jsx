@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
-import {  Table, Tooltip } from "antd";
+import {  Tooltip } from "antd";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { useDispatch, useSelector } from "react-redux"; 
 import MaterialIcon from "material-icons-react";
 import svg38 from "../../assets/svg/svg38.svg";
@@ -43,26 +44,30 @@ function SenderList() {
     },
     {
       title: "Email Address",
-      dataIndex: "accAdminEmail", 
+      dataIndex: "accAdminEmail",
+      ...hideBelow(),
     },
     {
       title: "Admin Mobile",
-      dataIndex: "accAdminMobile", 
+      dataIndex: "accAdminMobile",
+      ...hideBelow(),
     },
     {
       title: "Office Mobile",
-      dataIndex: "accOfficeMobile", 
+      dataIndex: "accOfficeMobile",
+      ...hideBelow(),
     },
-    
+
     {
       title: "Sms Price",
+      ...hideBelow(),
       render:(item)=>{
         return(
           <div>{cashConverter(item)}</div>
         )
       },
-      dataIndex: "accSmsPrice", 
-    }, 
+      dataIndex: "accSmsPrice",
+    },
     {
       title: "Balance",
       render:(item)=>{
@@ -76,10 +81,11 @@ function SenderList() {
     
     {
       title: "Created Date",
+      ...hideBelow(),
       render: (item) => {
         return <div>{dateForHumans(item)}</div>;
       },
-      dataIndex: "accCreatedDate", 
+      dataIndex: "accCreatedDate",
     },
     {
       title: "Assigned",
@@ -190,7 +196,7 @@ function SenderList() {
             </button>
           </div> 
         </div>
-        <Table
+        <ResponsiveTable
           className="mt-[1px] w-full"
           scroll={{
             x: "max-content",

@@ -9,7 +9,8 @@ import {
   numberWithCommas,
 } from "../../../utils";
 import MaterialIcon from "material-icons-react";
-import { Skeleton, Spin, Table, Tooltip } from "antd";
+import { Skeleton, Spin, Tooltip } from "antd";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 import FilterStatusModal from "./FilterStatusModal";
 import svg38 from "../../../assets/svg/svg38.svg";
 import { downloadExcel } from "../../../features/save/saveSlice";
@@ -65,6 +66,7 @@ function StatusSummary() {
 
     {
       title: "Credit",
+      ...hideBelow(),
       dataIndex: "credit",
     },
   ];
@@ -146,7 +148,7 @@ function StatusSummary() {
       {loading ? (
         <Skeleton />
       ) : (
-        <Table
+        <ResponsiveTable
           className="mt-[1.31rem] w-full"
           scroll={{
             x: 800,

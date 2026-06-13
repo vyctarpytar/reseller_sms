@@ -1,4 +1,4 @@
-import { Skeleton, Spin, Table, Tooltip } from "antd";
+import { Skeleton, Spin, Tooltip } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchDailySmsReport } from "../../../features/dashboard/dashboardSlice";
@@ -14,6 +14,7 @@ import svg38 from "../../../assets/svg/svg38.svg";
 import FilterDailySmsModal from "./FilterDailySmsModal";
 import { downloadExcel } from "../../../features/save/saveSlice";
 import ExportExcelButton from "../../../components/ExportExcelButton";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 import toast from "react-hot-toast";
 
 function DailySms() {
@@ -65,6 +66,7 @@ function DailySms() {
     {
       title: "Credit",
       dataIndex: "credit",
+      ...hideBelow(),
     },
   ];
 
@@ -165,7 +167,7 @@ function DailySms() {
       {loading ? (
         <Skeleton />
       ) : (
-        <Table
+        <ResponsiveTable
           className="mt-[1.31rem] w-full"
           scroll={{
             x: 800,

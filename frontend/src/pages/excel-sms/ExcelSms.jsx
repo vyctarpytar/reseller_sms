@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
-import { Form, Spin, Table } from "antd";
+import { Form, Spin } from "antd";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import uplooadSimple from "../../assets/svg/UploadSimple.svg";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +40,7 @@ function ExcelSms() {
     {
       title: "Message",
       dataIndex: "message",
+      ...hideBelow(),
       key: "message",
     },
   ];
@@ -165,7 +167,7 @@ function ExcelSms() {
             </div>
 
             <div className="mt-[0.5rem]">
-              <Table
+              <ResponsiveTable
                 rowSelection={false}
                 className="mt-[1px] w-full"
                 scroll={{

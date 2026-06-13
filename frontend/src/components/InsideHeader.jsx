@@ -8,7 +8,7 @@ function InsideHeader({ title, subtitle, back,handleGoBack }) {
   };
   return (
     <> 
-      <div className="w-[100%] h-auto bg-white border-b border-[#ECE9E4] pt-7 pb-4 px-10 lg:flex hidden justify-between items-end">
+      <div className="w-[100%] h-auto bg-white border-b border-[#ECE9E4] pt-4 lg:pt-7 pb-4 px-4 lg:px-10 flex justify-between items-end">
         <div className="flex items-center gap-x-4">
           {back && (
             <button
@@ -29,7 +29,7 @@ function InsideHeader({ title, subtitle, back,handleGoBack }) {
             </button>
           )}
           <div className="flex flex-col gap-1">
-            <span className="font-bold text-[28px] text-[#1A1A1A] dash-title leading-tight tracking-tight">
+            <span className="font-bold text-[22px] lg:text-[28px] text-[#1A1A1A] dash-title leading-tight tracking-tight">
               {title}
             </span>
             {subtitle && (

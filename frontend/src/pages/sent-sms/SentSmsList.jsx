@@ -1,5 +1,6 @@
-import { Badge, Dropdown, Skeleton, Spin, Table, Tooltip } from "antd";
+import { Badge, Dropdown, Skeleton, Spin, Tooltip } from "antd";
 import React, { useEffect, useRef, useState } from "react";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import InsideHeader from "../../components/InsideHeader";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -63,6 +64,7 @@ function SentSmsList() {
   const columns = [
     {
       title: "Text",
+      ...hideBelow(),
       render: (item) => {
         return (
           <>
@@ -79,6 +81,7 @@ function SentSmsList() {
       ? [
           {
             title: "Reseller Name",
+            ...hideBelow(),
             render: (item) => {
               return <div>{item}</div>;
             },
@@ -89,11 +92,13 @@ function SentSmsList() {
       : []),
     {
       title: "Account Name",
+      ...hideBelow(),
       dataIndex: "msgAccName",
       width: "10%",
     },
     {
       title: "Sender Name",
+      ...hideBelow(),
       dataIndex: "msgSenderIdName",
       width: "5%",
     },
@@ -116,6 +121,7 @@ function SentSmsList() {
     },
     {
       title: "Pages",
+      ...hideBelow(),
       dataIndex: "msgPage",
       width: "5%",
     },
@@ -135,6 +141,7 @@ function SentSmsList() {
     },
     {
       title: "Sent By",
+      ...hideBelow(),
       dataIndex: "msgCreatedByEmail",
       width: "10%",
     },
@@ -346,7 +353,7 @@ function SentSmsList() {
           ) : (
             <div className="mt-5 mb-10 card !p-0 overflow-hidden">
               {sentSmsData && sentSmsData?.length > 0 ? (
-                <Table
+                <ResponsiveTable
                   className="w-full"
                   scroll={{
                     // x: "max-content",

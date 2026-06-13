@@ -1,4 +1,4 @@
-import { Dropdown, Input, Modal, Table } from "antd";
+import { Dropdown, Input, Modal } from "antd";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { dateForHumans } from "../../../utils";
 import SmsGroupModal from "./SmsGroupModal";
 import DeleteModal from "../../../components/DeleteModal";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 import svg27 from '../../../assets/svg/svg27.svg'
 
 export default function ContactsListView({ handleGraduateOption }) {
@@ -177,6 +178,7 @@ export default function ContactsListView({ handleGraduateOption }) {
     {
       title: "ID No.",
       dataIndex: "chNationalId",
+      ...hideBelow(),
       sorter: (a, b) => a.chNationalId.localeCompare(b.chNationalId),
     },
 
@@ -201,34 +203,40 @@ export default function ContactsListView({ handleGraduateOption }) {
         return <div>{dateForHumans(item)}</div>;
       },
       dataIndex: "chDob",
+      ...hideBelow(),
       sorter: (a, b) => a.chDob.localeCompare(b.chDob),
     },
     {
       title: "Gender",
       dataIndex: "chGenderCode",
+      ...hideBelow(),
       sorter: (a, b) => a.chGenderCode.localeCompare(b.chGenderCode),
     },
     {
       title: "Option 1",
       render: (item) => <span>{item?.chOption1}</span>,
+      ...hideBelow(),
       sorter: (a, b) => a.chOption1.localeCompare(b.chOption1),
     },
     {
       title: "Option 2",
       render: (item) => <span>{item?.chOption2}</span>,
+      ...hideBelow(),
       sorter: (a, b) => a.chOption2.localeCompare(b.chOption2),
     },
 
     {
       title: "Option 3",
       render: (item) => <span>{item?.chOption3}</span>,
+      ...hideBelow(),
       sorter: (a, b) => a.chOption3.localeCompare(b.chOption3),
     },
     {
       title: "Option 4",
       render: (item) => <span>{item?.chOption4}</span>,
+      ...hideBelow(),
       sorter: (a, b) => a.chOption4.localeCompare(b.chOption4),
-    },  
+    },
 
     {
       title: "",
@@ -311,7 +319,7 @@ export default function ContactsListView({ handleGraduateOption }) {
           List of members
         </div>
 
-        <Table
+        <ResponsiveTable
           rowSelection={false}
           loading={gradLoading}
           className="w-full"

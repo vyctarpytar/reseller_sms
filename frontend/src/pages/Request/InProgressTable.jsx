@@ -1,6 +1,7 @@
-import { Dropdown, Table } from "antd";
+import { Dropdown } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { dateForHumans } from "../../utils";
 import { fetchInProgressProductRequest, fetchNewProductRequest } from "../../features/product-request/productRequestSlice";
 import { useNavigate } from "react-router-dom";
@@ -17,23 +18,26 @@ function InProgressTable() {
   const columns = [
     {
       title: "Reference No",
-      dataIndex: "reResellerId", 
+      dataIndex: "reResellerId",
+      ...hideBelow(),
     },
     {
       title: "Reseller Name",
-      dataIndex: "reName", 
+      dataIndex: "reName",
     },
     {
       title: "Telcos",
-      dataIndex: "reTelcos", 
+      dataIndex: "reTelcos",
+      ...hideBelow(),
     },
     {
       title: "Type",
-      dataIndex: "reServiceType", 
+      dataIndex: "reServiceType",
+      ...hideBelow(),
     },
     {
       title: "Status",
-      dataIndex: "reStatus", 
+      dataIndex: "reStatus",
     },
     {
       title: "Created Date",
@@ -113,11 +117,11 @@ function InProgressTable() {
  
   return (
     <>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{
           x: 800,
-        }} 
+        }}
         rowKey={(record) => record?.reId}
         columns={columns}
         dataSource={progressData}

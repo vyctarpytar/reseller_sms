@@ -1,6 +1,7 @@
-import { Dropdown, Table } from "antd";
+import { Dropdown } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { dateForHumans } from "../../utils";
 import { fetchNewProductRequest } from "../../features/product-request/productRequestSlice";
 import { useNavigate } from "react-router-dom";
@@ -17,19 +18,22 @@ function NewTable() {
   const columns = [
     {
       title: "Reference No",
-      dataIndex: "reResellerId", 
+      ...hideBelow(),
+      dataIndex: "reResellerId",
     },
     {
       title: "Reseller Name",
-      dataIndex: "reName", 
+      dataIndex: "reName",
     },
     {
       title: "Telcos",
-      dataIndex: "reTelcos", 
+      ...hideBelow(),
+      dataIndex: "reTelcos",
     },
     {
       title: "Type",
-      dataIndex: "reServiceType", 
+      ...hideBelow(),
+      dataIndex: "reServiceType",
     },
     {
       title: "Status",
@@ -113,7 +117,7 @@ function NewTable() {
 
   return (
     <>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{
           x: 800,

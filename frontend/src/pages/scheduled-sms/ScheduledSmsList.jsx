@@ -1,4 +1,4 @@
-import { Badge, Dropdown, Skeleton, Table, Tooltip } from "antd";
+import { Badge, Dropdown, Skeleton, Tooltip } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
 import { Link, useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ import useModalToggle from "../../custom_hooks/useModalToggle";
 import ConfirmModal from "../../components/ConfirmModal";
 import StatusBadge from "../../components/StatusBadge";
 import RescheduleModal from "./RescheduleModal";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 
 function ScheduledSmsList() {
   const [notOpen, setnotOpen] = useState(false);
@@ -106,9 +107,11 @@ function ScheduledSmsList() {
     {
       title: "Created By Name",
       dataIndex: "schCreatedByName",
+      ...hideBelow(),
     },
     {
       title: "Created Date",
+      ...hideBelow(),
       render: (item) => {
         return <div>{formatDateTime(item)}</div>;
       },
@@ -125,10 +128,12 @@ function ScheduledSmsList() {
     {
       title: "Sender ID",
       dataIndex: "schSenderid",
+      ...hideBelow(),
     },
     {
       title: "Group Name",
       dataIndex: "schGroupName",
+      ...hideBelow(),
     },
 
     {
@@ -259,7 +264,7 @@ function ScheduledSmsList() {
           ) : (
             <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
               {scheduledSmsData && scheduledSmsData?.length > 0 ? (
-                <Table
+                <ResponsiveTable
                   className="w-full"
                   scroll={{
                     // x: "max-content",

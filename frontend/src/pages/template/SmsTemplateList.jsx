@@ -1,6 +1,7 @@
-import { Skeleton, Table } from "antd";
+import { Skeleton } from "antd";
 import React, { useEffect, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import svg32 from "../../assets/svg/svg32.svg";
@@ -47,6 +48,7 @@ function SmsTemplateList() {
     },
     {
       title: "Created date",
+      ...hideBelow(),
       render: (item) => {
         return <div>{dateForHumans(item)}</div>;
       },
@@ -54,6 +56,7 @@ function SmsTemplateList() {
     },
     {
       title: "Reseller",
+      ...hideBelow(),
       dataIndex: "tmpResellerName",
     },
     {
@@ -149,7 +152,7 @@ function SmsTemplateList() {
                     </div>
                     <div className="ml-[20%]"></div>
                   </div>
-                  <Table
+                  <ResponsiveTable
                     rowSelection={rowSelection}
                     className="mt-[1.31rem] w-full mb-10"
                     scroll={{

@@ -114,7 +114,7 @@ export const ProtectedRoute = ({ role }) => {
   return (
     <>
       
-        <div className="flex items-start justify-start w-full h-[92vh]">
+        <div className="flex items-start justify-start w-full min-h-[92vh] lg:h-[92vh]">
           <SideBar />
           <Outlet />
         </div> 

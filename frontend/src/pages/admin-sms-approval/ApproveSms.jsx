@@ -1,6 +1,6 @@
-import { Table } from "antd";
 import React, { useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { useSelector } from "react-redux";
 import ConfirmSubmitModal from "../../components/ConfirmSubmitModal";
 
@@ -41,11 +41,13 @@ function ApproveSms() {
     {
       title: "Age",
       dataIndex: "age",
+      ...hideBelow(),
       key: "age",
     },
     {
       title: "Address",
       dataIndex: "address",
+      ...hideBelow(),
       key: "address",
     },
     {
@@ -70,7 +72,7 @@ function ApproveSms() {
           subtitle="Manage your group broadcasts messages before they are sent"
           back={true}
         />
-        <Table
+        <ResponsiveTable
           className="mt-[1.31rem] w-full mb-10"
           scroll={{
             x: 800,

@@ -4,7 +4,8 @@ import svg48 from "../../assets/svg/svg48.svg";
 import paypal from "../../assets/svg/paypal.png";
 import bitcoin from "../../assets/svg/bitcoin-btc-logo.png";
 
-import { Divider, Table, Tag } from "antd";
+import { Divider, Tag } from "antd";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { fetchTariff } from "../../features/billing/billingSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { cashConverter, numberWithCommas } from "../../utils";
@@ -59,6 +60,7 @@ function PayoutMethod() {
     },
     {
       title: "To",
+      ...hideBelow(),
       render: (item) => {
         return <div>{numberWithCommas(item)}</div>;
       },
@@ -66,6 +68,7 @@ function PayoutMethod() {
     },
     {
       title: "Type",
+      ...hideBelow(),
       render: (item) => {
         return <div>{item === "MPESA" ? "B2C" : null}</div>;
       },
@@ -80,7 +83,7 @@ function PayoutMethod() {
   return (
     <div className="report-card px-3 p-2 h-auto w-full">
       <div className="product_sub !text-[18px]">Payout Tariff</div>
-      <Table
+      <ResponsiveTable
         dataSource={newTariff}
         columns={columns}
         className="mt-[1.31rem] w-full"

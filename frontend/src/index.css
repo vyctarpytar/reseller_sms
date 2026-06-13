@@ -58,7 +58,13 @@
 }
 html {
 	background-color: var(--mainBg) !important;
-	overflow-y: hidden; 
+}
+/* Desktop uses inner scroll containers (fixed 92vh shell), so the document
+   itself must not scroll. On mobile we DROP this so the page can scroll
+   naturally and tall content isn't clipped. Keyed to the same 1024px line as
+   the sidebar/shell breakpoints — desktop behaviour is unchanged. */
+@media (min-width: 1024px) {
+	html { overflow-y: hidden; }
 }
 
 .react-tel-input .form-control {

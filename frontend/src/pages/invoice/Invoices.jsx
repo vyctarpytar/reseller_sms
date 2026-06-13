@@ -1,6 +1,7 @@
-import { Dropdown, Skeleton, Spin, Table } from "antd";
+import { Dropdown, Skeleton, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import MaterialIcon from "material-icons-react";
@@ -83,6 +84,7 @@ function Invoices() {
     },
     {
       title: "Pay Mobile",
+      ...hideBelow(),
       render: (item) => {
         return <div>{addSpaces(item)}</div>;
       },
@@ -90,15 +92,18 @@ function Invoices() {
     },
     {
       title: "Created By Email",
+      ...hideBelow(),
       dataIndex: "invoCreatedByEmail",
     },
     {
       title: "Created Date",
+      ...hideBelow(),
       dataIndex: "invoCreatedDate",
       render: (value) => <div>{dateForHumans(value)}</div>,
     },
     {
       title: "Due Date",
+      ...hideBelow(),
       dataIndex: "invoDueDate",
       render: (value) => <div>{dateForHumans(value)}</div>,
     },
@@ -226,7 +231,7 @@ function Invoices() {
           ) : (
             <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
               {invoiceData && invoiceData?.length > 0 ? (
-                <Table
+                <ResponsiveTable
                   className="w-full"
                   scroll={{
                     x: 800,

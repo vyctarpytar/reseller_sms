@@ -7,7 +7,6 @@ import {
   Select,
   Skeleton,
   Spin,
-  Table,
   Tag,
   Tooltip,
 } from "antd";
@@ -26,6 +25,7 @@ import moment from "moment";
 import { fetchReseller } from "../../../features/reseller/resellerSlice";
 import { fetchResellerAccounts } from "../../../features/reseller-account/resellerAccountSlice";
 import ExportExcelButton from "../../../components/ExportExcelButton";
+import ResponsiveTable, { hideBelow } from "../../../components/ResponsiveTable";
 
 function QuarterlyReport() {
   const [selectId, setSelectId] = useState(new Date().getFullYear());
@@ -123,24 +123,25 @@ function QuarterlyReport() {
   );
 
   const columns = [
-    { title: "Reseller", dataIndex: "resellerName" },
-    { title: "Account", dataIndex: "accountName" },
-    { title: "Sender ID", dataIndex: "senderId" },
-    { title: "Provider", dataIndex: "senderIdProvider" },
+    { title: "Reseller", dataIndex: "resellerName", ...hideBelow() },
+    { title: "Account", dataIndex: "accountName", ...hideBelow() },
+    { title: "Sender ID", dataIndex: "senderId", ...hideBelow() },
+    { title: "Provider", dataIndex: "senderIdProvider", ...hideBelow() },
     { title: "Period", dataIndex: "period" },
     { title: "Messages", dataIndex: "messages" },
-    { title: "Delivered", dataIndex: "delivered" },
-    { title: "Failed", dataIndex: "failed" },
+    { title: "Delivered", dataIndex: "delivered", ...hideBelow() },
+    { title: "Failed", dataIndex: "failed", ...hideBelow() },
     { title: "Delivery Rate", dataIndex: "deliveryRate" },
     { title: "Revenue", dataIndex: "revenue" },
-    { title: "Avg Msg Cost", dataIndex: "averageMessageCost" },
-    { title: "Unit Price", dataIndex: "unitPrice" }, 
-    { title: "Unique Customers", dataIndex: "uniqueCustomerCount" },
-    { title: "Top Month", dataIndex: "topPerformingMonth" },
+    { title: "Avg Msg Cost", dataIndex: "averageMessageCost", ...hideBelow() },
+    { title: "Unit Price", dataIndex: "unitPrice", ...hideBelow() },
+    { title: "Unique Customers", dataIndex: "uniqueCustomerCount", ...hideBelow() },
+    { title: "Top Month", dataIndex: "topPerformingMonth", ...hideBelow() },
     { title: "Status", dataIndex: "status" },
     {
       title: "Updated",
       dataIndex: "updatedAt",
+      ...hideBelow(),
       render: (text) =>
         text ? moment(text)?.format("DD-MM-YYYY HH:mm:ss") : "-",
     },
@@ -327,7 +328,7 @@ function QuarterlyReport() {
       <div className="flex justify-end item-center w-full mt-[1rem]">
         <ExportExcelButton onClick={handleClick} loading={saving} />
       </div>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{ x: "2000px" }}
         rowKey={(record) => record?.key}

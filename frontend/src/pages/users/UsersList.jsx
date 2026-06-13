@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import UsersAddModal from "./UsersAddModal";
 import InsideHeader from "../../components/InsideHeader";
-import { Dropdown, Skeleton, Table, Tag } from "antd";
+import { Dropdown, Skeleton, Tag } from "antd";
 import MaterialIcon from "material-icons-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -16,6 +16,7 @@ import svg27 from "../../assets/svg/svg27.svg";
 import UserPermissionModal from "./UserPermissionModal";
 import StatusBadge from "../../components/StatusBadge";
 import FilterModal from "./FilterModal";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 
 function UsersList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,6 +76,7 @@ function UsersList() {
     },
     {
       title: "Phone Number",
+      ...hideBelow(),
       render: (item) => {
         return <div>{addSpaces(item)}</div>;
       },
@@ -82,6 +84,7 @@ function UsersList() {
     },
     {
       title: "National ID",
+      ...hideBelow(),
       dataIndex: "usrNationalId",
     },
     {
@@ -97,6 +100,7 @@ function UsersList() {
       ? [
           {
             title: "Permission",
+            ...hideBelow(),
             render: (item) => {
               return (
                 <div className="flex flex-col">
@@ -124,6 +128,7 @@ function UsersList() {
       : []),
     {
       title: "Created Date",
+      ...hideBelow(),
       render: (item) => {
         return <div>{dateForHumans(item)}</div>;
       },
@@ -284,7 +289,7 @@ function UsersList() {
           </div>
         </div>
         <div className="mt-[1.31rem] mb-10 card !p-0 overflow-hidden">
-        <Table
+        <ResponsiveTable
           className="w-full"
           scroll={{
             x: 800,

@@ -1,5 +1,5 @@
-import { Table } from "antd";
 import React, { useEffect, useState } from "react";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import { fetchPayoutHistory } from "../../features/billing/billingSlice";
 import FilterModal from "./FilterModal";
 import MaterialIcon from "material-icons-react";
@@ -79,11 +79,13 @@ function PayoutHistory() {
     },
     {
       title: "Phone Number",
-      dataIndex: "withDrawPhoneNumber", 
+      dataIndex: "withDrawPhoneNumber",
+      ...hideBelow(),
     },
     {
       title: "Withdrawal Email",
-      dataIndex: "withDrawCreatedByEmail", 
+      dataIndex: "withDrawCreatedByEmail",
+      ...hideBelow(),
     },
   ];
 
@@ -116,7 +118,7 @@ function PayoutHistory() {
           )}
         </div>
       </div>
-      <Table
+      <ResponsiveTable
         dataSource={payoutHistoryData}
         columns={columns}
         className="mt-[.31rem]  mb-[10rem] w-full"

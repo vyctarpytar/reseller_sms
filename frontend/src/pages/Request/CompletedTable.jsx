@@ -1,7 +1,8 @@
-import { Dropdown, Table } from "antd";
+import { Dropdown } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { dateForHumans } from "../../utils";
+import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
 import {
   fetchApprovedProductRequest,
   fetchInProgressProductRequest,
@@ -27,15 +28,18 @@ function CompletedTable() {
     },
     {
       title: "Reseller Name",
-      dataIndex: "reName", 
+      dataIndex: "reName",
+      ...hideBelow(),
     },
     {
       title: "Telcos",
       dataIndex: "reTelcos",
+      ...hideBelow(),
     },
     {
       title: "Type",
       dataIndex: "reServiceType",
+      ...hideBelow(),
     },
     {
       title: "Status",
@@ -115,7 +119,7 @@ function CompletedTable() {
  
   return (
     <>
-      <Table
+      <ResponsiveTable
         className="mt-[1.31rem] w-full"
         scroll={{
           x: 800,
