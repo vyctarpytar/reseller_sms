@@ -8,6 +8,7 @@ import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceRepository;
 import com.spa.smart_gate_springboot.account_setup.invoice.InvoiceService;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
+import com.spa.smart_gate_springboot.user.UsrStatus;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.apache.http.util.TextUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,13 +42,24 @@ public class SandboxAccountService {
     private final InvoiceService invoiceService;
     private final InvoiceRepository invoiceRepository;
 
-    /** Resolve the (active or not) API key record, or fail with a clear message. */
+    /**
+     * Resolve the API key record and reject it if missing, inactive or expired. Unlike the legacy
+     * single-sms path (which only does findByApiKey), these endpoints move money, so we enforce the
+     * same active+expiry contract that {@code existsValidApiKey} checks — here, on the fetched entity.
+     */
     private ApiKey resolveKey(String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new RuntimeException("API KEY missing!!!");
         }
-        return apiKeyRepository.findByApiKey(apiKey)
+        ApiKey key = apiKeyRepository.findByApiKey(apiKey)
                 .orElseThrow(() -> new RuntimeException("Invalid API key"));
+        if (key.getActive() == null || !key.getActive()) {
+            throw new RuntimeException("API key is inactive");
+        }
+        if (key.getExpirationDate() != null && key.getExpirationDate().before(new Date())) {
+            throw new RuntimeException("API key has expired");
+        }
+        return key;
     }
 
     /** Current SMS balance (KSh) + derived units for the account this API key belongs to. */
@@ -80,7 +93,14 @@ public class SandboxAccountService {
             return resp;
         }
 
-        return invoiceService.accountLoadCredit(dto, users.get(0));
+        // Prefer an ACTIVE user for invoCreatedBy — a DELETED/INACTIVE one is only a fallback so the
+        // load still works even if the account's first user has been deactivated.
+        User user = users.stream()
+                .filter(u -> u.getUsrStatus() == UsrStatus.ACTIVE)
+                .findFirst()
+                .orElse(users.get(0));
+
+        return invoiceService.accountLoadCredit(dto, user);
     }
 
     /**
