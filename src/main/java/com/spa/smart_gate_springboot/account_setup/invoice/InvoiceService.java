@@ -152,6 +152,11 @@ public class InvoiceService {
             }
 
             invoice.setInvoStatus(InvoStatus.PAID);
+            // Persist the M-Pesa receipt (C2B TransID) so a settled invoice carries a reconcilable
+            // reference. Don't clobber a real receipt already captured by the STK callback path.
+            if (paymentDto.getTransId() != null && invoice.getInvoMpesaReceipt() == null) {
+                invoice.setInvoMpesaReceipt(paymentDto.getTransId());
+            }
             if (paymentDto.getFirstName() != null) {
                 invoice.setInvoPayerName(paymentDto.getFirstName().replaceAll(" null", ""));
             }
