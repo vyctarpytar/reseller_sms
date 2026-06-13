@@ -4,6 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchReseller } from "../features/reseller/resellerSlice";
 import { fetchTopResellerAccounts } from "../features/reseller-account/resellerAccountSlice";
+import {
+  useTenantScope,
+  setTenantScope,
+  clearTenantScope,
+} from "../custom_hooks/useTenantScope";
 
 // Small inline icons so the breadcrumb reads cleanly without the old svg assets.
 const GridIcon = () => (
@@ -30,12 +35,9 @@ const CaretDown = () => (
 
 const HeaderCrumb = () => {
   const navigate = useNavigate();
-  const [selectedOrg, setSelectedOrg] = useState(
-    localStorage.getItem("selectedOrg")
-  );
-  const [selectedAccount, setSelectedAccount] = useState(
-    localStorage.getItem("selectedAccount")
-  );
+  // Reactive tenant scope — updates live no matter which page changes it.
+  const { selectedOrg, selectedAccount, selectedAccountName: scopeAccountName } =
+    useTenantScope();
 
   const { resellerData } = useSelector((state) => state.reseller);
   const { topResellerAccountData } = useSelector(
@@ -46,31 +48,21 @@ const HeaderCrumb = () => {
   const [accOpen, setAccOpen] = useState(false);
   const dispatch = useDispatch();
 
-  const handleOrgClick = async (item) => {
-    await localStorage.setItem("selectedOrg", item?.rsId);
-    await localStorage.removeItem("selectedAccount");
-    await localStorage.removeItem("selectedAccountName");
-    await setSelectedOrg(item?.rsId);
-    await setSelectedAccount(null);
-    await setOrgOpen(false);
-    await navigate("/dashboard-main");
+  const handleOrgClick = (item) => {
+    setTenantScope({ org: item?.rsId, account: null, accountName: null });
+    setOrgOpen(false);
+    navigate("/dashboard-main");
   };
 
-  const handleAccClick = async (item) => {
-    await localStorage.setItem("selectedAccount", item?.accId);
-    await localStorage.setItem("selectedAccountName", item?.accName);
-    await setSelectedAccount(item?.accId);
-    await setAccOpen(false);
-    await navigate("/dashboard-main");
+  const handleAccClick = (item) => {
+    setTenantScope({ account: item?.accId, accountName: item?.accName });
+    setAccOpen(false);
+    navigate("/dashboard-main");
   };
 
-  const handleRemove = async () => {
-    localStorage.removeItem("selectedAccount");
-    localStorage.removeItem("selectedAccountName");
-    localStorage.removeItem("selectedOrg");
-    setSelectedOrg(null);
-    setSelectedAccount(null);
-    await navigate("/dashboard");
+  const handleRemove = () => {
+    clearTenantScope();
+    navigate("/dashboard");
   };
 
   const filteredResellers = resellerData?.filter((item) =>
@@ -91,10 +83,8 @@ const HeaderCrumb = () => {
     const found = topResellerAccountData?.find(
       (a) => a?.accId === selectedAccount
     );
-    return (
-      found?.accName ?? localStorage.getItem("selectedAccountName") ?? null
-    );
-  }, [selectedAccount, topResellerAccountData]);
+    return found?.accName ?? scopeAccountName ?? null;
+  }, [selectedAccount, topResellerAccountData, scopeAccountName]);
 
   // Shared list panel used by both the reseller and account switchers.
   const listPanel = (placeholder, items, render, empty) => (

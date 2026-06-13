@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Dropdown, Skeleton } from "antd";
 import { addSpaces, formatMoney } from "../../utils";
 import { setResellerId } from "../../features/global/globalSlice";
+import { setTenantScope } from "../../custom_hooks/useTenantScope";
 import useModalToggle from "../../custom_hooks/useModalToggle";
 import { save } from "../../features/save/saveSlice";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -42,9 +43,7 @@ function ResellersList() {
   // dashboard-main which lands a TOP user on /dashboard-reseller.
   const handleEnterReseller = (item) => {
     if (item?.rsStatus === "DELETED") return;
-    localStorage.setItem("selectedOrg", item?.rsId);
-    localStorage.removeItem("selectedAccount");
-    localStorage.removeItem("selectedAccountName");
+    setTenantScope({ org: item?.rsId, account: null, accountName: null });
     navigate("/dashboard-main");
   };
 

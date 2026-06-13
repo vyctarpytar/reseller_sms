@@ -50,7 +50,8 @@ public class TemplateService {
                 .tmpName(tempFilterDto.getTmpName())
                 .tmpMessage(tempFilterDto.getTmpMessage()).tmpAccById(user.getUsrAccId()).tmpAccName(acc.getAccName()).tmpCreatedOn(LocalDateTime.now())
                 .tmpResellerName(reseller.getRsCompanyName()).tmpResellerById(user.getUsrResellerId()).build();
-        StandardJsonResponse resp = new StandardJsonResponse();
+       
+                StandardJsonResponse resp = new StandardJsonResponse();
         resp.setData("result", templateRepository.saveAndFlush(template), resp);
         resp.setMessage("message", "Template Created Successfully", resp);
         resp.setTotal(1);

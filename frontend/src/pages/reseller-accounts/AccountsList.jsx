@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import ConfirmModal from "../../components/ConfirmModal";
 import AccountDeleteModal from "./AccountDeleteModal";
 import useModalToggle from "../../custom_hooks/useModalToggle";
+import { setTenantScope } from "../../custom_hooks/useTenantScope";
 
 function AccountsList() {
   const { resellerAccountData, loading } = useSelector(
@@ -167,12 +168,11 @@ function AccountsList() {
   // subsequent API call to it by setting selectedAccount, then let
   // DashboardMain route to the account-level dashboard. Mirrors the
   // TOP-level drill in HeaderCrumb.handleAccClick.
-  const handleRequest = async (account) => {
+  const handleRequest = (account) => {
     if (user?.layer === "ACCOUNT") return;
     if (account?.accStatus === "DELETED") return;
-    await localStorage.setItem("selectedAccount", account?.accId);
-    await localStorage.setItem("selectedAccountName", account?.accName);
-    await navigate("/dashboard-main");
+    setTenantScope({ account: account?.accId, accountName: account?.accName });
+    navigate("/dashboard-main");
   };
 
   useEffect(() => {

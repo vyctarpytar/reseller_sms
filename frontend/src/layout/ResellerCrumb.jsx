@@ -3,6 +3,7 @@ import { Dropdown, Input } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchResellerAccounts } from "../features/reseller-account/resellerAccountSlice";
+import { useTenantScope, setTenantScope } from "../custom_hooks/useTenantScope";
 
 // Small inline icons so the breadcrumb reads cleanly without the old svg assets.
 const HomeIcon = () => (
@@ -37,32 +38,21 @@ const ResellerCrumb = () => {
   const { resellerAccountData } = useSelector((state) => state.resellerAccount);
   const { balanceHeader } = useSelector((state) => state.menu);
 
-  const [selectedAccount, setSelectedAccount] = useState(
-    localStorage.getItem("selectedAccount")
-  );
-  const [selectedAccountName, setSelectedAccountName] = useState(
-    localStorage.getItem("selectedAccountName")
-  );
+  const { selectedAccount, selectedAccountName } = useTenantScope();
   const [searchValue, setSearchValue] = useState("");
   const [open, setOpen] = useState(false);
 
-  const handleAccClick = async (item) => {
-    await localStorage.setItem("selectedAccount", item?.accId);
-    await localStorage.setItem("selectedAccountName", item?.accName);
-    await setSelectedAccount(item?.accId);
-    await setSelectedAccountName(item?.accName);
-    await setOpen(false);
-    await navigate("/dashboard-main");
+  const handleAccClick = (item) => {
+    setTenantScope({ account: item?.accId, accountName: item?.accName });
+    setOpen(false);
+    navigate("/dashboard-main");
   };
 
   // Exit the account: drop the account context and fall back to the
   // reseller's own dashboard (DashboardMain routes RESELLER -> reseller).
-  const handleExit = async () => {
-    await localStorage.removeItem("selectedAccount");
-    await localStorage.removeItem("selectedAccountName");
-    await setSelectedAccount(null);
-    await setSelectedAccountName(null);
-    await navigate("/dashboard-main");
+  const handleExit = () => {
+    setTenantScope({ account: null, accountName: null });
+    navigate("/dashboard-main");
   };
 
   const filteredAccounts = resellerAccountData?.filter((item) =>

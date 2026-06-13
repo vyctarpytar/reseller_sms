@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { cleanAuthLoading, logout } from "./features/auth/authSlice";
 import { cleanBalanceHeader, fetchMenu } from "./features/menu/menuSlice";
+import { useTenantScope } from "./custom_hooks/useTenantScope";
 
 export default function Root() {
   const { isLoggedIn, user, token } = useSelector((state) => state.auth);
@@ -42,14 +43,15 @@ export default function Root() {
       setTokenExpired(false);
     }
   }, [token, dispatch, navigate]);
-  const orgId = localStorage.getItem("selectedOrg");
-  const accId = localStorage.getItem("selectedAccount");
+  // Reactive scope so the menu + balance header refetch the moment the tenant
+  // is switched anywhere in the app, instead of only after a full page reload.
+  const { selectedOrg: orgId, selectedAccount: accId } = useTenantScope();
 
   useEffect(() => {
     if (user) {
       dispatch(fetchMenu());
     }
-  }, [user, orgId, accId]);
+  }, [user, orgId, accId, dispatch]);
 
   return (
     <div className="flex flex-col w-full ">
