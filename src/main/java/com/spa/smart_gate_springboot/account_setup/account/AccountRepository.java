@@ -75,7 +75,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     List<Object[]> countByStatusForReseller(@Param("resellerId") UUID resellerId);
 
     /** Total units held across every account (platform units-in-circulation, account side). */
-    @Query("select coalesce(sum(a.accMsgBal), 0) from Account a")
+    // NB: HQL entity name is "jsc_accounts" (see @Entity(name=...) on Account), NOT the class name.
+    @Query("select coalesce(sum(a.accMsgBal), 0) from jsc_accounts a")
     BigDecimal sumAllAccountMsgBal();
 
     @Modifying

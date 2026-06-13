@@ -48,7 +48,7 @@ public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
               coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.ACTIVE then 1 else 0 end), 0),
               coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.PENDING_MAPPING then 1 else 0 end), 0),
               count(s)
-            from ShortCode s
+            from shortcode s
             """)
     List<Object[]> senderIdStats();
 
@@ -59,7 +59,7 @@ public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
               coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.ACTIVE then 1 else 0 end), 0),
               coalesce(sum(case when s.shStatus = com.spa.smart_gate_springboot.account_setup.senderId.ShStatus.PENDING_MAPPING then 1 else 0 end), 0),
               count(s)
-            from ShortCode s
+            from shortcode s
             where s.shResellerId = :resellerId
             """)
     List<Object[]> senderIdStatsForReseller(@Param("resellerId") UUID resellerId);
