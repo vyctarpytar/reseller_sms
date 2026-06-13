@@ -40,7 +40,6 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UserService userService;
-    //    private final SmartGate smartGate;
     private final ResellerRepo resellerRepo;
     private final GlobalUtils gu;
     private final ApiKeyService apiKeyService;

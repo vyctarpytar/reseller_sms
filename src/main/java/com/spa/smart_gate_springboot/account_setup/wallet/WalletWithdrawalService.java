@@ -10,9 +10,9 @@ import com.spa.smart_gate_springboot.payment.mpesa.charge.MpesaB2cChargeReposito
 import com.spa.smart_gate_springboot.payment.mpesa.gateway.WaretechMpesaService;
 import com.spa.smart_gate_springboot.payment.mpesa.gateway.dto.GatewayB2cResponse;
 import com.spa.smart_gate_springboot.account_setup.wallet.dto.WithdrawDto;
+import com.spa.smart_gate_springboot.messaging.send_message.SystemSmsService;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
-import com.spa.smart_gate_springboot.utils.SmartGate;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +43,7 @@ public class WalletWithdrawalService {
     private final WaretechMpesaService gatewayService;
     private final B2cTransactionRepository b2cRepository;
     private final UserService userService;
+    private final SystemSmsService systemSmsService;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -88,13 +89,7 @@ public class WalletWithdrawalService {
         final String msisdn = user.getPhoneNumber();
 
         // Fire-and-forget SMS — never block/fail the request on the SMS gateway.
-        new Thread(() -> {
-            try {
-                new SmartGate().sendSMS(msisdn, msg);
-            } catch (Exception e) {
-                log.error("Failed to send withdrawal OTP SMS to {}: {}", msisdn, e.getMessage());
-            }
-        }).start();
+        systemSmsService.sendSms(msisdn, msg);
 
         user.setUsrPhoneWithdrawOtp(passwordEncoder.encode(code));
         user.setUsrOtpStatus("WITHDRAW_OTP_SENT");

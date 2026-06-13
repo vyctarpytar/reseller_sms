@@ -3,8 +3,8 @@ package com.spa.smart_gate_springboot.account_setup.request;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
 import com.spa.smart_gate_springboot.dto.Layers;
+import com.spa.smart_gate_springboot.messaging.send_message.SystemSmsService;
 import com.spa.smart_gate_springboot.user.User;
-import com.spa.smart_gate_springboot.utils.SmartGate;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.http.HttpStatus;
@@ -30,15 +30,15 @@ public class RequestService {
 
     public static String uploadDir = "/opt/images/OTP_IMAGES/FILES/";
     private final RequestRepo requestRepo;
-    private final SmartGate smartGate;
+    private final SystemSmsService systemSmsService;
     private final ResellerService resellerService;
     @Value("${server.my-server-url}")
     private String coreGatewayUrl;
 
-    private void notifyWeiser(ReServiceType reServiceType, Reseller rs) {
+    private void notifyAdmin(ReServiceType reServiceType, Reseller rs) {
 
         String xMessage = rs.getRsCompanyName() + " has made a service request (" + reServiceType.name() + ");\n Login to " + coreGatewayUrl + " to process the request";
-        smartGate.sendSMS("254716177880", xMessage);
+        systemSmsService.sendSms("254716177880", xMessage);
     }
 
     public StandardJsonResponse saveShortCodeRequests(SenderIdReqDto senderIdReqDto, User auth) {
@@ -48,7 +48,7 @@ public class RequestService {
         save(req);
 
 
-        notifyWeiser(req.getReServiceType(), reseller);
+        notifyAdmin(req.getReServiceType(), reseller);
 
 
         StandardJsonResponse resp = new StandardJsonResponse();
@@ -64,7 +64,7 @@ public class RequestService {
         save(req);
 
 
-        notifyWeiser(req.getReServiceType(), reseller);
+        notifyAdmin(req.getReServiceType(), reseller);
 
 
         StandardJsonResponse resp = new StandardJsonResponse();
@@ -80,7 +80,7 @@ public class RequestService {
         save(req);
 
         //EMAIL JOHN / VICTOR
-        notifyWeiser(req.getReServiceType(), reseller);
+        notifyAdmin(req.getReServiceType(), reseller);
         StandardJsonResponse resp = new StandardJsonResponse();
         resp.setData("result", req, resp);
         resp.setMessage("message", "Request saved successfully", resp);

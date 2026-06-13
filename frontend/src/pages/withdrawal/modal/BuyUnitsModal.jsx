@@ -98,47 +98,7 @@ function BuyUnitsModal({ open, onClose }) {
       title={step === "confirm" ? "Confirm purchase" : "Buy SMS Units"}
       open={open}
       onCancel={onClose}
-      footer={
-        step === "confirm"
-          ? [
-              <button
-                key="back"
-                type="button"
-                onClick={() => setStep("form")}
-                className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)] !w-auto px-5 mr-2"
-              >
-                Back
-              </button>,
-              <button
-                key="confirm"
-                type="button"
-                disabled={buying}
-                onClick={handleConfirm}
-                className="cstm-btn !w-auto px-5"
-              >
-                {buying ? "Processing..." : "Confirm purchase"}
-              </button>,
-            ]
-          : [
-              <button
-                key="cancel"
-                type="button"
-                onClick={onClose}
-                className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)] !w-auto px-5 mr-2"
-              >
-                Cancel
-              </button>,
-              <button
-                key="continue"
-                type="button"
-                disabled={!units || (priceReady && exceedsBalance)}
-                onClick={handleContinue}
-                className="cstm-btn !w-auto px-5"
-              >
-                Continue
-              </button>,
-            ]
-      }
+      footer={null}
     >
       {step === "form" ? (
         <Form form={form} layout="vertical">
@@ -226,6 +186,49 @@ function BuyUnitsModal({ open, onClose }) {
           </div>
         </div>
       )}
+
+      {/* Action buttons live inside the modal body because the global
+          `.ant-modal-footer { display:none }` rule (src/antd.css) hides the
+          native antd footer for every modal in this app. */}
+      <div className="flex items-center justify-end mt-5">
+        {step === "confirm" ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setStep("form")}
+              className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)] !w-auto px-5 mr-2"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={buying}
+              onClick={handleConfirm}
+              className="cstm-btn !w-auto px-5"
+            >
+              {buying ? "Processing..." : "Confirm purchase"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onClose}
+              className="cstm-btn !bg-white !text-[var(--brand)] !border !border-[var(--brand)] !w-auto px-5 mr-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!units || (priceReady && exceedsBalance)}
+              onClick={handleContinue}
+              className="cstm-btn !w-auto px-5"
+            >
+              Continue
+            </button>
+          </>
+        )}
+      </div>
     </Modal>
   );
 }

@@ -69,7 +69,7 @@ public class ApiKey {
         calendar.add(Calendar.YEAR, 1);
         this.expirationDate = calendar.getTime();
         this.active = true;
-        this.apiEndPoint = "https://backend.smartgate.co.ke/api/v2/sandbox/single-sms";
+        this.apiEndPoint = "https://backend.synqafrica.co.ke/api/v2/sandbox/single-sms";
         this.apiKeyTag = "X-API-KEY";
         this.apiPayload = "curl --request POST \\\n" +
                 "  --url "+this.apiEndPoint+" \\\n" +

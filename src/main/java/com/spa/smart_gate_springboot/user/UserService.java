@@ -5,6 +5,7 @@ import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
 import com.spa.smart_gate_springboot.config.JwtService;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.mailjet.JavaEmailService;
+import com.spa.smart_gate_springboot.messaging.send_message.SystemSmsService;
 import com.spa.smart_gate_springboot.user.token.Token;
 import com.spa.smart_gate_springboot.user.token.TokenRepository;
 import com.spa.smart_gate_springboot.utils.*;
@@ -36,7 +37,7 @@ public class UserService {
 
 
     private final UserRepository userRepository;
-    private final SmartGate smartGate;
+    private final SystemSmsService systemSmsService;
     private final TokenRepository tokenRepository;
     private final JavaEmailService javaEmailService;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -78,7 +79,7 @@ public class UserService {
     }
 
     private void sendPhonePassword(String xMsisdn, String xMessage) {
-        new Thread(() -> smartGate.sendSMS(xMsisdn, xMessage)).start();
+        systemSmsService.sendSms(xMsisdn, xMessage);
     }
 
     private void sendMailPassword(String xemail, String xMessage) {
@@ -211,10 +212,7 @@ public class UserService {
 
         String xMsisdn = usr.getPhoneNumber();
 
-        new Thread(() -> {
-            SmartGate smartGate = new SmartGate();
-            smartGate.sendSMS(xMsisdn, xMessage);
-        }).start();
+        systemSmsService.sendSms(xMsisdn, xMessage);
 
         usr.setUsrOtpStatus("SMS_OTP_SENT");
         usr.setUsrPhoneOtp(passwordEncoder.encode(xPlainCode));
@@ -292,10 +290,7 @@ public class UserService {
         UniqueCodeGenerator ug = new UniqueCodeGenerator();
         String xPlainCode = ug.getUniqueCode();
         String xMessage = "Your E-citizen verification code is " + xPlainCode;
-        new Thread(() -> {
-            SmartGate smartGate = new SmartGate();
-            smartGate.sendSMS(newmobile, xMessage);
-        }).start();
+        systemSmsService.sendSms(newmobile, xMessage);
         usr.setUsrOtpStatus("SMS_OTP_SENT");
         usr.setUsrPhoneOtp(passwordEncoder.encode(xPlainCode));
         usr = save(usr);
