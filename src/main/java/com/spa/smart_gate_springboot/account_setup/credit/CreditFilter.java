@@ -13,8 +13,6 @@ public class CreditFilter{
     private String smsAccountName;
     private String  smsCreatedByName;
     private LocalDateTime smsCreatedDate;
-    private String  smsApprovedByName;
-    private LocalDateTime smsApprovedDate;
     private String crStatus;
     private UUID accId;
     private UUID resellerId;

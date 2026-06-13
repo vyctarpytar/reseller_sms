@@ -267,16 +267,6 @@ public class CreditService {
         return true;
     }
 
-    public StandardJsonResponse initiateCredit(Credit credit, User user) {
-        StandardJsonResponse response = new StandardJsonResponse();
-        credit.setSmsCreatedBy(user.getUsrId());
-        credit.setSmsCreatedByName(user.getEmail());
-        credit.setSmsCreatedDate(LocalDateTime.now());
-        credit.setCrStatus(CrStatus.PENDING_APPROVAL);
-        response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + " initiated successfully", response);
-        response.setData("result", save(credit), response);
-        return response;
-    }
 
     @Transactional
     public void accountLoadCredit(Credit credit, StandardJsonResponse response) {
@@ -556,17 +546,6 @@ public class CreditService {
         return response;
     }
 
-    public StandardJsonResponse approveCredit(UUID crId, User user) {
-        StandardJsonResponse response = new StandardJsonResponse();
-        Credit credit = findById(crId);
-        credit.setSmsApprovedBy(user.getUsrId());
-        credit.setSmsApprovedByName(user.getEmail());
-        credit.setSmsApprovedDate(LocalDateTime.now());
-        credit.setCrStatus(CrStatus.PROCESSED);
-        resellerLoadCredit(credit, response);
-        response.setData("result", save(credit), response);
-        return response;
-    }
   public StandardJsonResponse reverseCredit(UUID crId) {
         StandardJsonResponse response = new StandardJsonResponse();
         Credit credit = findById(crId);

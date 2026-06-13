@@ -262,11 +262,14 @@ public class WalletController {
         UUID accountScope = (account_id != null && !account_id.isBlank()) ? UUID.fromString(account_id) : null;
         WalletValueType valueScope = (value_type != null && !value_type.isBlank())
                 ? WalletValueType.valueOf(value_type.trim().toUpperCase()) : null;
+        // A reseller must not see the platform-side legs of its own purchases (the TOP counterparty
+        // rows carry this reseller's id). TOP sees everything, including its own legs.
+        WalletOwnerType excludeOwnerType = (user.getLayer() == Layers.RESELLER) ? WalletOwnerType.TOP : null;
 
         Pageable pageable = PageRequest.of(start, limit <= 0 ? 10 : limit,
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<WalletTransaction> page = walletTxRepository.findAll(
-                WalletTransactionSpecifications.filter(resellerScope, accountScope, valueScope), pageable);
+                WalletTransactionSpecifications.filter(resellerScope, accountScope, valueScope, excludeOwnerType), pageable);
 
         // Per-page caches so each reseller/account name is resolved once.
         Map<UUID, String> resellerNames = new HashMap<>();

@@ -24,7 +24,8 @@ public final class WalletTransactionSpecifications {
 
     public static Specification<WalletTransaction> filter(UUID resellerId,
                                                           UUID accountId,
-                                                          WalletValueType valueType) {
+                                                          WalletValueType valueType,
+                                                          WalletOwnerType excludeOwnerType) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (resellerId != null) {
@@ -35,6 +36,12 @@ public final class WalletTransactionSpecifications {
             }
             if (valueType != null) {
                 predicates.add(cb.equal(root.get("valueType"), valueType));
+            }
+            // Hide a counterparty tier's own legs from the viewer. A reseller's purchase from TOP
+            // writes a TOP leg that also carries this reseller's id (so TOP can filter by reseller) —
+            // excluding ownerType=TOP keeps those platform-side rows out of the reseller's statement.
+            if (excludeOwnerType != null) {
+                predicates.add(cb.notEqual(root.get("ownerType"), excludeOwnerType));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

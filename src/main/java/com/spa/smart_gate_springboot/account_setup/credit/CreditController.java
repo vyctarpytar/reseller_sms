@@ -53,7 +53,7 @@ public class CreditController {
         return creditService.getResellerCreditHistory(resellerId);
     }
 
-    @PreAuthorize("hasAnyAuthority('super_admin:create', 'management:approve_credit','accountant:load_credit')")
+    @PreAuthorize("hasAnyAuthority('super_admin:create','accountant:load_credit')")
     @PostMapping
     public StandardJsonResponse saveCredit(@RequestBody Credit credit, HttpServletRequest request) {
         var user = userService.getCurrentUser(request);
@@ -73,21 +73,8 @@ public class CreditController {
         return invoiceService.accountLoadCredit(credit, user);
     }
 
-
-
-    @PreAuthorize("hasAuthority('sale:initiate_credit')")
-    @PostMapping("initiate")
-    public StandardJsonResponse intitateCredit(@RequestBody Credit credit, HttpServletRequest request) {
-        var user = userService.getCurrentUser(request);
-        return creditService.initiateCredit(credit, user);
-    }
-
-    @PreAuthorize("hasAuthority('management:approve_credit')")
-    @PostMapping("approve/{crId}")
-    public StandardJsonResponse approveCredit(@PathVariable UUID crId, HttpServletRequest request) {
-        var user = userService.getCurrentUser(request);
-        return creditService.approveCredit(crId, user);
-    }
+    // Manager-approval flow (initiate -> approve) removed: credit is loaded directly via saveCredit /
+    // create-invoice. No more PENDING_APPROVAL step.
 
 
     //logged in as account - show my credits

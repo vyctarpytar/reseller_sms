@@ -32,9 +32,13 @@ public enum Permission {
     MANAGER_UPDATE("management:update"),
     MANAGER_CREATE("management:create"),
     MANAGER_DELETE("management:delete"),
+    // DEPRECATED: the credit manager-approval flow was removed. No longer granted to any role or used
+    // by any endpoint, but the constant is RETAINED because it is persisted by name in
+    // js_core.user_permissions (@Enumerated STRING) — deleting it would crash loading existing users.
     MANAGER_APPROVE_CREDIT("management:approve_credit"),
 
     SALE_CREATE_CUSTOMER("sale:create_customer"),
+    // DEPRECATED: retained for the same persistence reason as MANAGER_APPROVE_CREDIT above.
     SALE_INTITATE_CREDIT("sale:initiate_credit"),
     SALE_APPROVE_ACCOUNT_REQUEST("sale:approve_account_request"),
 

@@ -48,9 +48,7 @@ public enum Role {
                     MANAGER_UPDATE,
                     MANAGER_DELETE,
                     MANAGER_CREATE,
-                    MANAGER_APPROVE_CREDIT,
                     SALE_CREATE_CUSTOMER,
-                    SALE_INTITATE_CREDIT,
                     SALE_APPROVE_ACCOUNT_REQUEST,
                     CREATE_TEMPLATE,
                     SEND_SMS, LOAD_CREDIT
@@ -59,7 +57,6 @@ public enum Role {
     SALE(
             Set.of(
                     SALE_CREATE_CUSTOMER,
-                    SALE_INTITATE_CREDIT,
                     SALE_APPROVE_ACCOUNT_REQUEST
             )
     );

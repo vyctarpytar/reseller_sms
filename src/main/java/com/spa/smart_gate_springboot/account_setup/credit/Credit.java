@@ -42,10 +42,8 @@ public class Credit {
     private String  smsCreatedByName;
     private LocalDateTime smsCreatedDate;
 
-    @Column(updatable = false,insertable = false)
-    private UUID smsApprovedBy;
-    private String  smsApprovedByName;
-    private LocalDateTime smsApprovedDate;
+    // smsApproved* fields removed with the manager-approval flow. The DB columns are left in place
+    // (ddl-auto:update never drops columns) but are no longer mapped or written.
 
     @Enumerated(EnumType.STRING)
     private CrStatus crStatus;
