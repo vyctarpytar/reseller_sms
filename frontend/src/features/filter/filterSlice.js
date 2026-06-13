@@ -28,7 +28,7 @@ export const fetchDistinctStatus = createAsyncThunk(
 	"filterSlice/fetchInvoiceStatus",
 	async (data) => {
 	  const res = await axiosInstance
-		.get(`${url}/api/v2/credit/distinct-invo-statuses`)
+		.get(`${url}/api/v2/invoice/distinct-statuses`)
 		.then((res) => res.data?.data?.result); 
 	  return res;
 	}
