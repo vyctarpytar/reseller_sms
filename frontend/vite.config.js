@@ -1,5 +1,6 @@
 import { defineConfig, transformWithEsbuild } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 
 // CRA allowed JSX inside .js files; Vite/esbuild does not by default.
 // This is the official Vite recipe (https://vite.dev/guide/troubleshooting) to
@@ -18,6 +19,18 @@ export default defineConfig({
     },
     react(),
   ],
+  resolve: {
+    alias: {
+      // `material-icons-react` is abandoned and pulled a vulnerable React-15 /
+      // fbjs / node-fetch subtree (6 high-severity audit advisories). It is
+      // replaced by a local shim that renders the identical <i class="material-icons">.
+      // The package has been removed from package.json; this alias keeps the 31
+      // existing default imports working unchanged.
+      'material-icons-react': fileURLToPath(
+        new URL('./src/shims/material-icons-react.jsx', import.meta.url)
+      ),
+    },
+  },
   server: {
     port: 3000,
     open: true,
