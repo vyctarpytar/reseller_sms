@@ -1,4 +1,4 @@
-import { Dropdown, Skeleton, Spin } from "antd";
+import { Skeleton, Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import InsideHeader from "../../components/InsideHeader";
 import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
@@ -14,8 +14,6 @@ import {
 } from "../../features/invoice/invoiceSlice";
 import StatusBadge from "../../components/StatusBadge";
 import InvoiceDocModal from "./InvoiceDocModal";
-
-const RECEIPTABLE = ["PAID", "PARTIALLY_PAID"];
 
 function Invoices() {
   const { invoiceData, invoiceCount, loading } = useSelector(
@@ -41,24 +39,23 @@ function Invoices() {
     fileName: "",
   });
 
-  const openDoc = async (record, type) => {
-    setDocLoadingKey(`${record?.invoId}-${type}`);
+  const openDoc = async (record) => {
+    setDocLoadingKey(`${record?.invoId}-invoice`);
     try {
       const res = await dispatch(
-        fetchInvoiceDocument({ invoId: record?.invoId, type })
+        fetchInvoiceDocument({ invoId: record?.invoId, type: "invoice" })
       );
       if (res?.payload instanceof Blob) {
         if (docModal.url) URL.revokeObjectURL(docModal.url);
-        const label = type === "receipt" ? "Receipt" : "Invoice";
         setDocModal({
           open: true,
           url: URL.createObjectURL(res.payload),
-          title: `${label} · ${record?.invoCode ?? ""}`,
-          fileName: `${type}-${record?.invoCode ?? record?.invoId}.pdf`,
+          title: `Invoice · ${record?.invoCode ?? ""}`,
+          fileName: `invoice-${record?.invoCode ?? record?.invoId}.pdf`,
         });
       } else {
         customToast({
-          content: `Could not generate the ${type}. Please try again.`,
+          content: "Could not generate the document. Please try again.",
           bdColor: "error",
         });
       }
@@ -120,36 +117,21 @@ function Invoices() {
       title: "Document",
       align: "center",
       render: (_, record) => {
-        const receiptable = RECEIPTABLE.includes(
-          String(record?.invoStatus).toUpperCase()
-        );
         const busy =
           docLoadingKey && docLoadingKey.startsWith(`${record?.invoId}-`);
-        const items = [
-          { key: "invoice", label: "Preview invoice" },
-          ...(receiptable
-            ? [{ key: "receipt", label: "Preview receipt" }]
-            : []),
-        ];
         return (
-          <Dropdown
-            trigger={["click"]}
+          <button
+            type="button"
+            className="btn-ghost px-3 py-1"
             disabled={!!busy}
-            menu={{ items, onClick: ({ key }) => openDoc(record, key) }}
+            onClick={() => openDoc(record)}
           >
-            <button
-              type="button"
-              className="btn-ghost px-3 py-1"
-              onClick={(e) => e.preventDefault()}
-            >
-              {busy ? (
-                <Spin size="small" />
-              ) : (
-                <MaterialIcon icon="picture_as_pdf" color="#69472E" />
-              )}
-              <MaterialIcon icon="expand_more" color="#64748b" />
-            </button>
-          </Dropdown>
+            {busy ? (
+              <Spin size="small" />
+            ) : (
+              <MaterialIcon icon="picture_as_pdf" color="#69472E" />
+            )}
+          </button>
         );
       },
     },
@@ -255,18 +237,9 @@ function Invoices() {
                   loading={loading}
                   mobileEmptyText="No invoices found"
                   mobileCard={(record) => {
-                    const receiptable = RECEIPTABLE.includes(
-                      String(record?.invoStatus).toUpperCase()
-                    );
                     const busy =
                       docLoadingKey &&
                       docLoadingKey.startsWith(`${record?.invoId}-`);
-                    const items = [
-                      { key: "invoice", label: "Preview invoice" },
-                      ...(receiptable
-                        ? [{ key: "receipt", label: "Preview receipt" }]
-                        : []),
-                    ];
                     return (
                       <div className="card !p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -288,30 +261,21 @@ function Invoices() {
                           </div>
                         </div>
                         <div className="flex justify-end mt-3">
-                          <Dropdown
-                            trigger={["click"]}
+                          <button
+                            type="button"
+                            className="btn-ghost px-3 py-1"
                             disabled={!!busy}
-                            menu={{
-                              items,
-                              onClick: ({ key }) => openDoc(record, key),
-                            }}
+                            onClick={() => openDoc(record)}
                           >
-                            <button
-                              type="button"
-                              className="btn-ghost px-3 py-1"
-                              onClick={(e) => e.preventDefault()}
-                            >
-                              {busy ? (
-                                <Spin size="small" />
-                              ) : (
-                                <MaterialIcon
-                                  icon="picture_as_pdf"
-                                  color="#69472E"
-                                />
-                              )}
-                              <MaterialIcon icon="expand_more" color="#64748b" />
-                            </button>
-                          </Dropdown>
+                            {busy ? (
+                              <Spin size="small" />
+                            ) : (
+                              <MaterialIcon
+                                icon="picture_as_pdf"
+                                color="#69472E"
+                              />
+                            )}
+                          </button>
                         </div>
                       </div>
                     );
