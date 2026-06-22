@@ -2,8 +2,10 @@ package com.spa.smart_gate_springboot.report;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.pdf.PdfPTable;
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.invoice.Invoice;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +19,11 @@ import java.util.Date;
  * Branded PDF exports. One method per document; all styling/chrome comes from {@link BrandedPdf}.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ReportExportService {
+
+    private final AccountService accountService;
 
     private static final DateTimeFormatter D = DateTimeFormatter.ofPattern("dd MMM yyyy");
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
@@ -103,7 +108,10 @@ public class ReportExportService {
         return v == null ? BigDecimal.ZERO : v;
     }
 
-    private static String payer(Invoice inv) {
+    private String payer(Invoice inv) {
+        if (inv.getInvoAccId() != null) {
+            return accountService.findByAccId(inv.getInvoAccId()).getAccName();
+        }
         if (inv.getInvoPayerName() != null && !inv.getInvoPayerName().trim().isEmpty()) {
             return inv.getInvoPayerName().trim();
         }
