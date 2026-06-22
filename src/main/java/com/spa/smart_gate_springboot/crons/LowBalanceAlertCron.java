@@ -39,7 +39,7 @@ public class LowBalanceAlertCron {
     private BigDecimal threshold;
 
     /** Minimum time between alerts for the same account. */
-    @Value("${sms.low-balance.alert-interval-minutes:60}")
+    @Value("${sms.low-balance.alert-interval-minutes:180}")
     private long alertIntervalMinutes;
 
     private final AccountRepository accountRepository;
@@ -47,7 +47,7 @@ public class LowBalanceAlertCron {
     private final MsgShortcodeSetupRepository shortcodeSetupRepository;
     private final QueueMsgService queueMsgService;
 
-    /** Scan every 10 minutes; the per-account throttle keeps it to ~1 alert/hour. */
+    /** Scan every 10 minutes; the per-account throttle keeps it to ~1 alert/3 hours. */
     @Scheduled(fixedRate = 10 * 60_000)
     public void alertLowBalanceAccounts() {
         try {
