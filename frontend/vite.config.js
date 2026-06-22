@@ -37,16 +37,34 @@ export default defineConfig({
     react(),
   ],
   resolve: {
-    alias: {
-      // `material-icons-react` is abandoned and pulled a vulnerable React-15 /
-      // fbjs / node-fetch subtree (6 high-severity audit advisories). It is
-      // replaced by a local shim that renders the identical <i class="material-icons">.
-      // The package has been removed from package.json; this alias keeps the 31
-      // existing default imports working unchanged.
-      'material-icons-react': fileURLToPath(
-        new URL('./src/shims/material-icons-react.jsx', import.meta.url)
-      ),
-    },
+    // Array form is required here so we can use a regex for react-phone-input-2.
+    // A string key like `'react-phone-input-2'` would also match the subpath
+    // `react-phone-input-2/lib/style.css` imported in index.js (breaking the CSS),
+    // while the regex /^react-phone-input-2$/ matches only the bare specifier.
+    alias: [
+      {
+        // `material-icons-react` is abandoned and pulled a vulnerable React-15 /
+        // fbjs / node-fetch subtree (6 high-severity audit advisories). It is
+        // replaced by a local shim that renders the identical <i class="material-icons">.
+        // The package has been removed from package.json; this alias keeps the 31
+        // existing default imports working unchanged.
+        find: 'material-icons-react',
+        replacement: fileURLToPath(
+          new URL('./src/shims/material-icons-react.jsx', import.meta.url)
+        ),
+      },
+      {
+        // react-phone-input-2 is CJS-only. Rolldown (Vite 8 production build)
+        // doesn't auto-unwrap the .default export, so rendering <PhoneInput />
+        // crashes with React error #130 ("got object, expected function").
+        // The shim imports the real lib.js by path and does the CJS interop.
+        // Regex matches only the bare specifier, not subpaths (e.g. /lib/style.css).
+        find: /^react-phone-input-2$/,
+        replacement: fileURLToPath(
+          new URL('./src/shims/react-phone-input-2.jsx', import.meta.url)
+        ),
+      },
+    ],
   },
   server: {
     port: 3000,
