@@ -17,10 +17,34 @@ import {
   fetchNotificationFrequencies,
   save,
 } from "../../features/save/saveSlice";
-import { disabledPastDate } from "../../utils";
 import svg45 from "../../assets/svg/svg45.svg";
 
 const { TextArea } = Input;
+
+const FREQUENCY_STEP = {
+  DAILY: [1, "day"],
+  WEEKLY: [1, "week"],
+  MONTHLY: [1, "month"],
+  EVERY_2_MONTHS: [2, "month"],
+  EVERY_3_MONTHS: [3, "month"],
+  EVERY_6_MONTHS: [6, "month"],
+  YEARLY: [1, "year"],
+};
+
+// Mirrors the backend's advanceUntilFuture so the preview shows the real next run.
+const computeNextRun = (startDate, sendTime, frequency, intervalDays) => {
+  if (!startDate || !frequency) return null;
+  const [h, m] = String(sendTime || "09:00").split(":");
+  let next = dayjs(startDate).hour(Number(h) || 0).minute(Number(m) || 0).second(0);
+  const step =
+    frequency === "CUSTOM_DAYS"
+      ? [Math.max(Number(intervalDays) || 1, 1), "day"]
+      : FREQUENCY_STEP[frequency];
+  if (!step) return null;
+  const now = dayjs();
+  for (let i = 0; i < 2000 && !next.isAfter(now); i++) next = next.add(step[0], step[1]);
+  return next.isAfter(now) ? next : null;
+};
 
 export const FREQUENCY_FALLBACK = [
   { value: "DAILY", label: "Daily" },
@@ -158,6 +182,12 @@ const ScheduledNotificationModal = ({
     frequencies,
   ]);
 
+  const nextRunLabel = useMemo(() => {
+    const time = sendTime ? dayjs(sendTime).format("HH:mm") : "09:00";
+    const next = computeNextRun(startDate, time, frequency, intervalDays);
+    return next ? next.format("DD MMM YYYY, HH:mm") : null;
+  }, [startDate, sendTime, frequency, intervalDays]);
+
   const onFinish = async (values) => {
     const recipients = (values?.phones || [])
       .map((p) => normalizeMsisdn(p?.digits))
@@ -285,12 +315,12 @@ const ScheduledNotificationModal = ({
                 label="Start date"
                 name="snStartDate"
                 rules={[{ required: true, message: "Required field" }]}
+                extra="Anchors the cycle. A past date is fine — the next run rolls forward from it."
               >
                 <DatePicker
                   format="YYYY-MM-DD"
                   className="w-full"
                   style={{ height: "42px", width: "100%" }}
-                  disabledDate={disabledPastDate}
                 />
               </Form.Item>
 
@@ -487,6 +517,11 @@ const ScheduledNotificationModal = ({
               </p>
               <div className="border-t border-border mt-4 pt-3">
                 <p className="text-[12px] text-muted">{scheduleSummary}</p>
+                {nextRunLabel && (
+                  <p className="text-[12px] text-primary font-semibold mt-2">
+                    Next run: {nextRunLabel}
+                  </p>
+                )}
               </div>
             </div>
           </div>
