@@ -41,6 +41,10 @@ public class SchedulingConfig {
      * accounts and ran a 500-row {@code IN (...)} query — so DB load grew with tenant count and could
      * overlap itself. Now it's O(batch) per tick regardless of how many resellers exist.
      * <p>
+     * Messages whose body contains the word "OTP" are excluded — a one-time code re-sent minutes later
+     * is stale by the time it lands, so it's dropped rather than retried (filtered in SQL, so it doesn't
+     * consume the batch limit). See {@code findRetryBatch}.
+     * <p>
      * {@code fixedDelay} (not {@code fixedRate}) guarantees a slow tick never overlaps the next one.
      * Single-instance + per-row delete + the {@code msg_sent_retried} filter prevent reprocessing; if
      * this ever runs on more than one instance, switch {@code findRetryBatch} to a claim-style

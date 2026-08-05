@@ -22,6 +22,7 @@ import externalSvg from "../assets/svg/externalSvg.svg";
 import passwordSvg from "../assets/svg/passwordSvg.svg";
 import withdrawalSvg from "../assets/svg/withdrawalSvg.svg";
 import reportSvg from "../assets/svg/svg60.svg";
+import notificationSvg from "../assets/svg/shortcodeSvg.svg";
 
 import { useNavigate } from "react-router-dom";
 
@@ -38,7 +39,8 @@ const icons = {
   adminAccountSvg,
   externalSvg,
   withdrawalSvg,
-  reportSvg
+  reportSvg,
+  notificationSvg
 };
 
 function getItem(label, key, icon, children, type) {

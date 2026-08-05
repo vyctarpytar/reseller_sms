@@ -10,12 +10,16 @@ import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.dto.S
 import com.spa.smart_gate_springboot.utils.AppUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.ResponseBody;
 import org.apache.http.util.TextUtils;
 import org.springframework.stereotype.Service;
 import retrofit2.Call;
+import retrofit2.Converter;
 import retrofit2.Response;
+import retrofit2.Retrofit;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.List;
 
 @Service
@@ -28,6 +32,8 @@ public class SafaricomRestBulkService {
     private final MsgMessageQueueArcRepository msgMessageQueueArcRepository;
     private final MsgShortcodeSetupService msgShortcodeSetupService;
     private final SafaricomRestProperties safaricomRestProperties;
+    /** Field name matters: it selects the v2 Retrofit bean over the v1 {@code safComRetrofit} one. */
+    private final Retrofit safComRestRetrofit;
 
     public void sendSms(MsgMessageQueueArc msg) throws Exception {
         String accessToken = safaricomRestAuthService.getAccessToken();
@@ -75,20 +81,48 @@ public class SafaricomRestBulkService {
             res = executeSend(request, accessToken);
         }
 
-        if (res.isSuccessful() && res.body() != null) {
-            SafaricomRestSendResponse body = res.body();
-            boolean success = AppUtils.BULK_SMS_SEND_SUCCESS_STATUS_CODE.equalsIgnoreCase(body.getStatusCode());
-            log.info("[DSDP] Response — status={} statusCode={}", body.getStatus(), body.getStatusCode());
-            updateMessageStatus(success, msg.getMsgCode(), res.code(), body.getStatusCode());
-        } else {
-            log.error("[DSDP] Send failed — HTTP {}", res.code());
-            updateMessageStatus(false, msg.getMsgCode(), res.code(), "HTTP_" + res.code());
+        // These codes can come back on either side of isSuccessful(), so parse the error body too rather
+        // than collapsing every non-2xx to "HTTP_<code>" — that hid the carrier's own status code.
+        SafaricomRestSendResponse body = res.isSuccessful() ? res.body() : parseError(res.errorBody());
+        String statusCode = (body != null && !TextUtils.isEmpty(body.getStatusCode()))
+                ? body.getStatusCode()
+                : "HTTP_" + res.code();
+
+        if (AppUtils.requiresTokenEviction(statusCode)) {
+            // SC0029 / SC0012 — the token being replayed is spent or dead on Safaricom's side. Both come
+            // back 200-level, so the 401 recovery above never fired; drop the cache here instead. The
+            // message is left ERROR, so the retry cron re-sends it (~5s) against a freshly minted token.
+            log.warn("[DSDP] statusCode={} ({}) for msgCode={} — evicting cached token so the retry logs in fresh",
+                    statusCode, body != null ? body.getStatus() : "?", msg.getMsgCode());
+            safaricomRestAuthService.evictTokens();
         }
+
+        boolean success = res.isSuccessful()
+                && AppUtils.BULK_SMS_SEND_SUCCESS_STATUS_CODE.equalsIgnoreCase(statusCode);
+        if (success) {
+            log.info("[DSDP] Response — status={} statusCode={}", body.getStatus(), statusCode);
+        } else {
+            log.error("[DSDP] Send failed — HTTP {} statusCode={}", res.code(), statusCode);
+        }
+        updateMessageStatus(success, msg.getMsgCode(), res.code(), statusCode);
     }
 
     private Response<SafaricomRestSendResponse> executeSend(SafaricomRestSendRequest request, String accessToken) throws IOException {
         Call<SafaricomRestSendResponse> call = safaricomRestInterface.sendBulkSms("Bearer " + accessToken, request);
         return call.execute();
+    }
+
+    /** Decode a non-2xx body into the same response shape; null if it is absent or unparseable. */
+    private SafaricomRestSendResponse parseError(ResponseBody errorBody) {
+        if (errorBody == null) return null;
+        try {
+            Converter<ResponseBody, SafaricomRestSendResponse> converter = safComRestRetrofit
+                    .responseBodyConverter(SafaricomRestSendResponse.class, new Annotation[0]);
+            return converter.convert(errorBody);
+        } catch (Exception e) {
+            log.warn("[DSDP] Could not parse error body: {}", e.getMessage());
+            return null;
+        }
     }
 
     private void updateMessageStatus(boolean success, String msgCode, int httpCode, String safResponse) {

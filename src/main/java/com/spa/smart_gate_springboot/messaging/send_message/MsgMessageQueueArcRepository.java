@@ -157,12 +157,20 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
      * {@code coalesce(msg_sent_retried, true) = false} keeps each message to a single retry, and the
      * {@code msg_created_date} comparison is left un-cast so Postgres can use an index. Wants a
      * supporting index — see the prod note on {@code SchedulingConfig.retryFailedMessages}.
+     * <p>
+     * <b>OTPs are never retried.</b> A one-time code is only useful for the few seconds around the
+     * user's login attempt; re-sending it minutes later just delivers a stale (often already-expired,
+     * already-superseded) code and reads as a duplicate/suspicious SMS to the recipient. The exclusion
+     * is done in SQL, not in the cron loop, so skipped OTPs don't eat slots out of {@code :limit}.
+     * The word-boundary regex ({@code \\yotp\\y}, case-insensitive) matches the standalone word only —
+     * it won't swallow a legitimate message containing "otp" inside another word (footpath, hotplate).
      */
     @Query(value = """
             SELECT * FROM msg.message_queue_arc
             WHERE msg_status IN (:statuses)
               AND coalesce(msg_sent_retried, true) = false
               AND msg_created_date >= current_date - 2
+              AND coalesce(msg_message, '') !~* '\\yotp\\y'
             ORDER BY msg_created_date
             LIMIT :limit
             """, nativeQuery = true)

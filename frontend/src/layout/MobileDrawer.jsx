@@ -16,6 +16,7 @@ import externalSvg from "../assets/svg/externalSvg.svg";
 import { fetchMenu } from "../features/menu/menuSlice";
 import passwordSvg from "../assets/svg/passwordSvg.svg";
 import reportSvg from "../assets/svg/svg60.svg";
+import notificationSvg from "../assets/svg/shortcodeSvg.svg";
 
 const icons = {
   gridSvg,
@@ -30,6 +31,7 @@ const icons = {
   adminAccountSvg,
   externalSvg,
   reportSvg,
+  notificationSvg,
 };
 function getItem(label, key, icon, children, type) {
   return {

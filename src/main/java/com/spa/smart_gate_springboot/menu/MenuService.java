@@ -59,10 +59,11 @@ public class MenuService {
         Menu m18 = Menu.builder().mnLink("report").mnName("reports").mnOwner(Layers.ALL).mnIcons("reportSvg").build();
         Menu m19 = Menu.builder().mnLink("dev-sandbox").mnName("Dev SandBox").mnOwner(Layers.ACCOUNT).mnIcons("requestSvg").build();
 
+        Menu mNotif = Menu.builder().mnLink("scheduled-notifications").mnName("Reminders").mnOwner(Layers.TOP).mnIcons("notificationSvg").build();
 
 
 
-        menuRepo.saveAllAndFlush(List.of(m1, m2, m3, m14, m4, m5, m6, m7,  m9, m10, m11,  m13,m15,m16, m17,m18,m19));
+        menuRepo.saveAllAndFlush(List.of(m1, m2, m3, m14, m4, m5, m6, m7,  m9, m10, m11,  m13,m15,m16, m17,m18,m19, mNotif));
 
 //        Menu m4a = Menu.builder().mnLink("sms-request-list").mnName("request").mnOwner(Layers.ACCOUNT).mnParentId(m4.getMnId()).build();
 //        Menu m4b = Menu.builder().mnLink("inbox").mnName("inbox").mnOwner(Layers.ACCOUNT).mnParentId(m4.getMnId()).build();

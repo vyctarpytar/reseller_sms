@@ -69,6 +69,20 @@ public class SafaricomRestAuthService {
         return loginFresh();
     }
 
+    /**
+     * Drop both cached tokens so the next send performs a full fresh login.
+     * <p>
+     * Called when the carrier answers a send with {@code SC0029 / "SYSTEM ERROR"} or
+     * {@code SC0012 / "QUOTA_EXPIRED"} — 200-level responses, so {@link #refreshOnUnauthorized} never
+     * sees them, but both mean the token we are replaying is dead or spent on Safaricom's side. The
+     * refresh token is dropped too: keeping it would let the scheduled refresh mint a new access token
+     * from a credential issued in the same exhausted session.
+     */
+    public void evictTokens() {
+        evict(ACCESS_KEY);
+        evict(REFRESH_KEY);
+    }
+
     /** Performs the actual login. Synchronized + double-checked so concurrent misses collapse into one call. */
     private synchronized String loginFresh() throws IOException {
         String current = getFromRedis(ACCESS_KEY);

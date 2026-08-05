@@ -112,6 +112,7 @@ public class SafBulkService {
             } else {
                 log.info("[SEND BULK RESPONSE MEANS WAS SENT FAILED WITH STATUS CODE {} ]", res.body().getStatusCode());
 
+                evictTokenIfSystemError(res.body().getStatusCode());
                 updateMessageStatus(false, sendBulkSafReq.getDataSet(), res.code(), res.body().getStatusCode());
             }
 
@@ -120,10 +121,24 @@ public class SafBulkService {
 
             BulkResponse ob = parseError(res.errorBody());
             log.error("[SAF SEND BULK ERROR RES {} ]", ob);
+            if (ob != null) evictTokenIfSystemError(ob.getStatusCode());
             updateMessageStatus(false, sendBulkSafReq.getDataSet(), res.code(), ob.getMessage());
         }
 
 //        return body;
+    }
+
+    /**
+     * Drop the cached SDP token when the carrier answers {@code SC0029 / "SYSTEM ERROR"} or
+     * {@code SC0012 / "QUOTA_EXPIRED"} — both mean the token we are replaying is dead or spent on
+     * Safaricom's side. The message is left ERROR, so the retry cron re-sends it (~5s) against a
+     * freshly minted token.
+     */
+    private void evictTokenIfSystemError(String statusCode) {
+        if (AppUtils.requiresTokenEviction(statusCode)) {
+            log.warn("[SAF] statusCode={} — evicting cached token so the retry logs in fresh", statusCode);
+            safAuthService.evictToken();
+        }
     }
 
     private void updateMessageStatus(boolean success, List<SafBulkDataSet> dataSet, int code, String safResponse) {

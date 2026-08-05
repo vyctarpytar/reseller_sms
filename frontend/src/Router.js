@@ -51,6 +51,7 @@ import SandBox from './pages/sand-box/SandBox';
 import WithdrawalList from './pages/withdrawal/WithdrawalList';
 import WithdrawalPage from './pages/withdrawal/WithdrawalPage';
 import ScheduledSmsList from './pages/scheduled-sms/ScheduledSmsList';
+import ScheduledNotificationsList from './pages/scheduled-notifications/ScheduledNotificationsList';
 import QuarterlyReport from './pages/reports/quarterly-report/QuarterlyReport';
  
 export const router = createHashRouter([
@@ -276,6 +277,11 @@ export const router = createHashRouter([
 					{
 						path:'/scheduled-sms',
 						element: <ScheduledSmsList />,
+					},
+
+					{
+						path:'/scheduled-notifications',
+						element: <ScheduledNotificationsList />,
 					},
 
 					

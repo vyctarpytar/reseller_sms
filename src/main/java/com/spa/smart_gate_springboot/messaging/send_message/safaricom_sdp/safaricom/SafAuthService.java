@@ -83,6 +83,21 @@ public class SafAuthService {
         }
     }
 
+    /**
+     * Drop the cached token so the next send fetches a fresh one.
+     * <p>
+     * Called when a send comes back {@code SC0029 / "SYSTEM ERROR"} or {@code SC0012 / "QUOTA_EXPIRED"}
+     * — the HTTP call succeeds, so nothing else notices, but both mean the token we are replaying is
+     * dead or spent on Safaricom's side.
+     */
+    public void evictToken() {
+        try {
+            redisTemplate.delete(REDIS_KEY);
+        } catch (Exception e) {
+            log.warn("Could not evict Safaricom token from Redis: {}", e.getMessage());
+        }
+    }
+
     /** Store the token in Redis with a TTL of (configured expiry − 2 minutes). Never fails the send. */
     private void cacheToken(String token) {
         if (TextUtils.isEmpty(token)) return;
@@ -104,11 +119,7 @@ public class SafAuthService {
         }
         log.info("Refreshing Safaricom token");
         try {
-            try {
-                redisTemplate.delete(REDIS_KEY);
-            } catch (Exception e) {
-                log.warn("Could not evict Safaricom token from Redis: {}", e.getMessage());
-            }
+            evictToken();
             getTokenFromSafaricom();
         } catch (Exception e) {
             log.error("Error refreshing Safaricom access token", e);

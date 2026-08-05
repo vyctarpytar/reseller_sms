@@ -19,6 +19,9 @@ const initialState = {
 	loading:false,
 	scheduledSmsData:[],
 	scheduledSmsCount:0,
+	notificationsData:[],
+	notificationsCount:0,
+	loadingNotifications:false,
 };
 
 // export const save = createAsyncThunk('saveSlice/save', async (data) => {
@@ -225,6 +228,46 @@ export const fetchSavedSms = createAsyncThunk('saveSlice/fetch/saved/sms', async
 	}
   });
 
+  export const fetchNotifications = createAsyncThunk('saveSlice/fetch/fetchNotifications', async (data, { rejectWithValue }) => {
+	let saveUrl = data.url;
+	delete data.url;
+	try {
+		const response = await axiosInstance.post(`${url}/${saveUrl}`, data)
+		if (!response.data.success) {
+			return rejectWithValue(response.data);
+		}
+		return response.data;
+	} catch (error) {
+		return rejectWithValue(error.response?.data || error.message);
+	}
+  });
+
+  export const fetchNotificationLogs = createAsyncThunk('saveSlice/fetch/fetchNotificationLogs', async (data, { rejectWithValue }) => {
+	let fetchUrl = data.url;
+	delete data.url;
+	try {
+		const response = await axiosInstance.get(`${url}/${fetchUrl}`, { params: data })
+		if (!response.data.success) {
+			return rejectWithValue(response.data);
+		}
+		return response.data;
+	} catch (error) {
+		return rejectWithValue(error.response?.data || error.message);
+	}
+  });
+
+  export const fetchNotificationFrequencies = createAsyncThunk('saveSlice/fetch/fetchNotificationFrequencies', async (_arg, { rejectWithValue }) => {
+	try {
+		const response = await axiosInstance.get(`${url}/api/v2/notifications/frequencies`)
+		if (!response.data.success) {
+			return rejectWithValue(response.data);
+		}
+		return response.data;
+	} catch (error) {
+		return rejectWithValue(error.response?.data || error.message);
+	}
+  });
+
 export const saveSlice = createSlice({
 	name: 'save',
 	initialState,
@@ -379,6 +422,20 @@ export const saveSlice = createSlice({
 				state.loading = false;
 				state.scheduledSmsData = [];
 				state.scheduledSmsCount = 0
+			})
+
+			.addCase(fetchNotifications.pending, (state) => {
+				state.loadingNotifications = true;
+			})
+			.addCase(fetchNotifications.fulfilled, (state, action) => {
+				state.loadingNotifications = false;
+				state.notificationsData = action.payload?.data?.result;
+				state.notificationsCount = action.payload?.total
+			})
+			.addCase(fetchNotifications.rejected, (state) => {
+				state.loadingNotifications = false;
+				state.notificationsData = [];
+				state.notificationsCount = 0
 			})
 
 
