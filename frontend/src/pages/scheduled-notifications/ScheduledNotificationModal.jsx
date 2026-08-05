@@ -31,19 +31,30 @@ const FREQUENCY_STEP = {
   YEARLY: [1, "year"],
 };
 
-// Mirrors the backend's advanceUntilFuture so the preview shows the real next run.
-const computeNextRun = (startDate, sendTime, frequency, intervalDays) => {
-  if (!startDate || !frequency) return null;
-  const [h, m] = String(sendTime || "09:00").split(":");
-  let next = dayjs(startDate).hour(Number(h) || 0).minute(Number(m) || 0).second(0);
+// Mirrors the backend: occurrences are every cycle date × every send time.
+// Cycle dates come off the original start date so month-ends don't drift.
+const computeNextRun = (startDate, times, frequency, intervalDays) => {
+  if (!startDate || !frequency || !times?.length) return null;
   const step =
     frequency === "CUSTOM_DAYS"
       ? [Math.max(Number(intervalDays) || 1, 1), "day"]
       : FREQUENCY_STEP[frequency];
   if (!step) return null;
+  const sorted = [...times].sort();
   const now = dayjs();
-  for (let i = 0; i < 2000 && !next.isAfter(now); i++) next = next.add(step[0], step[1]);
-  return next.isAfter(now) ? next : null;
+  for (let k = 0; k < 2000; k++) {
+    const date = dayjs(startDate).add(step[0] * k, step[1]);
+    for (const hhmm of sorted) {
+      const [h, m] = hhmm.split(":");
+      const c = date
+        .hour(Number(h) || 0)
+        .minute(Number(m) || 0)
+        .second(0)
+        .millisecond(0);
+      if (c.isAfter(now)) return c;
+    }
+  }
+  return null;
 };
 
 export const FREQUENCY_FALLBACK = [
@@ -100,7 +111,7 @@ const ScheduledNotificationModal = ({
   const message = Form.useWatch("snMessage", form);
   const frequency = Form.useWatch("snFrequency", form);
   const intervalDays = Form.useWatch("snIntervalDays", form);
-  const sendTime = Form.useWatch("snSendTime", form);
+  const times = Form.useWatch("times", form);
   const startDate = Form.useWatch("snStartDate", form);
   const channels = Form.useWatch("snChannels", form);
   const phones = Form.useWatch("phones", form);
@@ -111,6 +122,15 @@ const ScheduledNotificationModal = ({
 
   const phoneCount = (phones || []).filter((p) => p?.digits).length;
   const emailCount = (emails || []).filter((e) => e?.address).length;
+  const timeCount = (times || []).filter((t) => t?.time).length;
+
+  const watchedTimes = useMemo(
+    () =>
+      (times || [])
+        .filter((t) => t?.time)
+        .map((t) => dayjs(t.time).format("HH:mm")),
+    [times]
+  );
 
   const charCount = message?.length || 0;
   const segments = Math.max(1, Math.ceil(charCount / 160));
@@ -134,13 +154,16 @@ const ScheduledNotificationModal = ({
         digits: normalizeMsisdn(v),
       }));
       const emailRows = splitCsv(prodd?.snEmails).map((v) => ({ address: v }));
+      const timeRows = splitCsv(
+        prodd?.snSendTimes || prodd?.snSendTime || "09:00"
+      ).map((v) => ({ time: timeToDayjs(v) }));
       form.setFieldsValue({
         snName: prodd?.snName,
         snSubject: prodd?.snSubject,
         snMessage: prodd?.snMessage,
         snFrequency: prodd?.snFrequency,
         snIntervalDays: prodd?.snIntervalDays,
-        snSendTime: timeToDayjs(prodd?.snSendTime),
+        times: timeRows.length ? timeRows : [{ time: timeToDayjs("09:00") }],
         snStartDate: prodd?.snStartDate ? dayjs(prodd.snStartDate) : dayjs(),
         snChannels: splitCsv(prodd?.snChannels),
         phones: phoneRows.length ? phoneRows : [{ digits: "" }],
@@ -149,7 +172,7 @@ const ScheduledNotificationModal = ({
       return;
     }
     form.setFieldsValue({
-      snSendTime: timeToDayjs("09:00"),
+      times: [{ time: timeToDayjs("09:00") }],
       snStartDate: dayjs(),
       snChannels: ["SMS"],
       phones: [{ digits: "" }],
@@ -162,7 +185,7 @@ const ScheduledNotificationModal = ({
       frequency === "CUSTOM_DAYS" && intervalDays
         ? `Every ${intervalDays} day${intervalDays > 1 ? "s" : ""}`
         : frequencyLabel(frequency, frequencies);
-    const time = sendTime ? dayjs(sendTime).format("HH:mm") : "09:00";
+    const time = watchedTimes.length ? [...watchedTimes].sort().join(", ") : "09:00";
     const start = startDate
       ? dayjs(startDate).format("DD MMM YYYY")
       : dayjs().format("DD MMM YYYY");
@@ -173,7 +196,7 @@ const ScheduledNotificationModal = ({
   }, [
     frequency,
     intervalDays,
-    sendTime,
+    watchedTimes,
     startDate,
     smsOn,
     emailOn,
@@ -183,10 +206,14 @@ const ScheduledNotificationModal = ({
   ]);
 
   const nextRunLabel = useMemo(() => {
-    const time = sendTime ? dayjs(sendTime).format("HH:mm") : "09:00";
-    const next = computeNextRun(startDate, time, frequency, intervalDays);
+    const next = computeNextRun(
+      startDate,
+      watchedTimes.length ? watchedTimes : ["09:00"],
+      frequency,
+      intervalDays
+    );
     return next ? next.format("DD MMM YYYY, HH:mm") : null;
-  }, [startDate, sendTime, frequency, intervalDays]);
+  }, [startDate, watchedTimes, frequency, intervalDays]);
 
   const onFinish = async (values) => {
     const recipients = (values?.phones || [])
@@ -196,6 +223,13 @@ const ScheduledNotificationModal = ({
     const addresses = (values?.emails || [])
       .map((e) => String(e?.address || "").trim())
       .filter(Boolean);
+    const sendTimes = Array.from(
+      new Set(
+        (values?.times || [])
+          .map((t) => (t?.time ? dayjs(t.time).format("HH:mm") : null))
+          .filter(Boolean)
+      )
+    ).sort();
 
     const payload = {
       snName: values?.snName,
@@ -204,9 +238,7 @@ const ScheduledNotificationModal = ({
       snFrequency: values?.snFrequency,
       snIntervalDays:
         values?.snFrequency === "CUSTOM_DAYS" ? values?.snIntervalDays : null,
-      snSendTime: values?.snSendTime
-        ? dayjs(values.snSendTime).format("HH:mm")
-        : "09:00",
+      snSendTimes: sendTimes.join(",") || "09:00",
       snStartDate: values?.snStartDate
         ? dayjs(values.snStartDate).format("YYYY-MM-DD")
         : dayjs().format("YYYY-MM-DD"),
@@ -324,17 +356,73 @@ const ScheduledNotificationModal = ({
                 />
               </Form.Item>
 
-              <Form.Item
-                label="Send time"
-                name="snSendTime"
-                rules={[{ required: true, message: "Required field" }]}
-              >
-                <TimePicker
-                  format="HH:mm"
-                  minuteStep={5}
-                  className="w-full"
-                  style={{ height: "42px", width: "100%" }}
-                />
+              <Form.Item label="Send times" required className="!mb-0">
+                <Form.List
+                  name="times"
+                  rules={[
+                    {
+                      validator: async (_, rows) => {
+                        const entered = (rows || [])
+                          .filter((r) => r?.time)
+                          .map((r) => dayjs(r.time).format("HH:mm"));
+                        if (entered.length === 0)
+                          return Promise.reject(
+                            new Error("Add at least one send time")
+                          );
+                        if (new Set(entered).size !== entered.length)
+                          return Promise.reject(
+                            new Error("Duplicate send times are not allowed")
+                          );
+                      },
+                    },
+                  ]}
+                >
+                  {(fields, { add, remove }, { errors }) => (
+                    <div className="mb-5">
+                      {fields.map(({ key, name: rowName, ...restField }) => (
+                        <div key={key} className="flex items-start gap-x-2 mb-1">
+                          <Form.Item
+                            {...restField}
+                            name={[rowName, "time"]}
+                            rules={[
+                              { required: true, message: "Required field" },
+                            ]}
+                            className="!mb-2 flex-1"
+                          >
+                            <TimePicker
+                              format="HH:mm"
+                              minuteStep={5}
+                              className="input"
+                              style={{ height: "42px", width: "100%" }}
+                            />
+                          </Form.Item>
+                          <button
+                            type="button"
+                            disabled={fields.length === 1}
+                            onClick={() => remove(rowName)}
+                            className="bg-transparent mt-[6px] disabled:opacity-30"
+                            aria-label="Remove send time"
+                          >
+                            <img src={svg45} alt="remove" className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => add({ time: null })}
+                          className="bg-transparent text-accent text-[13px] font-semibold"
+                        >
+                          ＋ Add another time
+                        </button>
+                        <span className="text-[12px] text-muted">
+                          {timeCount} send time{timeCount === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <Form.ErrorList errors={errors} />
+                    </div>
+                  )}
+                </Form.List>
               </Form.Item>
             </div>
 

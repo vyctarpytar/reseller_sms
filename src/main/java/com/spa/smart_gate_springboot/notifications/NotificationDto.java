@@ -19,6 +19,9 @@ public class NotificationDto {
     private String snMessage;
     private String snFrequency;
     private Integer snIntervalDays;
+    private String snSendTimes;
+
+    // Accepted so an older client (or a cached bundle mid-deploy) keeps working.
     private String snSendTime;
 
     @JsonFormat(pattern = "yyyy-MM-dd")

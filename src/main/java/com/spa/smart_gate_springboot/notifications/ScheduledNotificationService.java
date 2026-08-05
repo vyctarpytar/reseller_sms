@@ -18,9 +18,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -177,7 +179,7 @@ public class ScheduledNotificationService {
             try {
                 Integer runCount = notification.getSnRunCount();
                 notification.setSnRunCount(runCount == null ? 1 : runCount + 1);
-                notification.setSnNextRunAt(advanceFrom(notification));
+                notification.setSnNextRunAt(nextOccurrenceAfter(notification, LocalDateTime.now()));
                 notificationRepository.saveAndFlush(notification);
             } catch (Exception e) {
                 log.error("[NOTIF] Could not roll schedule forward for {} : {}", notification.getSnId(), e.getMessage(), e);
@@ -281,13 +283,8 @@ public class ScheduledNotificationService {
             throw new IllegalArgumentException("Interval days must be at least 1 when frequency is CUSTOM_DAYS");
         }
 
-        String sendTime = trimToNull(dto.getSnSendTime());
-        if (sendTime == null) {
-            sendTime = DEFAULT_SEND_TIME;
-        }
-        if (!TIME_PATTERN.matcher(sendTime).matches()) {
-            throw new IllegalArgumentException("Send time must be in HH:mm 24-hour format: " + sendTime);
-        }
+        String raw = trimToNull(dto.getSnSendTimes()) == null ? dto.getSnSendTime() : dto.getSnSendTimes();
+        String sendTimes = normalizeSendTimes(raw);
 
         String channels = normalizeChannels(dto.getSnChannels());
         String recipients = normalizeRecipients(dto.getSnRecipients());
@@ -305,7 +302,7 @@ public class ScheduledNotificationService {
         notification.setSnMessage(message);
         notification.setSnFrequency(frequency.name());
         notification.setSnIntervalDays(frequency == NotificationFrequency.CUSTOM_DAYS ? intervalDays : null);
-        notification.setSnSendTime(sendTime);
+        notification.setSnSendTimes(sendTimes);
         notification.setSnStartDate(dto.getSnStartDate() == null ? LocalDate.now() : dto.getSnStartDate());
         notification.setSnChannels(channels);
         notification.setSnRecipients(recipients);
@@ -313,29 +310,62 @@ public class ScheduledNotificationService {
     }
 
     LocalDateTime computeNextRun(ScheduledNotification notification) {
-        LocalDateTime anchor = LocalDateTime.of(notification.getSnStartDate(),
-                LocalTime.parse(notification.getSnSendTime()));
-        return advanceUntilFuture(NotificationFrequency.parse(notification.getSnFrequency()), anchor,
-                notification.getSnIntervalDays());
+        return nextOccurrenceAfter(notification, LocalDateTime.now());
     }
 
-    private LocalDateTime advanceFrom(ScheduledNotification notification) {
-        LocalDateTime anchor = notification.getSnNextRunAt() == null ? LocalDateTime.now() : notification.getSnNextRunAt();
-        return advanceUntilFuture(NotificationFrequency.parse(notification.getSnFrequency()), anchor,
-                notification.getSnIntervalDays());
-    }
+    // Occurrences are every cycle date x every send time; the next run is the earliest one after `after`.
+    private LocalDateTime nextOccurrenceAfter(ScheduledNotification notification, LocalDateTime after) {
+        NotificationFrequency frequency = NotificationFrequency.parse(notification.getSnFrequency());
+        List<LocalTime> times = parseTimes(notification.getSnSendTimes());
+        LocalDate start = notification.getSnStartDate() == null ? LocalDate.now() : notification.getSnStartDate();
+        Integer intervalDays = notification.getSnIntervalDays();
 
-    private LocalDateTime advanceUntilFuture(NotificationFrequency frequency, LocalDateTime anchor, Integer intervalDays) {
-        LocalDateTime now = LocalDateTime.now();
-        if (anchor.isAfter(now)) {
-            return anchor;
-        }
         // Runaway guard: a years-old start date on a daily cadence would otherwise loop unbounded.
-        LocalDateTime next = anchor;
-        for (int i = 0; i < MAX_ADVANCE_STEPS && !next.isAfter(now); i++) {
-            next = frequency.advance(next, intervalDays);
+        for (int step = 0; step < MAX_ADVANCE_STEPS; step++) {
+            LocalDate date = frequency.advance(start, step, intervalDays);
+            for (LocalTime time : times) {
+                LocalDateTime candidate = LocalDateTime.of(date, time);
+                if (candidate.isAfter(after)) {
+                    return candidate;
+                }
+            }
         }
-        return next.isAfter(now) ? next : frequency.advance(now, intervalDays);
+        return frequency.advance(after, intervalDays);
+    }
+
+    private List<LocalTime> parseTimes(String raw) {
+        List<LocalTime> times = new ArrayList<>();
+        for (String part : String.valueOf(raw == null ? DEFAULT_SEND_TIME : raw).split(",")) {
+            String value = part.trim();
+            if (TIME_PATTERN.matcher(value).matches()) {
+                times.add(LocalTime.parse(value));
+            }
+        }
+        if (times.isEmpty()) {
+            times.add(LocalTime.parse(DEFAULT_SEND_TIME));
+        }
+        Collections.sort(times);
+        return times;
+    }
+
+    private String normalizeSendTimes(String raw) {
+        Set<String> times = new TreeSet<>();
+        if (raw != null) {
+            for (String part : raw.split(",")) {
+                String value = part.trim();
+                if (value.isEmpty()) {
+                    continue;
+                }
+                if (!TIME_PATTERN.matcher(value).matches()) {
+                    throw new IllegalArgumentException("Send time must be in HH:mm 24-hour format: " + value);
+                }
+                times.add(value);
+            }
+        }
+        if (times.isEmpty()) {
+            times.add(DEFAULT_SEND_TIME);
+        }
+        return String.join(",", times);
     }
 
     private ScheduledNotification require(UUID snId) {

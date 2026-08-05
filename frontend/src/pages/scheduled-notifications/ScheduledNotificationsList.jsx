@@ -33,6 +33,9 @@ const truncateText = (text, maxLength) => {
   return text;
 };
 
+const sendTimesLabel = (item) =>
+  splitCsv(item?.snSendTimes || item?.snSendTime).join(", ") || "—";
+
 function ScheduledNotificationsList() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -217,7 +220,7 @@ function ScheduledNotificationsList() {
       render: (item) => (
         <div>
           <p>{frequencyLabel(item?.snFrequency)}</p>
-          <p className="text-[11px] text-muted mt-1">at {item?.snSendTime || "—"}</p>
+          <p className="text-[11px] text-muted mt-1">at {sendTimesLabel(item)}</p>
         </div>
       ),
     },
@@ -359,7 +362,7 @@ function ScheduledNotificationsList() {
                         </p>
                         <p className="text-[11px] text-muted mt-1.5">
                           {frequencyLabel(record?.snFrequency)} at{" "}
-                          {record?.snSendTime || "—"}
+                          {sendTimesLabel(record)}
                         </p>
                         <div className="mt-2">{channelPills(record?.snChannels)}</div>
                       </div>

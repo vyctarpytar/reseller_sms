@@ -2,6 +2,7 @@ package com.spa.smart_gate_springboot.notifications;
 
 import lombok.Getter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -20,6 +21,31 @@ public enum NotificationFrequency {
 
     NotificationFrequency(String label) {
         this.label = label;
+    }
+
+    // Steps from the original start, never iteratively: repeated +1 month drifts off month-ends
+    // (Jan 31 -> Feb 28 -> Mar 28), while start.plusMonths(k) keeps landing on the 31st.
+    public LocalDate advance(LocalDate start, int steps, Integer intervalDays) {
+        switch (this) {
+            case DAILY:
+                return start.plusDays(steps);
+            case WEEKLY:
+                return start.plusWeeks(steps);
+            case MONTHLY:
+                return start.plusMonths(steps);
+            case EVERY_2_MONTHS:
+                return start.plusMonths(2L * steps);
+            case EVERY_3_MONTHS:
+                return start.plusMonths(3L * steps);
+            case EVERY_6_MONTHS:
+                return start.plusMonths(6L * steps);
+            case YEARLY:
+                return start.plusYears(steps);
+            case CUSTOM_DAYS:
+                return start.plusDays((long) steps * (intervalDays == null || intervalDays < 1 ? 1 : intervalDays));
+            default:
+                return start.plusDays(steps);
+        }
     }
 
     public LocalDateTime advance(LocalDateTime from, Integer intervalDays) {

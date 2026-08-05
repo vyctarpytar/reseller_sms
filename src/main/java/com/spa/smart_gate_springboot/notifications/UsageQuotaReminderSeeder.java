@@ -39,7 +39,7 @@ public class UsageQuotaReminderSeeder implements ApplicationRunner {
                     .snSubject(SUBJECT)
                     .snMessage(MESSAGE)
                     .snFrequency(NotificationFrequency.EVERY_2_MONTHS.name())
-                    .snSendTime("09:00")
+                    .snSendTimes("09:00")
                     .snStartDate(LocalDate.now())
                     .snChannels(ScheduledNotification.CHANNEL_SMS + "," + ScheduledNotification.CHANNEL_EMAIL)
                     .snRecipients(SEED_MSISDN)

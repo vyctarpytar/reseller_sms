@@ -49,7 +49,10 @@ public class ScheduledNotification {
 
     private String snFrequency;
     private Integer snIntervalDays;
-    private String snSendTime;
+    // Comma-separated "HH:mm" list. Reuses the original single-value column so no prod DDL
+    // or backfill is needed — an existing "09:00" is already a valid one-entry list.
+    @Column(name = "sn_send_time")
+    private String snSendTimes;
     private LocalDate snStartDate;
     private String snChannels;
 
