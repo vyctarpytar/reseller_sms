@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.StringJoiner;
 
 /**
  * Single owner of "persist + debit + send an SMS arc". Every path that bills or dispatches a message —
@@ -72,11 +73,48 @@ public class SmsDispatchService {
      * and {@code msgSentRetried} is set so the cron retries each message at most once.
      */
     public void resendBilled(MsgMessageQueueArc arc) {
-        arc.setMsgCode(new UniqueCodeGenerator().generateSecureApiKey());
-        arc.setMsgStatus("PENDING_PROCESSING");
-        arc.setMsgSentRetried(true);
-        arcRepo.save(arc);
-        dispatchSend(arc);
+        resendBilledBatch(List.of(arc));
+    }
+
+    /**
+     * Batch form of {@link #resendBilled}: stamp the WHOLE batch back to the DB in one statement, then
+     * send. Two phases on purpose —
+     * <ol>
+     *   <li><b>stamp</b> — mint every fresh {@code msgCode} in memory and write all of them, plus the
+     *       {@code PENDING_PROCESSING} status and the {@code msgSentRetried} flag, with a single
+     *       {@link MsgMessageQueueArcRepository#markResendDispatching} UPDATE;</li>
+     *   <li><b>send</b> — walk the batch doing carrier I/O only, with no DB write of our own.</li>
+     * </ol>
+     * The old shape interleaved them (save → send → save → send …), so every message paid a detached
+     * {@code merge()} — SELECT + UPDATE + commit — mid-loop, and the DB cost of a tick scaled with the
+     * batch size. Stamping first also keeps the "at most one retry" guarantee stronger than before: the
+     * flag is durable for the entire batch before any send can throw.
+     */
+    public void resendBilledBatch(List<MsgMessageQueueArc> arcs) {
+        if (arcs == null || arcs.isEmpty()) return;
+
+        stampForResend(arcs);
+        for (MsgMessageQueueArc arc : arcs) {
+            dispatchSend(arc); // never throws — one bad send must not abandon the rest of the batch
+        }
+    }
+
+    /** Phase 1 of {@link #resendBilledBatch}: fresh msgCodes in memory, one UPDATE for the lot. */
+    private void stampForResend(List<MsgMessageQueueArc> arcs) {
+        UniqueCodeGenerator codeGenerator = new UniqueCodeGenerator();
+        StringJoiner ids = new StringJoiner(",");
+        StringJoiner codes = new StringJoiner(",");
+
+        for (MsgMessageQueueArc arc : arcs) {
+            String msgCode = codeGenerator.generateSecureApiKey();
+            arc.setMsgCode(msgCode); // in-memory too: the send reads it as the carrier's uniqueId
+            arc.setMsgStatus("PENDING_PROCESSING");
+            arc.setMsgSentRetried(true);
+            ids.add(arc.getMsgId().toString());
+            codes.add(msgCode);
+        }
+
+        arcRepo.markResendDispatching(ids.toString(), codes.toString());
     }
 
     /**

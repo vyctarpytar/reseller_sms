@@ -139,12 +139,7 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
     List<MsgMessageQueueArc> getMsgPendingCreditForAccount(@Param("accountId") UUID accountId, @Param("msgStatus") String msgStatus);
 
 
-    @Query(value = """
-            SELECT * FROM msg.message_queue_arc m where msg_status = 'SENT' and cast(msg_created_date as date) > current_date - 3
-            """, countQuery = """
-            SELECT count(*) FROM msg.message_queue_arc m where msg_status = 'SENT' and cast(msg_created_date as date) > current_date - 3
-            """, nativeQuery = true)
-    Page<MsgMessageQueueArc> getWeiserPendingDNR(Pageable pageable);
+
 
 
     /**
@@ -177,6 +172,49 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
     List<MsgMessageQueueArc> findRetryBatch(@Param("statuses") List<String> statuses, @Param("limit") int limit);
 
 
+    /**
+     * Claim a whole re-send batch in ONE statement: stamp each row with its freshly minted
+     * {@code msg_code}, flip it back to {@code PENDING_PROCESSING} and mark it retried.
+     * <p>
+     * Replaces the per-message {@code save()} the retry cron used to do inside its send loop. Those
+     * entities are <b>detached</b> (the cron isn't transactional, so each repository call gets its own
+     * EntityManager), which made every {@code save()} a {@code merge()} — a SELECT + an UPDATE + a
+     * commit, per message. A 500-row tick therefore cost ~1500 round-trips before a single SMS left the
+     * box; now it costs one.
+     * <p>
+     * {@code ids} and {@code codes} are positionally-paired CSV lists — same length, same order — zipped
+     * back into rows by Postgres' two-argument {@code unnest}, so no SQL is string-built in Java.
+     * msgCodes are URL-safe Base64 ({@code UniqueCodeGenerator}), so they can never contain a comma.
+     */
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = """
+                UPDATE msg.message_queue_arc a
+                SET msg_code = v.code,
+                    msg_status = 'PENDING_PROCESSING',
+                    msg_sent_retried = true
+                FROM unnest(cast(string_to_array(:ids, ',') as uuid[]),
+                            string_to_array(:codes, ',')) AS v(id, code)
+                WHERE a.msg_id = v.id
+            """)
+    int markResendDispatching(@Param("ids") String ids, @Param("codes") String codes);
+
+
+    /**
+     * Flag a batch of messages as retried in ONE statement — the Airtel-fallback half of the retry cron,
+     * which keeps its existing {@code msg_code} (Airtel mints its own on response) and so only needs the
+     * flag. Set <em>before</em> the sends, so a message can't loop if its send blows up.
+     */
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = """
+                UPDATE msg.message_queue_arc
+                SET msg_sent_retried = true
+                WHERE msg_id = ANY (cast(string_to_array(:ids, ',') as uuid[]))
+            """)
+    int markSentRetried(@Param("ids") String ids);
+
+
     @Query(value = """
             select   * from msg.message_queue_arc
             where msg_status = 'SENT'
@@ -187,33 +225,11 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
             """, nativeQuery = true)
     Page<MsgMessageQueueArc> resendSentStatusAfter4hrs(Pageable pageable);
 
-    @Query(value = """
-               select   * from msg.message_queue_arc
-                        where msg_status = 'SENT'
-                          and msg_message ilike '%MAR-2025%'
-                        and cast(msg_created_date as date) > current_date-30
-                        and msg_error_desc ilike '%Request processed successfully%'
-                          and msg_acc_id = 'e555ca75-2e1f-42f9-a03b-435e2214b4c1'
-                        and COALESCE(msg_sent_retried,FALSE) = false;
-            """, nativeQuery = true)
-    Page<MsgMessageQueueArc> resendSentStatusAfter4hrsMurangaMarch(Pageable pageable);
 
-
-    List<MsgMessageQueueArc> findAllByMsgExternalIdAndMsgAccIdAndMsgSubMobileNo(String msgExternalId, UUID msgAccId, String msgSubMobileNo);
 
     List<MsgMessageQueueArc> findByMsgCode(String msgCode);
 
 
-    @Modifying
-    @Transactional
-    @Query(nativeQuery = true, value = """
-                UPDATE msg.message_queue_arc
-                SET msg_client_delivery_status = 'FAILED', 
-                    msg_error_desc = :message, 
-                    msg_retry_count = :counter
-                WHERE msg_id = :msgId
-            """)
-    void updateMessageDeliveryToFailed(@Param("msgId") UUID msgId, @Param("message") String message, @Param("counter") int counter);
 
 
     @Modifying
