@@ -1,15 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
-import { 
-  Form, 
-  Input, 
+import {
+  Form,
+  Input,
   Modal,
+  Select,
   Spin,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom"; 
-import toast from "react-hot-toast"; 
-import {   save } from "../../features/save/saveSlice"; 
- 
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import {   save } from "../../features/save/saveSlice";
+import { IdTypeData } from "../../data";
+
 const AddSenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
  
   const handleCancel = () => {
@@ -93,6 +95,25 @@ const AddSenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
               className="w-full"
             >
              <Input className="input"/>
+            </Form.Item>
+
+            <Form.Item
+              label="Sender ID Type"
+              name="shSenderType"
+              rules={[
+                {
+                  required: true,
+                  message: "Required field",
+                },
+              ]}
+              className="w-full"
+            >
+              <Select
+                allowClear
+                placeholder="Select sender ID type"
+                style={{ width: "100%" }}
+                options={IdTypeData}
+              />
             </Form.Item>
 
             <div className="flex justify-between mt-[48px] ">
