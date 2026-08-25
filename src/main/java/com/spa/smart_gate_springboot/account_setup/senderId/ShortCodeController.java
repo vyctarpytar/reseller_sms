@@ -26,9 +26,12 @@ public class ShortCodeController {
 
 //    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping("/assign/{accId}")
-    public StandardJsonResponse assignAccountToSetUpArray(@PathVariable UUID accId, @RequestBody @NotNull ShShorCode shIds, HttpServletRequest request) {
+    public StandardJsonResponse assignAccountToSetUpArray(@PathVariable UUID accId, @RequestBody @NotNull ShShorCode shIds, HttpServletRequest request, @RequestParam(required = false) String reseller_id) {
         StandardJsonResponse resp = new StandardJsonResponse();
         var auth = userService.getCurrentUser(request);
+        if (reseller_id != null) {
+            auth.setUsrResellerId(UUID.fromString(reseller_id));
+        }
 
         //            delete before saving :- do not remove this here
         msgShortcodeSetupService.deleteAssignedShortCodes(accId);
@@ -51,8 +54,11 @@ public class ShortCodeController {
     }
 
     @PostMapping
-    public StandardJsonResponse fetchAllSetups(HttpServletRequest request, @RequestBody ShFilterDto shFilterDto) {
+    public StandardJsonResponse fetchAllSetups(HttpServletRequest request, @RequestBody ShFilterDto shFilterDto, @RequestParam(required = false) String reseller_id) {
         var auth = userService.getCurrentUser(request);
+        if (reseller_id != null) {
+            shFilterDto.setShResellerId(UUID.fromString(reseller_id));
+        }
         return shortCodeService.fetchAllSetups(auth, shFilterDto);
     }
 
@@ -81,8 +87,11 @@ public class ShortCodeController {
     }
 
     @PostMapping("register")
-    public StandardJsonResponse registerSenderId(HttpServletRequest request, @RequestBody @Valid ShortCodeDto shortCode) {
+    public StandardJsonResponse registerSenderId(HttpServletRequest request, @RequestBody @Valid ShortCodeDto shortCode, @RequestParam(required = false) String reseller_id) {
         var auth = userService.getCurrentUser(request);
+        if (reseller_id != null) {
+            auth.setUsrResellerId(UUID.fromString(reseller_id));
+        }
         return shortCodeService.registerSenderId(shortCode,auth);
     }
 
