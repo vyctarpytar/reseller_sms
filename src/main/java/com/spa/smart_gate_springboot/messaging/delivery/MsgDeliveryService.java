@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.delivery;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
@@ -21,14 +23,14 @@ public class MsgDeliveryService {
 
     @Transactional
     public void saveMsgDelivery(MsgMessageQueueArc msgMessageQueueArc) {
-        MsgDelivery msgDelivery = MsgDelivery.builder().msgdDate(LocalDate.now())
+        MsgDelivery msgDelivery = MsgDelivery.builder().msgdDate(AppTime.today())
                 .msgdDelCode(msgMessageQueueArc.getMsgCode()).
                 msgdMsgId(msgMessageQueueArc.getMsgId())
                 .msgdStatus("PENDING")
                 .msgdLogs("PENDING")
                 .msgdIsRetry("FIRST")
                 .msgdPrsp(msgMessageQueueArc.getMsgSenderLevel())
-                .msgdTimestamp(LocalDateTime.now()).build();
+                .msgdTimestamp(AppTime.now()).build();
         msgDeliveryRepository.saveAndFlush(msgDelivery);
     }
 

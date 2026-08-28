@@ -1,9 +1,9 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,6 +14,16 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @ToString
+/**
+ * The archive row for one SMS send — the source of truth for billing, retries and DLRs.
+ *
+ * <p><b>Created date.</b> {@link #msgCreatedDate} / {@link #msgCreatedTime} are stamped in
+ * {@link #stampCreated()} from {@link AppTime#now()}, i.e. this JVM's clock in {@code Africa/Nairobi}.
+ * They used to carry Hibernate's {@code @CreationTimestamp}, which reads the ambient VM default zone
+ * ({@code Clock.systemDefaultZone()}, captured at bootstrap) — correct only for as long as nothing
+ * moves that process-global. Stamping explicitly makes the zone impossible to drift, and keeps this
+ * column consistent with every other timestamp the platform writes.
+ */
 @Table(schema = "msg")
 @Entity(name = "message_queue_arc")
 public class MsgMessageQueueArc {
@@ -40,8 +50,8 @@ public class MsgMessageQueueArc {
     private UUID msgAccId;
     private String msgCode;
     private BigDecimal msgUsrId;
+    /** Stamped by {@link #stampCreated()} from {@code AppTime.now()} — see the class javadoc. */
     @Column(nullable = false)
-    @CreationTimestamp
     private LocalDateTime msgCreatedDate;
     private String msgStatus;
     private LocalDateTime msgDeliveredDate;
@@ -62,7 +72,7 @@ public class MsgMessageQueueArc {
     private String msgErrorCode;
     @Column(length = 10000)
     private String msgErrorDesc;
-    @CreationTimestamp
+    /** Same instant as {@link #msgCreatedDate}; kept for the legacy reports that read it. */
     private LocalDateTime msgCreatedTime;
     private String msgWhyResent;
     private Long msgPriorityId;
@@ -92,4 +102,20 @@ public class MsgMessageQueueArc {
      */
     private LocalDateTime msgLastCallbackAttempt;
 
+    /**
+     * Stamp the creation timestamps from the JVM clock in EAT, on insert only. Both fields get the
+     * same instant. A value already set by the caller wins (the Airtel path sets its own), so this
+     * only fills the gap left by {@code BeanUtils.copyProperties}, which cannot carry
+     * {@code MsgQueue}'s {@code java.util.Date} into these {@code LocalDateTime} fields.
+     */
+    @PrePersist
+    void stampCreated() {
+        LocalDateTime now = AppTime.now();
+        if (msgCreatedDate == null) {
+            msgCreatedDate = now;
+        }
+        if (msgCreatedTime == null) {
+            msgCreatedTime = now;
+        }
+    }
 }

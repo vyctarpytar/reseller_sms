@@ -37,7 +37,8 @@ App listens on `server.port=8443`. Swagger UI is served (springdoc) and is in th
 ## Architecture
 
 Entry point: [Smart_gate_spring_boot.java](src/main/java/com/spa/smart_gate_springboot/Smart_gate_spring_boot.java)
-(`@SpringBootApplication`, `@EnableScheduling`, forces TZ Africa/Nairobi). Source is organized by
+(`@SpringBootApplication`, `@EnableScheduling`; its first statement is `AppTime.install()`, which pins the
+JVM to Africa/Nairobi — see **Time** below). Source is organized by
 **domain package**, not by layer: `auth`, `user`, `account_setup/*` (reseller, account, wallet, credit,
 invoice, senderId, group, member, blacklist, request), `messaging/*` (send_message, sender, shedules,
 templates, delivery, operatorPrefix), `payment/*`, `pushSDK/daraja`, `dashboad`, `report`, `menu`,
@@ -107,11 +108,39 @@ append-only ledger. Core in `account_setup/wallet`:
   (`crons/MpesaB2cPayoutsCron`, every 10s) polls B2C status; failed B2C is reversed atomically (guarded
   by `B2cTransaction.reversed`). Settlement/invoicing in `account_setup/invoice` + `account_setup/credit`.
 
+## Time
+
+**Every timestamp comes from the JVM in `Africa/Nairobi` — never from the DB.** Use
+[`AppTime.now()` / `AppTime.today()` / `AppTime.nowDate()`](src/main/java/com/spa/smart_gate_springboot/utils/AppTime.java),
+not `LocalDateTime.now()` / `LocalDate.now()` / `new Date()`; the bare JDK calls read
+`ZoneId.systemDefault()`, a process-global a container image or a stray `-Duser.timezone` can move.
+`AppTime.install()` is the first statement of `main()` because things that read the JVM default can't be
+parameterised: Hibernate's `@CreationTimestamp`/`@UpdateTimestamp` (VM clock, captured at bootstrap),
+`SimpleDateFormat`, `Calendar`, pgjdbc's binding of `java.util.Date`, and log timestamps.
+
+**No query may read the database clock.** `now()`, `current_timestamp` and `current_date` resolve
+against the *Postgres session* zone, which is UTC on a stock RDS instance — that is exactly how a
+created/delivered date lands three hours behind EAT. Every such call site is now a bound parameter fed
+from `AppTime` (`updateDeliverNote`'s `:deliveredDate`; the `current_date - N` retry/callback windows in
+`MsgMessageQueueArcRepository`; `AccountRepository.findAccountsForLowBalanceAlert`;
+`InvoiceRepository.getResellerInvoicesPerYearSummary`; `ApiKeyRepository.existsValidApiKey`). Keep it
+that way — and never give a column a `DEFAULT now()`.
+
+All the Postgres columns involved are `timestamp without time zone` bound from `LocalDateTime` or
+`java.util.Date`, so pgjdbc writes wall-clock verbatim and the server's own TZ never re-interprets it —
+the stored values are EAT. `hibernate.jdbc.time_zone`, `spring.jackson.time-zone` and the Hikari
+`connection-init-sql` are insurance for the day a column becomes `timestamptz`; they are not what makes
+this correct. `AppTimeTest` locks the invariant in.
+
+The SMPP gateway (`sms_smmp_gateway`) pins the same zone in its own `main()` and reads
+`msg.message_queue_arc.msg_delivered_date` straight back out into the downstream `done date:` SMPP
+receipt field — that contract breaks if this service ever changes zone.
+
 ## Database & persistence conventions
 
 - **Postgres** `synq_africa_rds`, two schemas: **`msg`** (messaging, wallet, b2c, invoices) and
   **`js_core`** (reseller, accounts, credit, operator prefixes). `ddl-auto: update`. KES currency,
-  Africa/Nairobi timezone enforced at the JVM, Hikari, and session level.
+  Africa/Nairobi timezone enforced at the JVM, Hikari, and session level — see **Time** below.
 - **Entities override the JPA name to a snake_case table**: `@Entity(name = "message_queue_arc")`,
   `@Entity(name = "jsc_accounts")`, etc. **JPQL `@Query` must use that entity name, not the Java class
   name** — otherwise the app aborts on boot with `UnknownEntityException`.

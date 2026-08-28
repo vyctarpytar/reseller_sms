@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.dashboad.annual;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -78,8 +80,8 @@ public class AnnualReport {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = AppTime.now();
+        updatedAt = AppTime.now();
         if (status == null) {
             status = "PROCESSING";
         }
@@ -87,6 +89,6 @@ public class AnnualReport {
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = AppTime.now();
     }
 }

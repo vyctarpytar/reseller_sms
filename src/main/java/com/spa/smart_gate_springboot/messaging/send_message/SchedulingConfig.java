@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +40,8 @@ public class SchedulingConfig {
 
     @Scheduled(fixedDelayString = "${sms.retry.interval-ms:5000}")
     public void retryFailedMessages() {
-        List<MsgMessageQueueArc> batch = arcRepository.findRetryBatch(RETRYABLE_STATUSES, retryBatchSize);
+        List<MsgMessageQueueArc> batch = arcRepository.findRetryBatch(
+                RETRYABLE_STATUSES, AppTime.today().minusDays(2).atStartOfDay(), retryBatchSize);
         if (batch.isEmpty()) return;
 
         List<MsgMessageQueueArc> airtelFallback = new ArrayList<>();
@@ -89,7 +92,8 @@ public class SchedulingConfig {
     public void resendSentStatusWithinHrs() {
         try {
             PageRequest pageRequest = PageRequest.of(0, 100);
-            Page<MsgMessageQueueArc> pagedData = arcRepository.resendSentStatusAfter4hrs(pageRequest);
+            Page<MsgMessageQueueArc> pagedData = arcRepository.resendSentStatusAfter4hrs(
+                    AppTime.now().getHour() - 4, AppTime.today(), pageRequest);
             // In-place re-send (no delete, no re-debit) — same model as retryOne.
             pagedData.getContent().forEach(smsDispatchService::resendBilled);
         } catch (Exception e) {

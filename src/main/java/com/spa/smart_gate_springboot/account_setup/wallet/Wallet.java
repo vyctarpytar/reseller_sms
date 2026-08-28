@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.wallet;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -70,13 +72,13 @@ public class Wallet {
 
     @PrePersist
     void prePersist() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = AppTime.now();
+        updatedAt = AppTime.now();
     }
 
     @PreUpdate
     void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = AppTime.now();
     }
 
     public BigDecimal getAvailableBalance() {

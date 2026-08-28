@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.notifications;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.mailjet.JavaEmailService;
 import com.spa.smart_gate_springboot.mailjet.SynqEmailTemplate;
 import com.spa.smart_gate_springboot.messaging.send_message.SystemSmsService;
@@ -67,7 +69,7 @@ public class ScheduledNotificationService {
         notification.setSnRunCount(0);
         notification.setSnCreatedById(user.getUsrId());
         notification.setSnCreatedByName(user.getEmail());
-        notification.setSnCreatedOn(LocalDateTime.now());
+        notification.setSnCreatedOn(AppTime.now());
         notification.setSnNextRunAt(computeNextRun(notification));
 
         ScheduledNotification saved = notificationRepository.saveAndFlush(notification);
@@ -85,7 +87,7 @@ public class ScheduledNotificationService {
         apply(notification, dto);
         notification.setSnNextRunAt(computeNextRun(notification));
         notification.setSnUpdatedById(user.getUsrId());
-        notification.setSnUpdatedOn(LocalDateTime.now());
+        notification.setSnUpdatedOn(AppTime.now());
 
         ScheduledNotification saved = notificationRepository.saveAndFlush(notification);
         resp.setData("result", saved, resp);
@@ -108,7 +110,7 @@ public class ScheduledNotificationService {
             notification.setSnNextRunAt(computeNextRun(notification));
         }
         notification.setSnUpdatedById(user.getUsrId());
-        notification.setSnUpdatedOn(LocalDateTime.now());
+        notification.setSnUpdatedOn(AppTime.now());
 
         ScheduledNotification saved = notificationRepository.saveAndFlush(notification);
         resp.setData("result", saved, resp);
@@ -122,7 +124,7 @@ public class ScheduledNotificationService {
         ScheduledNotification notification = require(snId);
         notification.setSnStatus(ScheduledNotification.STATUS_DELETED);
         notification.setSnUpdatedById(user.getUsrId());
-        notification.setSnUpdatedOn(LocalDateTime.now());
+        notification.setSnUpdatedOn(AppTime.now());
         notificationRepository.saveAndFlush(notification);
 
         resp.setMessage("message", "Scheduled notification deleted successfully", resp);
@@ -157,7 +159,7 @@ public class ScheduledNotificationService {
     }
 
     public void dispatchDue() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = AppTime.now();
         List<ScheduledNotification> due = notificationRepository
                 .findBySnStatusAndSnNextRunAtLessThanEqual(ScheduledNotification.STATUS_ACTIVE, now);
         if (due == null || due.isEmpty()) {
@@ -172,14 +174,14 @@ public class ScheduledNotificationService {
                 notification.setSnLastStatus(runLog.getSnlStatus());
             } catch (Exception e) {
                 log.error("[NOTIF] Dispatch failed for {} : {}", notification.getSnId(), e.getMessage(), e);
-                notification.setSnLastRunAt(LocalDateTime.now());
+                notification.setSnLastRunAt(AppTime.now());
                 notification.setSnLastStatus(ScheduledNotificationLog.STATUS_FAILED);
             }
             // Always roll forward, even after a failed dispatch, or the row stays due every tick.
             try {
                 Integer runCount = notification.getSnRunCount();
                 notification.setSnRunCount(runCount == null ? 1 : runCount + 1);
-                notification.setSnNextRunAt(nextOccurrenceAfter(notification, LocalDateTime.now()));
+                notification.setSnNextRunAt(nextOccurrenceAfter(notification, AppTime.now()));
                 notificationRepository.saveAndFlush(notification);
             } catch (Exception e) {
                 log.error("[NOTIF] Could not roll schedule forward for {} : {}", notification.getSnId(), e.getMessage(), e);
@@ -188,7 +190,7 @@ public class ScheduledNotificationService {
     }
 
     private ScheduledNotificationLog dispatch(ScheduledNotification notification, String triggeredBy) {
-        LocalDateTime runAt = LocalDateTime.now();
+        LocalDateTime runAt = AppTime.now();
         String channels = notification.getSnChannels() == null ? "" : notification.getSnChannels();
         int smsSent = 0;
         int smsFailed = 0;
@@ -303,21 +305,21 @@ public class ScheduledNotificationService {
         notification.setSnFrequency(frequency.name());
         notification.setSnIntervalDays(frequency == NotificationFrequency.CUSTOM_DAYS ? intervalDays : null);
         notification.setSnSendTimes(sendTimes);
-        notification.setSnStartDate(dto.getSnStartDate() == null ? LocalDate.now() : dto.getSnStartDate());
+        notification.setSnStartDate(dto.getSnStartDate() == null ? AppTime.today() : dto.getSnStartDate());
         notification.setSnChannels(channels);
         notification.setSnRecipients(recipients);
         notification.setSnEmails(emails);
     }
 
     LocalDateTime computeNextRun(ScheduledNotification notification) {
-        return nextOccurrenceAfter(notification, LocalDateTime.now());
+        return nextOccurrenceAfter(notification, AppTime.now());
     }
 
     // Occurrences are every cycle date x every send time; the next run is the earliest one after `after`.
     private LocalDateTime nextOccurrenceAfter(ScheduledNotification notification, LocalDateTime after) {
         NotificationFrequency frequency = NotificationFrequency.parse(notification.getSnFrequency());
         List<LocalTime> times = parseTimes(notification.getSnSendTimes());
-        LocalDate start = notification.getSnStartDate() == null ? LocalDate.now() : notification.getSnStartDate();
+        LocalDate start = notification.getSnStartDate() == null ? AppTime.today() : notification.getSnStartDate();
         Integer intervalDays = notification.getSnIntervalDays();
 
         // Runaway guard: a years-old start date on a daily cadence would otherwise loop unbounded.

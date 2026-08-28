@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.shedules;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.group.ChGroup;
 import com.spa.smart_gate_springboot.account_setup.group.ChGroupService;
 import com.spa.smart_gate_springboot.account_setup.member.ChMember;
@@ -57,7 +59,7 @@ public class ScheduleService {
 
     public StandardJsonResponse scheduleGroupMessage(UUID grpId, GroupMessageDto grpMessageDto, User user) {
         ChGroup chGroup = chGroupService.getChGroup(grpId);
-        Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schAccId(user.getUsrAccId()).schGrpId(grpId).schCreatedOn(LocalDateTime.now()).schMessage(grpMessageDto.getGrpMessage()).schReleaseTime(grpMessageDto.getGrpSendAt()).schSenderid(grpMessageDto.getSenderId()).schGroupName(chGroup.getGroupName()).build();
+        Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schAccId(user.getUsrAccId()).schGrpId(grpId).schCreatedOn(AppTime.now()).schMessage(grpMessageDto.getGrpMessage()).schReleaseTime(grpMessageDto.getGrpSendAt()).schSenderid(grpMessageDto.getSenderId()).schGroupName(chGroup.getGroupName()).build();
         scheduleRepository.saveAndFlush(sche);
 
         SingleMessageDto sendSingleSmsDto = SingleMessageDto.builder().mobile(user.getPhoneNumber()).message(grpMessageDto.getGrpMessage()).senderId(grpMessageDto.getSenderId()).build();
@@ -72,7 +74,7 @@ public class ScheduleService {
         String[] phoneNumbers = singleMessageDto.getMobile().split(",");
 
         for (String phoneNumber : phoneNumbers) {
-            Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schPhoneNumber(phoneNumber).schAccId(user.getUsrAccId()).schCreatedOn(LocalDateTime.now()).schMessage(singleMessageDto.getMessage()).schReleaseTime(singleMessageDto.getSendAt()).schSenderid(singleMessageDto.getSenderId()).build();
+            Schedule sche = Schedule.builder().schCreatedById(user.getUsrId()).schCreatedByName(user.getEmail()).schPhoneNumber(phoneNumber).schAccId(user.getUsrAccId()).schCreatedOn(AppTime.now()).schMessage(singleMessageDto.getMessage()).schReleaseTime(singleMessageDto.getSendAt()).schSenderid(singleMessageDto.getSenderId()).build();
             scheduleRepository.saveAndFlush(sche);
 
             SingleMessageDto sendSingleSmsDto = SingleMessageDto.builder().mobile(user.getPhoneNumber()).message(singleMessageDto.getMessage()).senderId(singleMessageDto.getSenderId()).build();
@@ -88,7 +90,7 @@ public class ScheduleService {
     @Scheduled(fixedRate = 5000)
     public void runScheduledMessages() {
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = AppTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         String formattedDate = now.format(formatter);
 
@@ -100,14 +102,14 @@ public class ScheduleService {
                 List<ChMember> memberList = memberService.getChMembersByGroupId(schedule.getSchGrpId());
                 for (ChMember m : memberList) {
                     String message = reformatMessage(schedule.getSchMessage(), m);
-                    MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(m.getChTelephone()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
+                    MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(AppTime.nowDate()).msgCreatedTime(String.valueOf(AppTime.now())).msgSubMobileNo(m.getChTelephone()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
                     queueMsgService.publishNewMessage(msgQueue);
                 }
 
             } else {
                 // send to one mobile number
                 String message = schedule.getSchMessage();
-                MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(schedule.getSchPhoneNumber()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
+                MsgQueue msgQueue = MsgQueue.builder().msgAccId(schedule.getSchAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(schedule.getSchSenderid()).msgMessage(message).msgCreatedDate(AppTime.nowDate()).msgCreatedTime(String.valueOf(AppTime.now())).msgSubMobileNo(schedule.getSchPhoneNumber()).msgCreatedBy(schedule.getSchCreatedById()).msgGroupId(schedule.getSchGrpId()).msgSourceIpAddress(schedule.getSchSourceIp()).build();
                 queueMsgService.publishNewMessage(msgQueue);
             }
             schedule.setSchStatus("SENT");
@@ -142,7 +144,7 @@ public class ScheduleService {
 
         schedule.setSchMessage(scheduleDto.getSchMessage());
         schedule.setSchReleaseTime(scheduleDto.getSchReleaseTime());
-        schedule.setSchUpdatedOn(LocalDateTime.now());
+        schedule.setSchUpdatedOn(AppTime.now());
         schedule.setSchUpdatedById(user.getUsrId());
         schedule.setSchUpdatedByName(user.getEmail());
         StandardJsonResponse resp = new StandardJsonResponse();
@@ -159,7 +161,7 @@ public class ScheduleService {
             throw new RuntimeException("Schedule Cannot Be Deleted");
 
         schedule.setSchStatus("DISABLED");
-        schedule.setSchUpdatedOn(LocalDateTime.now());
+        schedule.setSchUpdatedOn(AppTime.now());
         schedule.setSchUpdatedById(user.getUsrId());
         schedule.setSchUpdatedByName(user.getEmail());
         StandardJsonResponse resp = new StandardJsonResponse();

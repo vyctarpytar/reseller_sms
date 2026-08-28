@@ -100,11 +100,13 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
             WHERE msg_callback_url IS NOT NULL
               AND msg_client_delivery_status = 'PENDING'
               AND msg_delivered_date IS NOT NULL
-              AND cast(msg_created_date as date) >= current_date - 3
+              AND cast(msg_created_date as date) >= :createdOnOrAfter
               AND (msg_last_callback_attempt IS NULL OR msg_last_callback_attempt <= :retryBefore)
             ORDER BY msg_last_callback_attempt ASC NULLS FIRST
             """, nativeQuery = true)
-    Page<MsgMessageQueueArc> findPendingClientCallbacks(@Param("retryBefore") java.time.LocalDateTime retryBefore, Pageable pageable);
+    Page<MsgMessageQueueArc> findPendingClientCallbacks(@Param("retryBefore") java.time.LocalDateTime retryBefore,
+                                                        @Param("createdOnOrAfter") java.time.LocalDate createdOnOrAfter,
+                                                        Pageable pageable);
 
 
     /**
@@ -122,21 +124,24 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
               AND msg_delivered_date IS NULL
               AND msg_status IN (:statuses)
               AND msg_created_date <= :stuckBefore
-              AND cast(msg_created_date as date) >= current_date - 3
+              AND cast(msg_created_date as date) >= :createdOnOrAfter
               AND (msg_last_callback_attempt IS NULL OR msg_last_callback_attempt <= :retryBefore)
             ORDER BY msg_last_callback_attempt ASC NULLS FIRST
             """, nativeQuery = true)
     Page<MsgMessageQueueArc> findStuckClientCallbacks(@Param("statuses") List<String> statuses,
                                                       @Param("stuckBefore") java.time.LocalDateTime stuckBefore,
                                                       @Param("retryBefore") java.time.LocalDateTime retryBefore,
+                                                      @Param("createdOnOrAfter") java.time.LocalDate createdOnOrAfter,
                                                       Pageable pageable);
 
     @Query(value = """
             SELECT * FROM msg.message_queue_arc m WHERE cast(m.msg_acc_id as UUID) = cast( :accountId as UUID)
                         AND m.msg_status = :msgStatus
-                        AND cast(m.msg_created_date as date) > current_date - 3
+                        AND cast(m.msg_created_date as date) > :createdAfter
             """, nativeQuery = true)
-    List<MsgMessageQueueArc> getMsgPendingCreditForAccount(@Param("accountId") UUID accountId, @Param("msgStatus") String msgStatus);
+    List<MsgMessageQueueArc> getMsgPendingCreditForAccount(@Param("accountId") UUID accountId,
+                                                           @Param("msgStatus") String msgStatus,
+                                                           @Param("createdAfter") java.time.LocalDate createdAfter);
 
 
 
@@ -164,12 +169,14 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
             SELECT * FROM msg.message_queue_arc
             WHERE msg_status IN (:statuses)
               AND coalesce(msg_sent_retried, true) = false
-              AND msg_created_date >= current_date - 2
+              AND msg_created_date >= :createdOnOrAfter
               AND coalesce(msg_message, '') !~* '\\yotp\\y'
             ORDER BY msg_created_date
             LIMIT :limit
             """, nativeQuery = true)
-    List<MsgMessageQueueArc> findRetryBatch(@Param("statuses") List<String> statuses, @Param("limit") int limit);
+    List<MsgMessageQueueArc> findRetryBatch(@Param("statuses") List<String> statuses,
+                                            @Param("createdOnOrAfter") java.time.LocalDateTime createdOnOrAfter,
+                                            @Param("limit") int limit);
 
 
     /**
@@ -218,12 +225,14 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
     @Query(value = """
             select   * from msg.message_queue_arc
             where msg_status = 'SENT'
-             and extract(hour  from msg_created_date ) <= extract(hour from  NOW() AT TIME ZONE 'Africa/Nairobi') - 4
-            and cast(msg_created_date as date) = current_date
+             and cast(extract(hour from msg_created_date) as integer) <= :maxCreatedHour
+            and cast(msg_created_date as date) = :today
             and msg_error_desc ilike '%Request processed successfully%'
             and COALESCE(msg_sent_retried,FALSE) = false
             """, nativeQuery = true)
-    Page<MsgMessageQueueArc> resendSentStatusAfter4hrs(Pageable pageable);
+    Page<MsgMessageQueueArc> resendSentStatusAfter4hrs(@Param("maxCreatedHour") int maxCreatedHour,
+                                                       @Param("today") java.time.LocalDate today,
+                                                       Pageable pageable);
 
 
 
@@ -285,12 +294,16 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
     @Query(nativeQuery = true, value = """
               update msg.message_queue_arc
               set msg_status = :msgStatus,
-              msg_delivered_date = now(),
+              msg_delivered_date = :deliveredDate,
               msg_Request_Id = :msgRequestId
               where msg_code = :msgCode
               and msg_sub_mobile_no =:msisdn
             """)
-    void updateDeliverNote(@Param("msgStatus") String msgStatus, @Param("msgRequestId") String msgRequestId, @Param("msisdn") String msisdn, @Param("msgCode") String msgCode);
+    void updateDeliverNote(@Param("msgStatus") String msgStatus,
+                           @Param("msgRequestId") String msgRequestId,
+                           @Param("msisdn") String msisdn,
+                           @Param("msgCode") String msgCode,
+                           @Param("deliveredDate") java.time.LocalDateTime deliveredDate);
 
 
 }

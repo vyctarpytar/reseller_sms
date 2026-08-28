@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.crons;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransaction;
 import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransactionRepository;
 import com.spa.smart_gate_springboot.payment.mpesa.b2c.B2cTransactionStatus;
@@ -41,7 +43,7 @@ public class MpesaB2cPayoutsCron {
             // Stuck-row guard: never poll a payout forever. After the threshold, mark it FAILED (not
             // reversed) so an admin can investigate and reverse via the wallet API if funds didn't move.
             if (tx.getCreatedAt() != null
-                    && Duration.between(tx.getCreatedAt(), LocalDateTime.now()).compareTo(STUCK_THRESHOLD) > 0) {
+                    && Duration.between(tx.getCreatedAt(), AppTime.now()).compareTo(STUCK_THRESHOLD) > 0) {
                 tx.setStatus(B2cTransactionStatus.FAILED);
                 tx.setFailureReason("Poller gave up after " + STUCK_THRESHOLD.toHours()
                         + "h with no terminal gateway result — needs manual reconciliation");

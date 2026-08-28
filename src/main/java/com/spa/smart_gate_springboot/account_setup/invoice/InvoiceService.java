@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.invoice;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.credit.Credit;
@@ -68,7 +70,7 @@ public class InvoiceService {
         }
         UniqueCodeGenerator ug = new UniqueCodeGenerator();
         String xPlainCode = ug.getUniqueCode();
-        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoAccId(user.getUsrAccId()).invoResellerId(user.getUsrResellerId()).invoPayerMobileNumber(credit.getSmsPayerMobileNumber()).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).build();
+        Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoAccId(user.getUsrAccId()).invoResellerId(user.getUsrResellerId()).invoPayerMobileNumber(credit.getSmsPayerMobileNumber()).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(AppTime.now()).invoDueDate(AppTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).build();
 
         BigDecimal amountToLaunch  = credit.getSmsPayAmount();
         if(credit.getSmsLoadingMethod().equalsIgnoreCase("UNITS")){
@@ -96,7 +98,7 @@ public class InvoiceService {
         //load collection to weiser
         Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoPayerMobileNumber(credit.getSmsPayerMobileNumber())
                 .invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail())
-                .invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId())
+                .invoCreatedDate(AppTime.now()).invoDueDate(AppTime.now().plusDays(1)).invoCreatedBy(user.getUsrId())
                 .invoStatus(InvoStatus.PENDING_PAYMENT).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).build();
         response.setMessage("message", "STK pop for amount " + credit.getSmsPayAmount() + " to code " + invoice.getInvoCode(), response);
         launchSDkResellerSelf(invoice);
@@ -241,7 +243,7 @@ public class InvoiceService {
      */
     @Transactional
     public int expireStalePending() {
-        return invoiceRepository.expireStalePending(LocalDateTime.now());
+        return invoiceRepository.expireStalePending(AppTime.now());
     }
 
     private Invoice findByInvoCode(String billRefNumber) {
@@ -273,7 +275,7 @@ public class InvoiceService {
 
     public StandardJsonResponse getResellerInvoicesPerYearSummary(UUID rsId) {
         StandardJsonResponse response = new StandardJsonResponse();
-        List<Object[]> objectList = invoiceRepository.getResellerInvoicesPerYearSummary(rsId);
+        List<Object[]> objectList = invoiceRepository.getResellerInvoicesPerYearSummary(rsId, AppTime.today().getYear());
         List<InvoiceResellerSummary> list = objectList.stream().map(result -> {
             log.info("see result = : {}", Arrays.toString(result));
             gu.printToJson(result, "success");

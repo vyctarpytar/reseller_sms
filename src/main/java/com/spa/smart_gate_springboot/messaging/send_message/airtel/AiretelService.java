@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.airtel;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
@@ -138,10 +140,10 @@ public class AiretelService {
         try {
             String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
             SMSReport responsee = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
-            msgMessageQueueArc.setMsgCreatedDate(LocalDateTime.now());
-            msgMessageQueueArc.setMsgCreatedTime(LocalDateTime.now());
+            msgMessageQueueArc.setMsgCreatedDate(AppTime.now());
+            msgMessageQueueArc.setMsgCreatedTime(AppTime.now());
             msgMessageQueueArc.setMsgStatus(responsee.responses.get(0).responseDescription);
-            msgMessageQueueArc.setMsgDeliveredDate(LocalDateTime.now());
+            msgMessageQueueArc.setMsgDeliveredDate(AppTime.now());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
             msgMessageQueueArc.setMsgCode(responsee.responses.get(0).messageid);
@@ -170,7 +172,7 @@ public class AiretelService {
                 airtelNumberRepository.save(
                         AirtelNumber.builder()
                                 .anNumber(msisdn)
-                                .anCreatedDate(LocalDateTime.now())
+                                .anCreatedDate(AppTime.now())
                                 .build()
                 );
                 return;

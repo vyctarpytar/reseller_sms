@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.crons;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
 import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetup;
@@ -51,9 +53,10 @@ public class LowBalanceAlertCron {
     @Scheduled(fixedRate = 10 * 60_000)
     public void alertLowBalanceAccounts() {
         try {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = AppTime.now();
             LocalDateTime alertBefore = now.minusMinutes(alertIntervalMinutes);
-            List<Account> accounts = accountRepository.findAccountsForLowBalanceAlert(threshold, alertBefore);
+            List<Account> accounts = accountRepository.findAccountsForLowBalanceAlert(
+                    threshold, alertBefore, now.toLocalDate().atStartOfDay());
             if (accounts.isEmpty()) {
                 return;
             }
@@ -113,8 +116,8 @@ public class LowBalanceAlertCron {
                 .msgSenderId(senderId)
                 .msgMessage(lowBalanceSmsBody(acc))
                 .msgSubMobileNo(mobile)
-                .msgCreatedDate(new Date())
-                .msgCreatedTime(String.valueOf(LocalDateTime.now()))
+                .msgCreatedDate(AppTime.nowDate())
+                .msgCreatedTime(String.valueOf(AppTime.now()))
                 .msgCreatedByEmail("AUTO")
                 .build();
 

@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.reseller;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
@@ -74,7 +76,7 @@ public class ResellerService {
 
     private void createDefaultAccount(Reseller reseller1) {
         Account acc = Account.builder().accResellerId(reseller1.getRsId()).accMsgBal(BigDecimal.TEN)
-                .accCreatedBy(reseller1.getRsCreatedBy()).accCreatedDate(LocalDateTime.now()).accSmsPrice(reseller1.getRsSmsUnitPrice())
+                .accCreatedBy(reseller1.getRsCreatedBy()).accCreatedDate(AppTime.now()).accSmsPrice(reseller1.getRsSmsUnitPrice())
                 .accCity(reseller1.getRaCity()).accCountry(reseller1.getRaCountry()).accOfficeMobile(reseller1.getRsPhoneNumber())
                 .accName(reseller1.getRsCompanyName()).accAdminEmail(reseller1.getRsEmail()).accAdminMobile(reseller1.getRsPhoneNumber()).build();
         accountService.save(acc);
@@ -169,7 +171,7 @@ public class ResellerService {
 
         Reseller reseller = findById(rsId);
         reseller.setRsStatus("DELETED");
-        reseller.setRsDeletedDate(LocalDateTime.now());
+        reseller.setRsDeletedDate(AppTime.now());
         reseller.setRsDeletedByName(user.getEmail());
         reseller.setRsDeletedReason(acDelete.getAcDeleteReason());
         reseller.setRsDeletedBy(user.getUsrId());

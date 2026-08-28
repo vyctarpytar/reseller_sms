@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.pushSDK.daraja;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.pushSDK.PushSDKConfig;
 import com.spa.smart_gate_springboot.pushSDK.daraja.dto.DarajaTokenResponse;
 import com.spa.smart_gate_springboot.pushSDK.daraja.dto.StkPushRequest;
@@ -32,11 +34,11 @@ public class DarajaService {
         
         public TokenCache(String token, int expiresInSeconds) {
             this.token = token;
-            this.expiryTime = LocalDateTime.now().plusSeconds(expiresInSeconds - 60); // Subtract 60 seconds for safety
+            this.expiryTime = AppTime.now().plusSeconds(expiresInSeconds - 60); // Subtract 60 seconds for safety
         }
         
         public boolean isExpired() {
-            return LocalDateTime.now().isAfter(expiryTime);
+            return AppTime.now().isAfter(expiryTime);
         }
         
         public String getToken() {
@@ -90,7 +92,7 @@ public class DarajaService {
         String formattedPhone = GlobalUtils.formatPhoneNumber(phone);
         
         // Generate timestamp
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String timestamp = AppTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         
         // Generate password: Base64.encode(Shortcode+Passkey+Timestamp)
         String passwordString = config.getMpShortCode() + config.getMpPassKey() + timestamp;

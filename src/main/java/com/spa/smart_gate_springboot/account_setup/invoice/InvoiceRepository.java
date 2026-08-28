@@ -64,9 +64,9 @@ select sum(invo_amount) as invo_amount, invo_month_name, invo_month_id
 from msg.credit_invoice
 where invo_status not in ('PENDING_PAYMENT', 'FAILED_TO_POP_SDK', 'CANCELLED', 'FAILED', 'EXPIRED')
   and invo_reseller_id = :resellerId
-  and extract(year from invo_created_date) = extract(year from current_timestamp)
+  and cast(extract(year from invo_created_date) as integer) = :year
 group by invo_month_name, invo_month_id
 order by invo_month_id asc
 """)
-List<Object[]> getResellerInvoicesPerYearSummary(@Param("resellerId") UUID resellerId);
+List<Object[]> getResellerInvoicesPerYearSummary(@Param("resellerId") UUID resellerId, @Param("year") int year);
 }

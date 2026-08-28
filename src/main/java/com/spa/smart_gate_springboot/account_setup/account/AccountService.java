@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.account;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcFilterDto;
@@ -176,7 +178,7 @@ public class AccountService {
         StandardJsonResponse resp = new StandardJsonResponse();
         account.setAccResellerId(user.getUsrResellerId());
         account.setAccCreatedBy(user.getUsrId());
-        account.setAccCreatedDate(LocalDateTime.now());
+        account.setAccCreatedDate(AppTime.now());
         account.setAccUsername(accountdto.getAccName());
 
         if (account.getAccMsgBal() == null) {
@@ -224,7 +226,7 @@ public class AccountService {
         Account account = findByAccId(accId);
         account.setAccStatus(AcStatus.DELETED);
         account.setAccDeletedBy(user.getEmail());
-        account.setAccDeletedDate(LocalDateTime.now());
+        account.setAccDeletedDate(AppTime.now());
         account.setAccDeletedReason(acDelete.getAcDeleteReason());
         save(account);
 

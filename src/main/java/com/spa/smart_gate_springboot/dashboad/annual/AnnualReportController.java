@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.dashboad.annual;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
@@ -116,7 +118,7 @@ public class AnnualReportController {
                     StringUtils.isEmpty(resellerId) ? null : UUID.fromString(resellerId));
             
             // Generate filename with timestamp
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String timestamp = AppTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String filename = String.format("quarterly_report_%s.xlsx", timestamp);
             
             HttpHeaders headers = new HttpHeaders();

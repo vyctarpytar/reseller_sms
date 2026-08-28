@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.senderId;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 
 import com.spa.smart_gate_springboot.account_setup.account.AcStatus;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
@@ -119,7 +121,7 @@ public class ShortCodeService {
             return response;
         }
         shortCode.setShResellerId(auth.getUsrResellerId());
-        shortCode.setShCreatedDate(LocalDateTime.now());
+        shortCode.setShCreatedDate(AppTime.now());
         shortCode.setShCreatedById(auth.getUsrId());
         shortCode.setShStatus(ShStatus.PENDING_MAPPING);
         shortCode.setShCreatedById(auth.getUsrId());

@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.dashboad.reports;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.dashboad.reports.models.*;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +40,9 @@ public class ReportService {
         Date msgDate = filterDto.getMsgCreatedDate();
         Date msgDateFrom = filterDto.getMsgDateFrom();
         Date msgDateTo = filterDto.getMsgDateTo();
-        if (msgDate == null) msgDate = new Date();
+        if (msgDate == null) msgDate = AppTime.nowDate();
 
-        if (msgDateTo == null) msgDateTo = new Date();
+        if (msgDateTo == null) msgDateTo = AppTime.nowDate();
         if (msgDateFrom != null) msgDate = null;
 
         String msgStatus = filterDto.getMsgStatus();
@@ -67,8 +69,8 @@ public class ReportService {
         Date msgDate = filterDto.getMsgCreatedDate();
         Date msgDateFrom = filterDto.getMsgDateFrom();
         Date msgDateTo = filterDto.getMsgDateTo();
-        if (msgDate == null) msgDate = new Date();
-        if (msgDateTo == null) msgDateTo = new Date();
+        if (msgDate == null) msgDate = AppTime.nowDate();
+        if (msgDateTo == null) msgDateTo = AppTime.nowDate();
         if (msgDateFrom != null) msgDate = null;
 
         filterDto.setSortColumn("msg_created_date");
@@ -91,8 +93,8 @@ public class ReportService {
         Date msgDate = filterDto.getMsgCreatedDate();
         Date msgDateFrom = filterDto.getMsgDateFrom();
         Date msgDateTo = filterDto.getMsgDateTo();
-        if (msgDate == null) msgDate = new Date();
-        if (msgDateTo == null) msgDateTo = new Date();
+        if (msgDate == null) msgDate = AppTime.nowDate();
+        if (msgDateTo == null) msgDateTo = AppTime.nowDate();
         if (msgDateFrom != null) msgDate = null;
 
         filterDto.setSortColumn("msg_status");
@@ -118,8 +120,8 @@ public class ReportService {
             Date msgDate = filterDto.getMsgCreatedDate();
             Date msgDateFrom = filterDto.getMsgDateFrom();
             Date msgDateTo = filterDto.getMsgDateTo();
-            if (msgDate == null) msgDate = new Date();
-            if (msgDateTo == null) msgDateTo = new Date();
+            if (msgDate == null) msgDate = AppTime.nowDate();
+            if (msgDateTo == null) msgDateTo = AppTime.nowDate();
             if (msgDateFrom != null) msgDate = null;
 
             filterDto.setSortColumn("msg_created_date");
@@ -181,8 +183,8 @@ public class ReportService {
             Date msgDate = filterDto.getMsgCreatedDate();
             Date msgDateFrom = filterDto.getMsgDateFrom();
             Date msgDateTo = filterDto.getMsgDateTo();
-            if (msgDate == null) msgDate = new Date();
-            if (msgDateTo == null) msgDateTo = new Date();
+            if (msgDate == null) msgDate = AppTime.nowDate();
+            if (msgDateTo == null) msgDateTo = AppTime.nowDate();
             if (msgDateFrom != null) msgDate = null;
 
             filterDto.setSortColumn("msg_status");

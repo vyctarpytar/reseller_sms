@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.wallet;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -87,6 +89,6 @@ public class WalletTransaction {
 
     @PrePersist
     void prePersist() {
-        createdAt = LocalDateTime.now();
+        createdAt = AppTime.now();
     }
 }

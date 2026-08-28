@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
@@ -87,7 +89,7 @@ public class QueueMsgService {
                 message = message.replace("@option4", m.getChOption4() != null ? m.getChOption4() : "");
             }
 
-            MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(groupMessageDto.getSenderId()).msgMessage(message).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(chTelephone).msgCreatedBy(user.getUsrId()).msgGroupId(grpId).build();
+            MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(groupMessageDto.getSenderId()).msgMessage(message).msgCreatedDate(AppTime.nowDate()).msgCreatedTime(String.valueOf(AppTime.now())).msgSubMobileNo(chTelephone).msgCreatedBy(user.getUsrId()).msgGroupId(grpId).build();
 
             publishNewMessage(msgQueue);
         }
@@ -103,7 +105,7 @@ public class QueueMsgService {
     }
 
     public StandardJsonResponse sendSingleSms(SingleMessageDto singleMessageDto, User user) {
-        MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(singleMessageDto.getSenderId()).msgMessage(singleMessageDto.getMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(singleMessageDto.getMobile()).msgCreatedBy(user.getUsrId()).build();
+        MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(singleMessageDto.getSenderId()).msgMessage(singleMessageDto.getMessage()).msgCreatedDate(AppTime.nowDate()).msgCreatedTime(String.valueOf(AppTime.now())).msgSubMobileNo(singleMessageDto.getMobile()).msgCreatedBy(user.getUsrId()).build();
 
 
         Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
@@ -138,7 +140,7 @@ public class QueueMsgService {
 
         String[] phoneNumbers = singleMessageDto.getMobile().split(",");
         for (String phoneNumber : phoneNumbers) {
-            MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(singleMessageDto.getSenderId()).msgMessage(singleMessageDto.getMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(phoneNumber).msgCreatedBy(user.getUsrId()).build();
+            MsgQueue msgQueue = MsgQueue.builder().msgAccId(user.getUsrAccId()).msgStatus("PENDING_PROCESSING").msgSenderId(singleMessageDto.getSenderId()).msgMessage(singleMessageDto.getMessage()).msgCreatedDate(AppTime.nowDate()).msgCreatedTime(String.valueOf(AppTime.now())).msgSubMobileNo(phoneNumber).msgCreatedBy(user.getUsrId()).build();
 
             Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
             if (acc.getAccMsgBal().compareTo(BigDecimal.TEN) < 1) {
@@ -293,7 +295,7 @@ public class QueueMsgService {
         MsgMessageQueueArc msgMessageQueueArc = arcRepository.findById(msgDelivery.getMsgdMsgId()).orElse(null);
         if (msgMessageQueueArc != null) {
             msgMessageQueueArc.setMsgStatus(msgDelivery.getMsgdStatus().trim());
-            msgMessageQueueArc.setMsgDeliveredDate(LocalDateTime.now());
+            msgMessageQueueArc.setMsgDeliveredDate(AppTime.now());
             msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
             msgMessageQueueArc.setMsgRetryCount(0);
             MsgMessageQueueArc msgMessageQueueArc2 = arcRepository.save(msgMessageQueueArc);
@@ -303,7 +305,8 @@ public class QueueMsgService {
     }
 
     public void resendPendingSMSAccountCredit(UUID accId) {
-        List<MsgMessageQueueArc> pending = arcRepository.getMsgPendingCreditForAccount(accId, "PENDING_CREDIT");
+        List<MsgMessageQueueArc> pending = arcRepository.getMsgPendingCreditForAccount(
+                accId, "PENDING_CREDIT", AppTime.today().minusDays(3));
         // In-place top-up resend: debit the existing PENDING_CREDIT arc and, if now funded, send it.
         // No delete + republish (which destroyed the archive row, re-inserted, and re-debited); the arc
         // is the source of truth. debitAndResend leaves it pending if credit still can't cover it.
@@ -318,7 +321,7 @@ public class QueueMsgService {
 
             // Set default values
             if (filterDto.getMsgCreatedDate() == null && filterDto.getMsgCreatedFrom() == null) {
-                filterDto.setMsgCreatedDate(new Date());
+                filterDto.setMsgCreatedDate(AppTime.nowDate());
             }
             if (filterDto.getLimit() == 0) filterDto.setLimit(5_000_000); // Use underscore for better readability
             filterDto.setSortColumn("msg_created_date");

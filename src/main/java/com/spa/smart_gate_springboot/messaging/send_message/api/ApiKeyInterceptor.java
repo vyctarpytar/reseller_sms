@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.api;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +17,7 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
     private final ApiKeyRepository apiKeyRepository;
 
     public boolean validateApiKey(String apiKey) {
-        boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
+        boolean isValid = apiKeyRepository.existsValidApiKey(apiKey, AppTime.today());
         log.info("Api key validation result intercepted :{}---- {}", apiKey, isValid);
         return isValid;
     }

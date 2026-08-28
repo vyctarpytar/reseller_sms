@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.payment.mpesa.b2c;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -98,12 +100,12 @@ public class B2cTransaction {
 
     @PrePersist
     void prePersist() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = AppTime.now();
+        updatedAt = AppTime.now();
     }
 
     @PreUpdate
     void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = AppTime.now();
     }
 }

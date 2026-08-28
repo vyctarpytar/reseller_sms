@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.member;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -68,7 +70,7 @@ public class MemberService {
         chMember.setChTelephone(chCellphone);
         chMember.setChAccId(user.getUsrAccId());
         chMember.setChMemberCreatedBy(user.getUsrId());
-        chMember.setChMemberCreatedDateTime(LocalDateTime.now());
+        chMember.setChMemberCreatedDateTime(AppTime.now());
         response.setData("result", memberRepository.saveAndFlush(chMember), response);
         response.setMessage("message", "Ok", response);
         return response;
@@ -110,7 +112,7 @@ public class MemberService {
                 chMember.setChGroupId(grpid);
                 chMember.setChAccId(user.getUsrAccId());
                 chMember.setChMemberCreatedBy(user.getUsrId());
-                chMember.setChMemberCreatedDateTime(LocalDateTime.now());
+                chMember.setChMemberCreatedDateTime(AppTime.now());
                 chMember.setChFirstName(globalUtils.getCellValueAsString(row.getCell(0)));
                 chMember.setChOtherName(globalUtils.getCellValueAsString(row.getCell(1)));
                 chMember.setChGenderCode(globalUtils.getCellValueAsString(row.getCell(2)));
@@ -195,7 +197,7 @@ public class MemberService {
             sampleRow.createCell(0).setCellValue("John");
             sampleRow.createCell(1).setCellValue("Doe");
             sampleRow.createCell(2).setCellValue("Male");
-            sampleRow.createCell(3).setCellValue(LocalDate.now().toString());
+            sampleRow.createCell(3).setCellValue(AppTime.today().toString());
             sampleRow.createCell(4).setCellValue("123456789");
             sampleRow.createCell(5).setCellValue("254712345678");
             sampleRow.createCell(6).setCellValue("");

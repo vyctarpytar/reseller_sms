@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.request;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
 import com.spa.smart_gate_springboot.dto.Layers;
@@ -43,7 +45,7 @@ public class RequestService {
 
     public StandardJsonResponse saveShortCodeRequests(SenderIdReqDto senderIdReqDto, User auth) {
         Reseller reseller = resellerService.findById(auth.getUsrResellerId());
-        RequestEntity req = RequestEntity.builder().reInstType(senderIdReqDto.getInstType()).reCreatedDate(LocalDateTime.now()).reCreatedBy(auth.getUsrId()).reDesc(senderIdReqDto.getDesc()).reTelcos(senderIdReqDto.getTelcos()).reStatus(ReStatus.PENDING).reResellerId(auth.getUsrResellerId()).reServiceOwnership(ServiceOwnership.valueOf(senderIdReqDto.getServiceOwnership())).reKeyWord(senderIdReqDto.getKeyword()).reServiceType(ReServiceType.SHORTCODE).reName(resellerService.findById(auth.getUsrResellerId()).getRsCompanyName()).reKraFileName(senderIdReqDto.getReKraFileName()).reIncorporationCertFileName(senderIdReqDto.getReIncorporationCertFileName()).reAuthorizationFileName(senderIdReqDto.getReAuthorizationFileName()).build();
+        RequestEntity req = RequestEntity.builder().reInstType(senderIdReqDto.getInstType()).reCreatedDate(AppTime.now()).reCreatedBy(auth.getUsrId()).reDesc(senderIdReqDto.getDesc()).reTelcos(senderIdReqDto.getTelcos()).reStatus(ReStatus.PENDING).reResellerId(auth.getUsrResellerId()).reServiceOwnership(ServiceOwnership.valueOf(senderIdReqDto.getServiceOwnership())).reKeyWord(senderIdReqDto.getKeyword()).reServiceType(ReServiceType.SHORTCODE).reName(resellerService.findById(auth.getUsrResellerId()).getRsCompanyName()).reKraFileName(senderIdReqDto.getReKraFileName()).reIncorporationCertFileName(senderIdReqDto.getReIncorporationCertFileName()).reAuthorizationFileName(senderIdReqDto.getReAuthorizationFileName()).build();
 
         save(req);
 
@@ -59,7 +61,7 @@ public class RequestService {
 
     public StandardJsonResponse saveUssdRequests(SenderIdReqDto senderIdReqDto, User auth) {
         Reseller reseller = resellerService.findById(auth.getUsrResellerId());
-        RequestEntity req = RequestEntity.builder().reInstType(senderIdReqDto.getInstType()).reCreatedDate(LocalDateTime.now()).reCreatedBy(auth.getUsrId()).reDesc(senderIdReqDto.getDesc()).reTelcos(senderIdReqDto.getTelcos()).reStatus(ReStatus.PENDING).reResellerId(auth.getUsrResellerId()).reCostCover(CostCover.valueOf(senderIdReqDto.getCostCover())).reServiceOwnership(ServiceOwnership.valueOf(senderIdReqDto.getServiceOwnership())).reServiceType(ReServiceType.USSD).reName(reseller.getRsCompanyName()).reKraFileName(senderIdReqDto.getReKraFileName()).reIncorporationCertFileName(senderIdReqDto.getReIncorporationCertFileName()).reAuthorizationFileName(senderIdReqDto.getReAuthorizationFileName()).build();
+        RequestEntity req = RequestEntity.builder().reInstType(senderIdReqDto.getInstType()).reCreatedDate(AppTime.now()).reCreatedBy(auth.getUsrId()).reDesc(senderIdReqDto.getDesc()).reTelcos(senderIdReqDto.getTelcos()).reStatus(ReStatus.PENDING).reResellerId(auth.getUsrResellerId()).reCostCover(CostCover.valueOf(senderIdReqDto.getCostCover())).reServiceOwnership(ServiceOwnership.valueOf(senderIdReqDto.getServiceOwnership())).reServiceType(ReServiceType.USSD).reName(reseller.getRsCompanyName()).reKraFileName(senderIdReqDto.getReKraFileName()).reIncorporationCertFileName(senderIdReqDto.getReIncorporationCertFileName()).reAuthorizationFileName(senderIdReqDto.getReAuthorizationFileName()).build();
 
         save(req);
 
@@ -75,7 +77,7 @@ public class RequestService {
 
     public StandardJsonResponse saveSenderIdRequests(SenderIdReqDto senderIdReqDto, User auth) {
         Reseller reseller = resellerService.findById(auth.getUsrResellerId());
-        RequestEntity req = RequestEntity.builder().reInstType(senderIdReqDto.getInstType()).reCreatedDate(LocalDateTime.now()).reCreatedBy(auth.getUsrId()).reDesc(senderIdReqDto.getDesc()).reTelcos(senderIdReqDto.getTelcos()).reSenderIdType(SenderIdType.valueOf(senderIdReqDto.getSenderIdType())).reStatus(ReStatus.PENDING).reResellerId(auth.getUsrResellerId()).reName(resellerService.findById(auth.getUsrResellerId()).getRsCompanyName()).reServiceType(ReServiceType.SMS).reKraFileName(senderIdReqDto.getReKraFileName()).reIncorporationCertFileName(senderIdReqDto.getReIncorporationCertFileName()).reAuthorizationFileName(senderIdReqDto.getReAuthorizationFileName()).build();
+        RequestEntity req = RequestEntity.builder().reInstType(senderIdReqDto.getInstType()).reCreatedDate(AppTime.now()).reCreatedBy(auth.getUsrId()).reDesc(senderIdReqDto.getDesc()).reTelcos(senderIdReqDto.getTelcos()).reSenderIdType(SenderIdType.valueOf(senderIdReqDto.getSenderIdType())).reStatus(ReStatus.PENDING).reResellerId(auth.getUsrResellerId()).reName(resellerService.findById(auth.getUsrResellerId()).getRsCompanyName()).reServiceType(ReServiceType.SMS).reKraFileName(senderIdReqDto.getReKraFileName()).reIncorporationCertFileName(senderIdReqDto.getReIncorporationCertFileName()).reAuthorizationFileName(senderIdReqDto.getReAuthorizationFileName()).build();
 
         save(req);
 
@@ -104,7 +106,7 @@ public class RequestService {
         }
 
         String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(AppTime.nowDate());
         String filename = timestamp + "_" + originalFilename;
 
         Path uploadPath = Paths.get(uploadDir);
@@ -180,7 +182,7 @@ public class RequestService {
         if (req.getReStatus().equals(ReStatus.PENDING)) {
             req.setReStatus(ReStatus.DELETED);
             req.setReUpdatedBy(auth.getUsrId());
-            req.setReUpdatedDate(LocalDateTime.now());
+            req.setReUpdatedDate(AppTime.now());
             resp.setData("result", save(req), resp);
             resp.setTotal(1);
             return resp;

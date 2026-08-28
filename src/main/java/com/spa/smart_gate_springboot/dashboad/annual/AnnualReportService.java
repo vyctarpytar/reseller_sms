@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.dashboad.annual;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountRepository;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
@@ -47,10 +49,10 @@ public class AnnualReportService {
     @PostConstruct
     @Transactional
     public void generateQuarterlyReportsScheduled() {
-        log.info("Starting scheduled quarterly report generation at: {}", LocalDateTime.now());
+        log.info("Starting scheduled quarterly report generation at: {}", AppTime.now());
 
         try {
-            int currentYear = LocalDateTime.now().getYear();
+            int currentYear = AppTime.now().getYear();
             int currentQuarter = getCurrentQuarter();
 
             generateQuarterlyReports(currentYear, currentQuarter);
@@ -281,7 +283,7 @@ public class AnnualReportService {
      * Get current quarter based on current month
      */
     private int getCurrentQuarter() {
-        int currentMonth = LocalDateTime.now().getMonthValue();
+        int currentMonth = AppTime.now().getMonthValue();
         return switch (currentMonth) {
             case 1, 2, 3 -> 3;      // Jan, Feb, Mar = Q3
             case 4, 5, 6 -> 4;      // Apr, May, Jun = Q4

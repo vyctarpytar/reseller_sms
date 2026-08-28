@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.templates;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
@@ -48,7 +50,7 @@ public class TemplateService {
         Reseller reseller = resellerService.findById(user.getUsrResellerId());
         Template template = Template.builder()
                 .tmpName(tempFilterDto.getTmpName())
-                .tmpMessage(tempFilterDto.getTmpMessage()).tmpAccById(user.getUsrAccId()).tmpAccName(acc.getAccName()).tmpCreatedOn(LocalDateTime.now())
+                .tmpMessage(tempFilterDto.getTmpMessage()).tmpAccById(user.getUsrAccId()).tmpAccName(acc.getAccName()).tmpCreatedOn(AppTime.now())
                 .tmpResellerName(reseller.getRsCompanyName()).tmpResellerById(user.getUsrResellerId()).build();
        
                 StandardJsonResponse resp = new StandardJsonResponse();

@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.report;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import jakarta.servlet.http.HttpServletResponse;
@@ -99,7 +101,7 @@ public final class BrandedPdf {
     /** Set {@code Content-Disposition} (inline) to {@code <file-name>-<today>.pdf}. Call before opening. */
     public static void preparePdf(HttpServletResponse resp, String fileName) {
         resp.setContentType("application/pdf");
-        resp.setHeader("Content-Disposition", "inline; filename=\"" + fileName + "-" + LocalDate.now() + ".pdf\"");
+        resp.setHeader("Content-Disposition", "inline; filename=\"" + fileName + "-" + AppTime.today() + ".pdf\"");
     }
 
     public static Document openPortrait(HttpServletResponse resp, String title) throws DocumentException, IOException {

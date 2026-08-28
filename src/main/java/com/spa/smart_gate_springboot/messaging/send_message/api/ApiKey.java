@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.api;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,10 +63,10 @@ public class ApiKey {
     @PrePersist
     protected void onCreate() {
         if (this.createdDate == null) {
-            this.createdDate = new Date();
+            this.createdDate = AppTime.nowDate();
         }
         // Set expiration date to 1 year from the creation date
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(AppTime.timeZone());
         calendar.setTime(this.createdDate);
         calendar.add(Calendar.YEAR, 1);
         this.expirationDate = calendar.getTime();

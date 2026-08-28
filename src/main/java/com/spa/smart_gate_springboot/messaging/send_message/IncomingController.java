@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
@@ -47,7 +49,7 @@ public class IncomingController {
         }
         String domainOrIp = queueMsgService.getDomainOrIp(request);
         msgQueue.setMsgSourceIpAddress(domainOrIp);
-        msgQueue.setMsgCreatedDate(new Date());
+        msgQueue.setMsgCreatedDate(AppTime.nowDate());
         queueMsgService.publishNewMessage(msgQueue);
 
         resp.setData("result", domainOrIp, resp);
@@ -74,7 +76,7 @@ public class IncomingController {
 
     @GetMapping("/health")
     public String health() {
-        log.error("Health Check:   {}", new Date());
+        log.error("Health Check:   {}", AppTime.nowDate());
         return "OK";
     }
 

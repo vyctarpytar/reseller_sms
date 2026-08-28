@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.crons;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
@@ -76,9 +78,10 @@ public class ClientDeliveryResponses {
     @Scheduled(fixedRate = 15_000)
     public void sendPendingDeliveryCallbacks() {
         try {
-            LocalDateTime retryBefore = LocalDateTime.now().minusMinutes(retryIntervalMinutes);
+            LocalDateTime retryBefore = AppTime.now().minusMinutes(retryIntervalMinutes);
             Pageable pageable = PageRequest.of(0, PAGE_SIZE);
-            Page<MsgMessageQueueArc> page = arcRepository.findPendingClientCallbacks(retryBefore, pageable);
+            Page<MsgMessageQueueArc> page = arcRepository.findPendingClientCallbacks(
+                    retryBefore, AppTime.today().minusDays(3), pageable);
             List<MsgMessageQueueArc> pending = page.getContent();
             if (pending.isEmpty()) {
                 return;
@@ -96,12 +99,13 @@ public class ClientDeliveryResponses {
     @Scheduled(fixedRate = 5 * 60_000)
     public void sendStuckMessageCallbacks() {
         try {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = AppTime.now();
             LocalDateTime retryBefore = now.minusMinutes(retryIntervalMinutes);
             LocalDateTime stuckBefore = now.minusMinutes(stuckGraceMinutes);
             Pageable pageable = PageRequest.of(0, PAGE_SIZE);
             Page<MsgMessageQueueArc> page =
-                    arcRepository.findStuckClientCallbacks(stuckStatuses, stuckBefore, retryBefore, pageable);
+                    arcRepository.findStuckClientCallbacks(
+                            stuckStatuses, stuckBefore, retryBefore, now.toLocalDate().minusDays(3), pageable);
             List<MsgMessageQueueArc> pending = page.getContent();
             if (pending.isEmpty()) {
                 return;
@@ -138,7 +142,7 @@ public class ClientDeliveryResponses {
                 if (response.body() != null) {
                     response.body().close();
                 }
-                arcRepository.markClientCallbackNotified(m.getMsgId(), LocalDateTime.now());
+                arcRepository.markClientCallbackNotified(m.getMsgId(), AppTime.now());
                 log.info("Delivery callback delivered msgId={} url={} httpStatus={}",
                         m.getMsgId(), m.getMsgCallbackUrl(), response.code());
             } else {
@@ -158,7 +162,7 @@ public class ClientDeliveryResponses {
 
     private void handleFailure(MsgMessageQueueArc m, String reason) {
         int attempts = m.getMsgRetryCount() + 1;
-        LocalDateTime attemptTime = LocalDateTime.now();
+        LocalDateTime attemptTime = AppTime.now();
         if (attempts >= maxRetries) {
             // Give up: mark the client delivery as failed so it is no longer picked up.
             // msg_status is left untouched so SMS resend/credit logic is unaffected.

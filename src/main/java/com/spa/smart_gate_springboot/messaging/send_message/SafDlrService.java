@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
@@ -97,7 +99,9 @@ public class SafDlrService {
     }
 
     public void updateDeliveryNote(String msgStatus, String msgRequestId, String msisdn, String msgCode) {
-        msgRepo.updateDeliverNote(msgStatus, msgRequestId, msisdn, msgCode);
+        // Delivery time comes from this JVM in EAT, never the DB clock — the SMPP gateway reads
+        // msg_delivered_date straight back out into the downstream `done date:` receipt field.
+        msgRepo.updateDeliverNote(msgStatus, msgRequestId, msisdn, msgCode, AppTime.now());
 
         if (msgStatus.equalsIgnoreCase("SenderName Blacklisted")) {
             blackListService.addToBlacklist(msisdn);

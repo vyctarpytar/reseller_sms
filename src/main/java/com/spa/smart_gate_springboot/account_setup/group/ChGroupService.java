@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.group;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.member.MemberService;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -60,7 +62,7 @@ public class ChGroupService {
 
     public StandardJsonResponse createGroup(ChGroup grp, User user) {
         StandardJsonResponse response = new StandardJsonResponse();
-        grp.setGroupCreationDate(LocalDateTime.now());
+        grp.setGroupCreationDate(AppTime.now());
         grp.setGroupCreatedBy(user.getUsrId());
         grp.setGroupCreatedByName(user.getFirstname());
         grp.setGroupAccId(user.getUsrAccId());

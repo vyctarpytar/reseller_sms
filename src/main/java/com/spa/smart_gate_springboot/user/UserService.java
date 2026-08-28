@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.user;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
 import com.spa.smart_gate_springboot.account_setup.reseller.ResellerRepo;
 import com.spa.smart_gate_springboot.config.JwtService;
@@ -73,7 +75,7 @@ public class UserService {
         sendPhonePassword(usr.getPhoneNumber(), xMessage);
         usr.setPassword(xPlainCode);
         usr.setUsrStatus(UsrStatus.ACTIVE);
-        usr.setCreatedDate(LocalDateTime.now());
+        usr.setCreatedDate(AppTime.now());
         usr.setPassword(passwordEncoder.encode(xPlainCode));
         save(usr);
     }
@@ -136,7 +138,7 @@ public class UserService {
 
             BeanUtils.copyProperties(userDto, user, gu.getNullPropertyNames(userDto));
             user.setCreatedBy(authed.getUsrId());
-            user.setCreatedDate(LocalDateTime.now());
+            user.setCreatedDate(AppTime.now());
             if (userDto.getUsrStatus() != null)
                 user.setUsrStatus(userDto.getUsrStatus());
             else {
@@ -359,7 +361,7 @@ public class UserService {
                     try {
                         u.setUsrStatus(UsrStatus.DELETED);
                         u.setUsrDeletedBy(user.getUsrId());
-                        u.setUsrDeletedDate(LocalDateTime.now());
+                        u.setUsrDeletedDate(AppTime.now());
                         u.setUsrDeletedReason(user.getUsrDeletedReason());
                         u.setUsrDeletedByName(user.getEmail());
                         save(u);

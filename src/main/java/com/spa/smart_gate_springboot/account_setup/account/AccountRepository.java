@@ -116,9 +116,10 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
      * alerted since {@code alertBefore} (i.e. due for a low-balance alert). Used by the
      * {@code LowBalanceAlertCron} to throttle alerts to one per account per interval.
      * <p>
-     * Only accounts that attempted to send at least one SMS today (a row in
-     * {@code msg.message_queue_arc} dated today) are returned, so dormant accounts are
-     * never alerted.
+     * Only accounts that attempted to send at least one SMS since {@code sentSince} (the caller
+     * passes EAT midnight, i.e. "today") are returned, so dormant accounts are never alerted.
+     * {@code sentSince} comes from the JVM clock rather than the database's {@code current_date},
+     * whose day boundary follows the Postgres session zone — see {@code AppTime}.
      */
     @Query(nativeQuery = true, value = """
             select * from js_core.jsc_accounts a
@@ -128,11 +129,12 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
               and exists (
                     select 1 from msg.message_queue_arc m
                     where m.msg_acc_id = a.acc_id
-                      and m.msg_created_date >= current_date
+                      and m.msg_created_date >= :sentSince
               )
             """)
     List<Account> findAccountsForLowBalanceAlert(@Param("threshold") BigDecimal threshold,
-                                                 @Param("alertBefore") java.time.LocalDateTime alertBefore);
+                                                 @Param("alertBefore") java.time.LocalDateTime alertBefore,
+                                                 @Param("sentSince") java.time.LocalDateTime sentSince);
 
 
     @Modifying

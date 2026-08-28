@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.api;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
@@ -154,7 +156,7 @@ public class ApiKeyService {
 
 
     public boolean validateApiKey(String apiKey) {
-        boolean isValid = apiKeyRepository.existsValidApiKey(apiKey);
+        boolean isValid = apiKeyRepository.existsValidApiKey(apiKey, AppTime.today());
         log.info("Api key validation result Service: {}", isValid);
         return isValid;
     }
@@ -171,7 +173,7 @@ public class ApiKeyService {
             }
 
             UniqueCodeGenerator ug = new UniqueCodeGenerator();
-            ApiKey apiKey = ApiKey.builder().id(UUID.randomUUID()).apiKey(ug.generateSecureApiKey()).clientName(acc.getAccName()).apiResellerId(acc.getAccResellerId()).apiAccId(acc.getAccId()).createdDate(new Date()).build(); // expirationDate and active will be set by @PrePersist
+            ApiKey apiKey = ApiKey.builder().id(UUID.randomUUID()).apiKey(ug.generateSecureApiKey()).clientName(acc.getAccName()).apiResellerId(acc.getAccResellerId()).apiAccId(acc.getAccId()).createdDate(AppTime.nowDate()).build(); // expirationDate and active will be set by @PrePersist
 
             applyApiDocs(apiKey);
             apiKeyRepository.save(apiKey);
@@ -183,7 +185,7 @@ public class ApiKeyService {
     public Map<String, Object> sendMessage(MsgApiDto msgApiDto, String apiKeyStr) {
         ApiKey apikey = apiKeyRepository.findByApiKey(apiKeyStr).orElseThrow(() -> new RuntimeException("Key Not Found"));
 
-        MsgQueue msgQueue = MsgQueue.builder().msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING").msgExternalId(msgApiDto.getMsgExternalId()).msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage()).msgCreatedDate(new Date()).msgCreatedTime(String.valueOf(LocalDateTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo()).msgCallbackUrl(msgApiDto.getCallbackUrl()).msgCreatedBy(null)// dont set thid
+        MsgQueue msgQueue = MsgQueue.builder().msgAccId(apikey.getApiAccId()).msgStatus("PENDING_PROCESSING").msgExternalId(msgApiDto.getMsgExternalId()).msgSenderId(msgApiDto.getMsgSenderId()).msgMessage(msgApiDto.getMsgMessage()).msgCreatedDate(AppTime.nowDate()).msgCreatedTime(String.valueOf(AppTime.now())).msgSubMobileNo(msgApiDto.getMsgMobileNo()).msgCallbackUrl(msgApiDto.getCallbackUrl()).msgCreatedBy(null)// dont set thid
                 .msgCreatedByEmail("API_USER").build();
 
         // API idempotency: when the caller supplies a msgExternalId, derive a stable dedup key from it

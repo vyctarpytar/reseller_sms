@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.wallet;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
@@ -204,9 +206,9 @@ public class WalletController {
 
         B2cTransactionStatus status = parseStatus(filter.getWithDrawStatus());
         LocalDateTime from = filter.getWithDrawDateFrom() == null ? null
-                : LocalDateTime.ofInstant(filter.getWithDrawDateFrom().toInstant(), ZoneId.systemDefault());
+                : LocalDateTime.ofInstant(filter.getWithDrawDateFrom().toInstant(), AppTime.ZONE);
         LocalDateTime to = filter.getWithDrawDateTo() == null ? null
-                : LocalDateTime.ofInstant(filter.getWithDrawDateTo().toInstant(), ZoneId.systemDefault());
+                : LocalDateTime.ofInstant(filter.getWithDrawDateTo().toInstant(), AppTime.ZONE);
 
         Page<B2cTransaction> page = b2cRepository.findAll(
                 B2cTransactionSpecifications.filter(walletCode, status, from, to), pageable);

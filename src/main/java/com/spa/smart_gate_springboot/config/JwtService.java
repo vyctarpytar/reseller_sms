@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.config;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.user.User;
 import io.jsonwebtoken.Claims;
@@ -78,11 +80,11 @@ public class JwtService {
     }
 
     private String buildToken(Map<String, Object> extraClaims, User userDetails, long expiration) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = AppTime.now();
         LocalDateTime expirationTime = now.plusSeconds(expiration);
 
-        Date issuedAt = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
-        Date expirationDate = Date.from(expirationTime.atZone(ZoneId.systemDefault()).toInstant());
+        Date issuedAt = Date.from(now.atZone(AppTime.ZONE).toInstant());
+        Date expirationDate = Date.from(expirationTime.atZone(AppTime.ZONE).toInstant());
 
 
         return Jwts.builder()
@@ -102,7 +104,7 @@ public class JwtService {
 
     private boolean isTokenExpired(String token) {
         Date date = extractExpiration(token);
-        return date.before(new Date());
+        return date.before(AppTime.nowDate());
     }
 
     private Date extractExpiration(String token) {

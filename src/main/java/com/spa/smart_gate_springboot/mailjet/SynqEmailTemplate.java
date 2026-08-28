@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.mailjet;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -80,7 +82,7 @@ public final class SynqEmailTemplate {
                 publicBaseUrl,
                 safeHeading,
                 body,
-                String.valueOf(Year.now().getValue()),
+                String.valueOf(AppTime.today().getYear()),
                 FONT);
     }
 

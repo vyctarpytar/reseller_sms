@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.messaging.send_message.api;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.invoice.CreditInvoDto;
 import com.spa.smart_gate_springboot.account_setup.invoice.Invoice;
@@ -56,7 +58,7 @@ public class SandboxAccountService {
         if (key.getActive() == null || !key.getActive()) {
             throw new RuntimeException("API key is inactive");
         }
-        if (key.getExpirationDate() != null && key.getExpirationDate().before(new Date())) {
+        if (key.getExpirationDate() != null && key.getExpirationDate().before(AppTime.nowDate())) {
             throw new RuntimeException("API key has expired");
         }
         return key;

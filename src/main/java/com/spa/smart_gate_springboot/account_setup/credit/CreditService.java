@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.credit;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.account_setup.account.AcStatus;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
@@ -153,7 +155,7 @@ public class CreditService {
         Layers layers = Layers.ACCOUNT;
         credit.setSmsCreatedBy(UUID.fromString("8225cfe4-e679-42b5-be7c-b98314991b39"));
         credit.setSmsCreatedByName("MAJIBYTE_LOGGED_IN_USER");
-        credit.setSmsCreatedDate(LocalDateTime.now());
+        credit.setSmsCreatedDate(AppTime.now());
         credit.setCrStatus(CrStatus.PROCESSED);
 
         if (layers.name().equalsIgnoreCase(Layers.TOP.name())) {
@@ -195,7 +197,7 @@ public class CreditService {
         Layers layers = user.getLayer();
         credit.setSmsCreatedBy(user.getUsrId());
         credit.setSmsCreatedByName(user.getEmail());
-        credit.setSmsCreatedDate(LocalDateTime.now());
+        credit.setSmsCreatedDate(AppTime.now());
         credit.setCrStatus(CrStatus.PROCESSED);
 
         if (layers.name().equalsIgnoreCase(Layers.TOP.name())) {
@@ -219,7 +221,7 @@ public class CreditService {
             UniqueCodeGenerator ug = new UniqueCodeGenerator();
             String xPlainCode = ug.getUniqueCode();
 
-            Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(LocalDateTime.now()).invoDueDate(LocalDateTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).invoMonthName(getMonthNameFromDate(LocalDateTime.now())).invoMonthId(getMonthIdFromDate(LocalDateTime.now())).build();
+            Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(AppTime.now()).invoDueDate(AppTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).invoMonthName(getMonthNameFromDate(AppTime.now())).invoMonthId(getMonthIdFromDate(AppTime.now())).build();
             invoiceRepository.saveAndFlush(invoice);
         }
 
@@ -375,7 +377,7 @@ public class CreditService {
         credit.setSmsNewBal(rs.getRsMsgBal());
         credit.setSmsCreatedBy(user.getUsrId());
         credit.setSmsCreatedByName(user.getEmail());
-        credit.setSmsCreatedDate(LocalDateTime.now());
+        credit.setSmsCreatedDate(AppTime.now());
         credit.setCrStatus(CrStatus.PROCESSED);
         Credit saved = save(credit);
         return saved;

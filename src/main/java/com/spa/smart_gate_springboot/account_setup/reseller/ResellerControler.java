@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.reseller;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 
 import com.spa.smart_gate_springboot.account_setup.account.dtos.AcDelete;
 import com.spa.smart_gate_springboot.dto.Layers;
@@ -40,7 +42,7 @@ public class ResellerControler{
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public StandardJsonResponse saveReseller (@RequestBody Reseller reseller, HttpServletRequest request){
        var user  =  userService.getCurrentUser(request);
-       reseller.setCreatedDate( LocalDateTime.now());
+       reseller.setCreatedDate( AppTime.now());
        reseller.setRsCreatedBy(user.getUsrId());
        return resellerService.saveReseller(reseller);
     }

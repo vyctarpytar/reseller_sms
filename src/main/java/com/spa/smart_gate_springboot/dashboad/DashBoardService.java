@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.dashboad;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.FilterDto;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
@@ -26,9 +28,9 @@ public class DashBoardService {
         Date msgDate = filterDto.getMsgCreatedDate();
         Date msgDateFrom = filterDto.getMsgCreatedFrom();
         Date msgDateTo = filterDto.getMsgCreatedTo();
-        if (msgDate == null) msgDate = new Date();
+        if (msgDate == null) msgDate = AppTime.nowDate();
 
-        if (msgDateTo == null) msgDateTo = new Date();
+        if (msgDateTo == null) msgDateTo = AppTime.nowDate();
         if (msgDateFrom != null) msgDate = null;
 
 

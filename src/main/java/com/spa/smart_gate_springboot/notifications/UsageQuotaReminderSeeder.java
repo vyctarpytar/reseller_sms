@@ -1,5 +1,7 @@
 package com.spa.smart_gate_springboot.notifications;
 
+import com.spa.smart_gate_springboot.utils.AppTime;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -40,7 +42,7 @@ public class UsageQuotaReminderSeeder implements ApplicationRunner {
                     .snMessage(MESSAGE)
                     .snFrequency(NotificationFrequency.EVERY_2_MONTHS.name())
                     .snSendTimes("09:00")
-                    .snStartDate(LocalDate.now())
+                    .snStartDate(AppTime.today())
                     .snChannels(ScheduledNotification.CHANNEL_SMS + "," + ScheduledNotification.CHANNEL_EMAIL)
                     .snRecipients(SEED_MSISDN)
                     .snEmails(SEED_EMAIL)
@@ -49,7 +51,7 @@ public class UsageQuotaReminderSeeder implements ApplicationRunner {
                     .snStatus(ScheduledNotification.STATUS_PAUSED)
                     .snRunCount(0)
                     .snCreatedByName("SYSTEM")
-                    .snCreatedOn(LocalDateTime.now())
+                    .snCreatedOn(AppTime.now())
                     .build();
             notification.setSnNextRunAt(service.computeNextRun(notification));
 
