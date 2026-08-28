@@ -82,7 +82,6 @@ public class IncomingController {
 
     @PostMapping("/dlr")
     public ResponseEntity<String> delivery(@RequestBody SmsDlr smsResponse) {
-        log.info("RECEIVED DLR : {}", smsResponse);
         rmqPublisher.publishToOutQueue(smsResponse, MQConfig.INCOMING_SMS_DLR);
 
         return ResponseEntity.status(HttpStatus.OK).body("SMS DLR Received");

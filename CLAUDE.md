@@ -166,8 +166,38 @@ A push to `main` triggers CI, **split by path** so frontend and backend deploy i
   `npm ci` + `npm run build` (Node 22, `CI=false`) → copies `frontend/build/*` to `/var/www/html/sms`
   and reloads nginx.
 
-`application.properties` currently holds **live secrets in plaintext** (DB, JWT, RabbitMQ, Safaricom,
-M-PESA gateway tokens) — do not echo them into logs/commits, and prefer redaction when reading the file.
+### Credentials (none are in the repo)
+
+`application.properties` carries `${DB_PASSWORD}`, `${RABBITMQ_PASSWORD}`, `${REDIS_PASSWORD}`,
+`${JWT_SECRET_KEY}`, `${SAF_SDP_PASSWORD}` and `${SAF_REST_PASSWORD}` with **no defaults**, so an
+unset one aborts startup instead of running half-configured against prod.
+
+- **prod** — GitHub Actions repo secrets of the same names. `deploy.yml`'s "Push secrets to VM" step
+  writes them over SSH to `/opt/apps/sms-app.env`, mode 0600, using **no sudo** (the "Prepare app dir"
+  step already chowns `/opt/apps` to the deploy user; that VM grants NOPASSWD sudo for a handful of
+  commands only, so `sudo install`/`tee` into `/etc` would hang on a password prompt). Values are
+  written single-quoted because systemd's `EnvironmentFile` parser treats a bare `#` as a comment —
+  `SAF_SDP_PASSWORD` contains one. The step then installs
+  `/etc/systemd/system/sms-app.service.d/10-env.conf` with `EnvironmentFile=` via `sudo -n`
+  (a drop-in, so the unit file is never rewritten by CI; re-applied every deploy so a rebuilt VM
+  self-heals), and **aborts before the restart** if `systemctl show sms-app -p EnvironmentFiles`
+  doesn't list it — otherwise the placeholders couldn't resolve and the app would die on boot.
+- **local** — `application-dev.properties` (gitignored) supplies them; run with the `dev` profile.
+  It overrides the datasource/RabbitMQ/Redis passwords with local ones and carries the JWT and
+  Safaricom values verbatim.
+
+Adding a secret: placeholder here, `printf` line in that step, `envs:`/`env:` entries, `gh secret set`,
+and a line in `application-dev.properties`. **`deploy.yml` is in its own `paths-ignore`**, so a
+workflow-only change cannot trigger a run — use `gh workflow run deploy.yml` (the `workflow_dispatch`
+trigger exists for exactly this).
+
+The `Verify app is up` step waits for Tomcat to bind **8443** before calling a deploy green; systemd's
+"Started" only means it forked, and a bad credential kills the JVM seconds later.
+
+Everything committed before 2026-08-28 is **still in git history** — those DB/JWT/RabbitMQ/Redis and
+Safaricom passwords are burned and need rotating at the source. `frontend/.env` is a separate matter:
+`VITE_*` vars are compiled into the public JS bundle, so `VITE_GOOGLE` is not secret by construction —
+restrict that key by HTTP referrer in Google Cloud Console rather than trying to hide it.
 
 ## See also
 

@@ -1,6 +1,9 @@
 name: Build and Deploy to VM
 
 on:
+  # deploy.yml is in paths-ignore below, so a workflow-only change cannot trigger a run.
+  # workflow_dispatch is the way to redeploy or test a fix to this file without a dummy commit.
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -47,6 +50,62 @@ jobs:
           target: "/opt/apps/"
 
 
+      - name: Push secrets to VM
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          envs: DB_PASSWORD,RABBITMQ_PASSWORD,REDIS_PASSWORD,JWT_SECRET_KEY,SAF_SDP_PASSWORD,SAF_REST_PASSWORD
+          script: |
+            set -eu
+            : "${DB_PASSWORD:?missing GitHub secret DB_PASSWORD}"
+            : "${RABBITMQ_PASSWORD:?missing GitHub secret RABBITMQ_PASSWORD}"
+            : "${REDIS_PASSWORD:?missing GitHub secret REDIS_PASSWORD}"
+            : "${JWT_SECRET_KEY:?missing GitHub secret JWT_SECRET_KEY}"
+            : "${SAF_SDP_PASSWORD:?missing GitHub secret SAF_SDP_PASSWORD}"
+            : "${SAF_REST_PASSWORD:?missing GitHub secret SAF_REST_PASSWORD}"
+            umask 077
+            # /opt/apps is chowned to this user by the "Prepare app dir" step, so no sudo here.
+            # Values are single-quoted: systemd's EnvironmentFile parser treats a bare # as a comment
+            # and would truncate SAF_SDP_PASSWORD. A value containing ' would break this.
+            {
+              printf "DB_PASSWORD='%s'\\n"       "$DB_PASSWORD"
+              printf "RABBITMQ_PASSWORD='%s'\\n" "$RABBITMQ_PASSWORD"
+              printf "REDIS_PASSWORD='%s'\\n"    "$REDIS_PASSWORD"
+              printf "JWT_SECRET_KEY='%s'\\n"    "$JWT_SECRET_KEY"
+              printf "SAF_SDP_PASSWORD='%s'\\n"  "$SAF_SDP_PASSWORD"
+              printf "SAF_REST_PASSWORD='%s'\\n" "$SAF_REST_PASSWORD"
+            } > /opt/apps/sms-app.env.tmp
+            chmod 600 /opt/apps/sms-app.env.tmp
+            mv -f /opt/apps/sms-app.env.tmp /opt/apps/sms-app.env
+            # Teach the unit to read it. A drop-in, so sms-app.service itself is never rewritten by
+            # CI. Re-applied every deploy (idempotent), so a rebuilt VM self-heals. `sudo -n` never
+            # prompts: without the grant this warns and the check below stops the deploy, rather
+            # than hanging until the 10m command timeout.
+            printf '[Service]\nEnvironmentFile=/opt/apps/sms-app.env\n' > /tmp/10-env.conf
+            sudo -n mkdir -p /etc/systemd/system/sms-app.service.d \
+              && sudo -n cp /tmp/10-env.conf /etc/systemd/system/sms-app.service.d/10-env.conf \
+              && sudo -n chmod 644 /etc/systemd/system/sms-app.service.d/10-env.conf \
+              && sudo -n systemctl daemon-reload \
+              || echo "WARN: could not install the systemd drop-in (needs passwordless sudo)" >&2
+            rm -f /tmp/10-env.conf
+            # Without the drop-in the jar's ${...} placeholders cannot resolve, so abort here
+            # rather than let the next step restart prod into a config it will die on.
+            if ! systemctl show sms-app -p EnvironmentFiles | grep -q '/opt/apps/sms-app.env'; then
+              echo "FATAL: sms-app is not reading /opt/apps/sms-app.env" >&2
+              echo "Install the drop-in by hand (see CLAUDE.md) or grant passwordless sudo." >&2
+              systemctl show sms-app -p EnvironmentFiles >&2 || true
+              exit 1
+            fi
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          SAF_SDP_PASSWORD: ${{ secrets.SAF_SDP_PASSWORD }}
+          SAF_REST_PASSWORD: ${{ secrets.SAF_REST_PASSWORD }}
+
       - name: Restart App on VM
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -57,7 +116,35 @@ jobs:
             sudo systemctl restart sms-app
 
 
+      - name: Verify app is up
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -eu
+            # systemd reports "Started" the instant it forks, so that alone proves nothing: a config
+            # failure (an unresolved ${...} placeholder, a wrong password) kills the JVM seconds
+            # later and the deploy would still look green. Wait for Tomcat to bind 8443 -- that only
+            # happens once the Spring context is up, which means the datasource actually connected.
+            for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
+              sleep 5
+              if ss -ltn 2>/dev/null | grep -q ':8443 '; then break; fi
+            done
+            ok=1
+            systemctl is-active --quiet sms-app || ok=0
+            ss -ltn 2>/dev/null | grep -q ':8443 ' || ok=0
+            if [ "$ok" -ne 1 ]; then
+              echo "FATAL: sms-app did not come up healthy after the restart" >&2
+              systemctl status sms-app --no-pager -n 40 >&2 || true
+              exit 1
+            fi
+            echo "sms-app is active and listening on 8443"
+            systemctl show sms-app -p ActiveState -p SubState -p ExecMainStartTimestamp
+
       - name: Show last 25 lines of app logs on VM
+        if: always()
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VM_HOST }}
