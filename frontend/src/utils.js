@@ -478,3 +478,40 @@ export const formatText = (str) => {
 
 
  
+// --- Sender ID networks (backend MsnProvider) -------------------------------------------------
+// A sender ID name is registered once per network it lives on, so the same name legitimately
+// appears as several rows. Anywhere we list sender IDs we collapse them back to one entry per name
+// carrying its networks — otherwise the name just appears twice with nothing to tell them apart.
+
+/** Badge class for one network, borrowing the status palette to match each carrier's colour. */
+export const msnBadgeClass = (provider) => {
+  switch (provider) {
+    case "AIRTEL":
+      return "badge-rejected";
+    case "TELKOM":
+      return "badge-open";
+    default:
+      return "badge-approved";
+  }
+};
+
+/**
+ * Collapse sender ID rows (registry entries or account mappings) to one entry per name:
+ * `{ shId, shCode, providers: [...] }`. Rows with no network are treated as SAFARICOM, matching
+ * the backend's backfill of everything that predates the column.
+ */
+export const groupSenderIdsByCode = (rows) => {
+  const byCode = new Map();
+  (rows ?? []).forEach((row) => {
+    if (!row?.shCode) return;
+    const entry = byCode.get(row.shCode) ?? {
+      shId: row.shId,
+      shCode: row.shCode,
+      providers: [],
+    };
+    const provider = row.shMsnProvider || "SAFARICOM";
+    if (!entry.providers.includes(provider)) entry.providers.push(provider);
+    byCode.set(row.shCode, entry);
+  });
+  return Array.from(byCode.values());
+};

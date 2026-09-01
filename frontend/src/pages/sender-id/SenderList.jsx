@@ -9,7 +9,7 @@ import svg27 from "../../assets/svg/svg27.svg";
 import FilterModal from "./FilterModal";
 import SenderIdModal from "./SenderIdModal";
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
-import { cashConverter, dateForHumans, numberWithCommas } from "../../utils";
+import { cashConverter, dateForHumans, groupSenderIdsByCode, msnBadgeClass, numberWithCommas } from "../../utils";
 import AddSenderIdModal from "./AddSenderIdModal";
 
 function SenderList() {
@@ -90,19 +90,31 @@ function SenderList() {
     {
       title: "Assigned",
       render: (item) => {
+        // One mapping row per network, so an account carrying a name on both Safaricom and Airtel
+        // would otherwise show that name twice with nothing to distinguish the two.
         return (
           <div>
-            {item?.senderId?.map((acc, index) => {
+            {groupSenderIdsByCode(item?.senderId)?.map((acc) => {
                 const randomColor = colors[Math.floor(Math.random() * colors.length)];
                 return(
                   <div key={acc?.shId}>
-                  <div className="w-auto rounded-[30px] 
-                   bg-lightBlue flex flex-col mb-[.5rem] py-1 px-3 items-start justify-start text-[14px]"
-                   style={{color:randomColor}}>{acc?.shCode}</div>
+                  <div className="w-auto rounded-[30px]
+                   bg-lightBlue flex flex-wrap gap-x-2 items-center mb-[.5rem] py-1 px-3 justify-start text-[14px]"
+                   style={{color:randomColor}}>
+                    <span>{acc?.shCode}</span>
+                    {acc?.providers?.map((provider) => (
+                      <span
+                        key={provider}
+                        className={`${msnBadgeClass(provider)} !text-[10px] !px-2 !py-0`}
+                      >
+                        {provider}
+                      </span>
+                    ))}
+                  </div>
                   </div>
                 )
             }
-             
+
             )}
           </div>
         );

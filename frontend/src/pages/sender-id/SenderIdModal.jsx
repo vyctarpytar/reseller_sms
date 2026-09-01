@@ -14,20 +14,7 @@ import toast from "react-hot-toast";
 import {  fetchSenderIds, save } from "../../features/save/saveSlice"; 
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
 import { fetchSenderId } from "../../features/sms-request/smsRequestSlice";
-
-// Sender IDs are per-network (backend MsnProvider), and a Safaricom sender ID is not valid on
-// Airtel — so the network has to be visible while assigning, not just the code. Colours borrow the
-// existing badge palette to match each carrier (Safaricom green, Airtel red, Telkom blue).
-const msnBadgeClass = (provider) => {
-  switch (provider) {
-    case "AIRTEL":
-      return "badge-rejected";
-    case "TELKOM":
-      return "badge-open";
-    default:
-      return "badge-approved";
-  }
-};
+import { groupSenderIdsByCode, msnBadgeClass } from "../../utils";
 
 const SenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
  
@@ -93,29 +80,20 @@ const SenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   // One row per sender ID name, carrying every network it is registered on. The backend assigns by
   // name and maps all of that name's network variants, so listing the variants separately would put
   // two options with the same value in the Select — antd cannot tell those apart.
-  const groupedSenderIds = useMemo(() => {
-    const byCode = new Map();
-    (senderIdData ?? []).forEach((option) => {
-      if (!option?.shCode) return;
-      const entry = byCode.get(option.shCode) ?? {
-        shCode: option.shCode,
-        shId: option.shId,
-        providers: [],
-      };
-      const provider = option.shMsnProvider || "SAFARICOM";
-      if (!entry.providers.includes(provider)) entry.providers.push(provider);
-      byCode.set(option.shCode, entry);
-    });
-    return Array.from(byCode.values());
-  }, [senderIdData]);
+  const groupedSenderIds = useMemo(
+    () => groupSenderIdsByCode(senderIdData),
+    [senderIdData]
+  );
 
   const [initialSelectedAccounts, setInitialSelectedAccounts] = useState([]);
  
   
   useEffect(() => {
-    if (prodd?.senderId) { 
-      const shIds = prodd?.senderId.map((acc) => acc?.shCode);  
-      setInitialSelectedAccounts(shIds);   
+    if (prodd?.senderId) {
+      // The account holds one mapping row per network, so the same name comes back several times —
+      // select it once, or the field shows duplicate tags that look like different sender IDs.
+      const shIds = groupSenderIdsByCode(prodd?.senderId).map((acc) => acc?.shCode);
+      setInitialSelectedAccounts(shIds);
       form.setFieldsValue({ shId: shIds });
     }else{ 
       setInitialSelectedAccounts([]); 
