@@ -15,7 +15,9 @@ import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.user.User;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,10 +28,12 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ShortCodeService {
     private final ShortCodeRepository shortCodeRepository;
     private final MsgShortcodeSetupService msgShortcodeSetupService;
@@ -37,6 +41,24 @@ public class ShortCodeService {
     private final AccountService accountService;
     private final GlobalUtils globalUtils;
 
+
+    /**
+     * Stamp the network on sender IDs that predate the {@code sh_msn_provider} column (all of them
+     * Safaricom), so provider filtering never has to special-case null. Idempotent — it re-runs on
+     * every boot and must never take the app down with it, hence the swallowed exception.
+     */
+    @PostConstruct
+    void backfillMsnProvider() {
+        try {
+            int shortCodes = shortCodeRepository.backfillMsnProvider();
+            int setups = msgShortcodeSetupService.backfillMsnProvider();
+            if (shortCodes > 0 || setups > 0) {
+                log.info("Backfilled MSN provider = SAFARICOM on {} shortcode(s) and {} setup(s)", shortCodes, setups);
+            }
+        } catch (Exception e) {
+            log.error("MSN provider backfill failed (sender IDs with a null provider will not match a provider filter): {}", e.getMessage(), e);
+        }
+    }
 
     public StandardJsonResponse assignSenderId(UUID reqId, User auth, ShortCode setup) {
         StandardJsonResponse resp = new StandardJsonResponse();
@@ -110,6 +132,24 @@ public class ShortCodeService {
     }
 
 
+    /**
+     * The sender ID to send with on one network. The account's own mapping wins; failing that the
+     * reseller's registry entry is used, so a reseller that registered e.g. one Airtel sender ID
+     * covers all of its accounts without a per-account mapping. Empty when neither exists — the
+     * caller decides whether that is fatal or falls back to a configured default.
+     */
+    public Optional<String> findSenderIdForProvider(UUID accId, UUID resellerId, MsnProvider provider) {
+        if (accId != null) {
+            Optional<String> mapped = msgShortcodeSetupService
+                    .findSenderIdForProvider(accId, provider);
+            if (mapped.isPresent()) return mapped;
+        }
+        if (resellerId == null) return Optional.empty();
+        return shortCodeRepository
+                .findFirstByShResellerIdAndShMsnProviderOrderByShPriorityAsc(resellerId, provider)
+                .map(ShortCode::getShCode);
+    }
+
     public StandardJsonResponse registerSenderId(ShortCodeDto shortCodeDto, User auth) {
 
         ShortCode shortCode = shortCodeRepository.findByShCodeAndShResellerId(shortCodeDto.getShCode(), auth.getUsrResellerId()).orElse(new ShortCode());
@@ -125,7 +165,9 @@ public class ShortCodeService {
         shortCode.setShCreatedById(auth.getUsrId());
         shortCode.setShStatus(ShStatus.PENDING_MAPPING);
         shortCode.setShCreatedById(auth.getUsrId());
-        shortCode.setShChannel("KENYA.SAFARICOM");
+        MsnProvider provider = shortCodeDto.getShMsnProvider() == null ? MsnProvider.SAFARICOM : shortCodeDto.getShMsnProvider();
+        shortCode.setShMsnProvider(provider);
+        shortCode.setShChannel("KENYA." + provider.name());
         shortCode.setShPriority(ShPriority.PRIMARY);
         shortCode.setShPrsp("WEISER");
         shortCode.setShCode(shortCodeDto.getShCode());

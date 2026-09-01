@@ -7,6 +7,7 @@ import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.request.ReStatus;
 import com.spa.smart_gate_springboot.account_setup.request.RequestEntity;
 import com.spa.smart_gate_springboot.account_setup.request.RequestService;
+import com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider;
 import com.spa.smart_gate_springboot.account_setup.senderId.ShortCode;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.errorhandling.ApplicationExceptionHandler;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -39,6 +41,21 @@ public class MsgShortcodeSetupService {
 
     public MsgShortcodeSetup findByShId(UUID id) {
         return this.msgShortcodeSetupRepository.findByShId(id).orElseThrow(() -> new ApplicationExceptionHandler.resourceNotFoundException("Short COde Setup not found with Id : " + id));
+    }
+
+    /**
+     * The sender ID this account is mapped to on one network — the send path's first choice, so an
+     * account can carry its own Airtel sender ID independent of its reseller's.
+     */
+    public Optional<String> findSenderIdForProvider(UUID accId, MsnProvider provider) {
+        return this.msgShortcodeSetupRepository
+                .findFirstByShAccIdAndShMsnProviderOrderByShPriorityAsc(accId, provider)
+                .map(MsgShortcodeSetup::getShCode);
+    }
+
+    /** @see com.spa.smart_gate_springboot.account_setup.senderId.ShortCodeService#backfillMsnProvider() */
+    public int backfillMsnProvider() {
+        return this.msgShortcodeSetupRepository.backfillMsnProvider();
     }
 
     public MsgShortcodeSetup findByShCodeAndShAccId(String shCode, UUID shAccId) {

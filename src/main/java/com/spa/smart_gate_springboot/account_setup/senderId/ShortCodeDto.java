@@ -12,4 +12,7 @@ public class ShortCodeDto{
 
     @NotNull(message =  "shSenderType Cannot Be Null")
     private String shSenderType;
+
+    /** Mobile service network to register this sender ID on. Optional — defaults to SAFARICOM. */
+    private MsnProvider shMsnProvider;
 }

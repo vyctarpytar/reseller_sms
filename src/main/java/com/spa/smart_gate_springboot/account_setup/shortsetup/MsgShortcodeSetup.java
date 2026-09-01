@@ -1,6 +1,7 @@
 package com.spa.smart_gate_springboot.account_setup.shortsetup;
 
 import com.spa.smart_gate_springboot.account_setup.account.Account;
+import com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -51,6 +52,14 @@ public class MsgShortcodeSetup {
     @Column(nullable = false)
     @NotNull(message = "field cannot be Empty")
     private String shSenderType;
+
+    /**
+     * Carried over from the {@code msg.shortcode} row this mapping was copied from, so the send
+     * path can pick the account's Airtel sender ID without a second hop through the registry.
+     */
+    @Column(name = "sh_msn_provider")
+    @Enumerated(EnumType.STRING)
+    private MsnProvider shMsnProvider;
 
 
 }

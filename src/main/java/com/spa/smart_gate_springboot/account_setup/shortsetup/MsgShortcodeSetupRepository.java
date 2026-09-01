@@ -1,11 +1,14 @@
 package com.spa.smart_gate_springboot.account_setup.shortsetup;
 
+import com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +19,19 @@ public interface MsgShortcodeSetupRepository extends JpaRepository<MsgShortcodeS
     Optional<MsgShortcodeSetup> findByShId(UUID id);
 
     List<MsgShortcodeSetup> findByShAccId(UUID id);
+
+    /**
+     * The sender ID this account is mapped to on one network. Preferred over the reseller-level
+     * registry so an account can carry its own Airtel sender ID. Priority ordering as in
+     * {@code ShortCodeRepository}.
+     */
+    Optional<MsgShortcodeSetup> findFirstByShAccIdAndShMsnProviderOrderByShPriorityAsc(UUID shAccId, MsnProvider msnProvider);
+
+    /** Backfill counterpart of {@code ShortCodeRepository.backfillMsnProvider()}. */
+    @Modifying
+    @Transactional
+    @Query("update shortcode_setup s set s.shMsnProvider = com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider.SAFARICOM where s.shMsnProvider is null")
+    int backfillMsnProvider();
 
 
 

@@ -51,6 +51,14 @@ public class ShortCode {
     @NotNull(message = "field cannot be Empty")
     private String shSenderType;
 
+    /**
+     * Mobile service network this sender ID belongs to. Nullable because rows created before the
+     * column existed have no value — they are backfilled to {@link MsnProvider#SAFARICOM} on boot.
+     */
+    @Column(name = "sh_msn_provider")
+    @Enumerated(EnumType.STRING)
+    private MsnProvider shMsnProvider;
+
 
 }
 

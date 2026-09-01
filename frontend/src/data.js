@@ -23,6 +23,23 @@ export const GenderData = [
    
   ];
 
+  // Mobile service network a sender ID is registered on — mirrors the backend MsnProvider enum
+  // (GET api/v2/shortcode/distinct-providers). Drives which carrier gateway a send is routed through.
+  export const MsnProviderData = [
+    {
+      label: "SAFARICOM",
+      value: "SAFARICOM",
+    },
+    {
+      label: "AIRTEL",
+      value: "AIRTEL",
+    },
+    {
+      label: "TELKOM",
+      value: "TELKOM",
+    }
+  ];
+
   export const instTypeData = [
     {
       label: "COMPANY",

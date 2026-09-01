@@ -3,9 +3,11 @@ package com.spa.smart_gate_springboot.account_setup.senderId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,24 @@ import java.util.UUID;
 public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
 
     Optional<ShortCode> findByShCodeAndShResellerId(String shortCode, UUID resellerId);
+
+    /**
+     * The reseller's sender ID for one network — how the Airtel gateway finds its sender ID instead
+     * of hardcoding one. Ordered by priority so a reseller holding several Airtel sender IDs gets a
+     * stable pick; the enum is stored as a string and PRIMARY/SECONDARY/TERTIALLY happen to sort
+     * that way alphabetically.
+     */
+    Optional<ShortCode> findFirstByShResellerIdAndShMsnProviderOrderByShPriorityAsc(UUID resellerId, MsnProvider msnProvider);
+
+    /**
+     * Sender IDs registered before {@code sh_msn_provider} existed are all Safaricom ones — stamp
+     * them so the provider filter never has to treat null as a special case. Idempotent, run at boot
+     * ({@code ddl-auto: update} adds the column but leaves it null, and CI has no migration step).
+     */
+    @Modifying
+    @Transactional
+    @Query("update shortcode s set s.shMsnProvider = com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider.SAFARICOM where s.shMsnProvider is null")
+    int backfillMsnProvider();
 
     @Query(value = """
             SELECT DISTINCT m.sh_code FROM msg.shortcode m

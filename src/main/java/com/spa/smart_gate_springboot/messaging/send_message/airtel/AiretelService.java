@@ -4,6 +4,8 @@ import com.spa.smart_gate_springboot.utils.AppTime;
 
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
+import com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider;
+import com.spa.smart_gate_springboot.account_setup.senderId.ShortCodeService;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ public class AiretelService {
     private final AirtelNumberRepository airtelNumberRepository;
     private final RestTemplate restTemplate;
     private final ObjectProvider<AccountService> accountServiceProvider;
+    private final ObjectProvider<ShortCodeService> shortCodeServiceProvider;
 
     private static final Set<String> AIRTEL_PREFIXES = Set.of(
             "25473" // adjust as needed
@@ -34,6 +37,10 @@ public class AiretelService {
 
     @Value("${sms.airtel.allowForAll}")
     private  String allowForAll;
+
+    /** Used only when the tenant has no sender ID registered on AIRTEL. */
+    @Value("${sms.airtel.defaultSenderId:letstalk}")
+    private String defaultSenderId;
 
 
     public boolean checkIsAirtel(String msisdn) {
@@ -74,6 +81,31 @@ public class AiretelService {
       return arcList.get(0);
     }
 
+    /**
+     * The Airtel sender ID to send this message with. The sender ID that arrived on the message is a
+     * Safaricom one (that is the network the web UI picks from), so it cannot be reused here —
+     * Airtel only accepts a sender ID registered on its own network. We therefore look up the
+     * account's, then the reseller's, sender ID registered with {@link MsnProvider#AIRTEL}
+     * ({@code sh_msn_provider}), and fall back to {@code sms.airtel.defaultSenderId} for tenants
+     * that have not registered one — that fallback is what every send used unconditionally before
+     * the column existed.
+     */
+    private String resolveAirtelSenderId(MsgMessageQueueArc msg) {
+        UUID resellerId = msg.getMsgResellerId();
+        if (resellerId == null && msg.getMsgAccId() != null) {
+            Account account = accountServiceProvider.getObject().findByAccId(msg.getMsgAccId());
+            resellerId = account == null ? null : account.getAccResellerId();
+        }
+
+        return shortCodeServiceProvider.getObject()
+                .findSenderIdForProvider(msg.getMsgAccId(), resellerId, MsnProvider.AIRTEL)
+                .orElseGet(() -> {
+                    log.info("No AIRTEL sender ID registered for accId={} resellerId={} — using default '{}'",
+                            msg.getMsgAccId(), msg.getMsgResellerId(), defaultSenderId);
+                    return defaultSenderId;
+                });
+    }
+
     private BigDecimal getCostPerSMS(UUID msgAccId) {
         Account acc = this.accountServiceProvider.getObject().findByAccId(msgAccId);
         BigDecimal _sms_price = acc.getAccSmsPrice();
@@ -102,9 +134,8 @@ public class AiretelService {
         BigDecimal totalCost = cost_per_sms.multiply(new BigDecimal(no_of_msg));
         msgMessageQueueArc.setMsgPage(no_of_msg);
         msgMessageQueueArc.setMsgCostId(totalCost);
-//        String senderId = "SYNQSMS"; //""letstalk";
-        String senderId = "letstalk"; //""letstalk";
 
+        String senderId = resolveAirtelSenderId(msgMessageQueueArc);
 
         msgMessageQueueArc.setMsgSenderIdName(senderId);
 

@@ -78,7 +78,12 @@ only (`menu`, `blacklist`, `management/**` which is role-gated, `auth/logout`). 
    (`safaricom_rest/SafaricomRestBulkService`); `sms.airtel.allowForAll` / per-number MNO lookup in
    `messaging/operatorPrefix` (`operator_prefix` table) routes to **Airtel** (`airtel/AiretelService`).
    Infobip is also a wired provider. Sender-ID / package (TRANSACTIONAL vs PROMOTIONAL) comes from the
-   account's shortcode setup. (An Infobip Java client is also a dependency under `messaging`.)
+   account's shortcode setup. **Sender IDs are per-network**: `msg.shortcode`/`msg.shortcode_setup`
+   carry `sh_msn_provider` (enum `MsnProvider`: SAFARICOM/AIRTEL/TELKOM), and `AiretelService` picks
+   the account's — else the reseller's — sender ID registered on AIRTEL, falling back to
+   `sms.airtel.defaultSenderId`. A Safaricom sender ID is not valid on Airtel, so never reuse the one
+   that arrived on the message. Rows predating the column are stamped SAFARICOM by an idempotent
+   boot-time backfill (`ShortCodeService.backfillMsnProvider`) — no manual DB step. (An Infobip Java client is also a dependency under `messaging`.)
 4. **Delivery reports**: carriers POST to `/api/v2/public/dlr` (`IncomingController`), which republishes
    to a DLR queue consumed by `SafDlrService`, which updates `message_queue_arc` by `msg_code`+msisdn.
 5. **Client callbacks**: for API-originated sends with a `msgCallbackUrl`, the `crons` package

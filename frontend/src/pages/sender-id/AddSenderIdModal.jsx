@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {   save } from "../../features/save/saveSlice";
-import { IdTypeData } from "../../data";
+import { IdTypeData, MsnProviderData } from "../../data";
 
 const AddSenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
  
@@ -113,6 +113,25 @@ const AddSenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
                 placeholder="Select sender ID type"
                 style={{ width: "100%" }}
                 options={IdTypeData}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Network"
+              name="shMsnProvider"
+              rules={[
+                {
+                  required: true,
+                  message: "Required field",
+                },
+              ]}
+              className="w-full"
+            >
+              <Select
+                allowClear
+                placeholder="Select network"
+                style={{ width: "100%" }}
+                options={MsnProviderData}
               />
             </Form.Item>
 
