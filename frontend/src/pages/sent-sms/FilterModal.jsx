@@ -24,7 +24,7 @@ import {
 import { fetchSavedSms, save } from "../../features/save/saveSlice";
 import moment from "moment";
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
-import { normalizeDateToLocalYearWTime } from "../../utils";
+import { normalizeDateToLocalYearWTime, senderNameOptions } from "../../utils";
 
 const { TextArea } = Input;
 const FilterModal = ({
@@ -535,11 +535,7 @@ const FilterModal = ({
                           handleSelectChange(value, "msgSenderId");
                         }}
                         options={
-                          senderNamesData?.length > 0 &&
-                          senderNamesData?.map((item) => ({
-                            value: item,
-                            label: item,
-                          }))
+                          senderNameOptions(senderNamesData)
                         }
                         showSearch
                         optionFilterProp="children"

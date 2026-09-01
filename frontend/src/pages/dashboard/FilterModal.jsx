@@ -22,6 +22,7 @@ import {
 import moment from "moment";
 import { fetchDash } from "../../features/dashboard/dashboardSlice";
 import { fetchReseller } from "../../features/reseller/resellerSlice";
+import { senderNameOptions } from "../../utils";
 
 const { TextArea } = Input;
 const FilterModal = ({
@@ -510,11 +511,7 @@ const FilterModal = ({
                           handleSelectChange(value, "msgSenderId");
                         }}
                         options={
-                          senderNamesData?.length > 0 &&
-                          senderNamesData?.map((item) => ({
-                            value: item,
-                            label: item,
-                          }))
+                          senderNameOptions(senderNamesData)
                         }
                         showSearch
                         optionFilterProp="children"

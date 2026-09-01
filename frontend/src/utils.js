@@ -515,3 +515,23 @@ export const groupSenderIdsByCode = (rows) => {
   });
   return Array.from(byCode.values());
 };
+
+/**
+ * Options for a "select sender name" dropdown. The endpoint is distinct on (name, network), so a
+ * name registered on several networks appears once per network with the network in the label; the
+ * value stays the bare name, which is what a send actually carries.
+ *
+ * Tolerates plain strings too: the store is persisted to localStorage, so after a deploy a user can
+ * still be holding the old string-only payload until the next fetch.
+ */
+export const senderNameOptions = (rows) =>
+  (rows ?? []).map((row) =>
+    typeof row === "string"
+      ? { value: row, label: row }
+      : {
+          value: row?.shCode,
+          label: row?.shMsnProvider
+            ? `${row?.shCode} (${row?.shMsnProvider})`
+            : row?.shCode,
+        }
+  );

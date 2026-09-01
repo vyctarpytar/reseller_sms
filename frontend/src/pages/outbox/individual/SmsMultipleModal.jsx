@@ -8,6 +8,7 @@ import svg43 from '../../../assets/svg/svg43.svg'
 import "./mention.css";
 import { fetchDistinctSenderNames } from "../../../features/filter/filterSlice";
 import ScheduleMultipleModal from "../group/modal/ScheduleMultipleModal";
+import { senderNameOptions } from "../../../utils";
 
 const { TextArea } = Input;
 const SmsMultipleModal = ({
@@ -141,11 +142,7 @@ const SmsMultipleModal = ({
                 handleSelectChange(value, "senderId");
               }}
               options={
-                senderNamesData?.length > 0 &&
-                senderNamesData?.map((item) => ({
-                  value: item,
-                  label: item,
-                }))
+                senderNameOptions(senderNamesData)
               }
               showSearch
               optionFilterProp="children"

@@ -43,12 +43,14 @@ public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
     @Query("update shortcode s set s.shMsnProvider = com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider.SAFARICOM where s.shMsnProvider is null")
     int backfillMsnProvider();
 
+    /** Distinct on (name, network) — see {@code MsgShortcodeSetupRepository.findDistinctSenderNames}. */
     @Query(value = """
-            SELECT DISTINCT m.sh_code FROM msg.shortcode m
+            SELECT DISTINCT m.sh_code, m.sh_msn_provider FROM msg.shortcode m
             where sh_code is not null
                  and case when cast( :usrResellerId as UUID) is not null then sh_reseller_id = cast(:usrResellerId as UUID) else 1=1 end
+            order by 1, 2
             """, nativeQuery = true)
-    List<String> findDistinctSenderNames(@Param("usrResellerId") UUID usrResellerId);
+    List<Object[]> findDistinctSenderNames(@Param("usrResellerId") UUID usrResellerId);
 
 
     @Query(value = """

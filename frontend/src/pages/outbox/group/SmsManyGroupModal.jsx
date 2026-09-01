@@ -9,6 +9,7 @@ import svg7 from "../../../assets/svg/svg7.svg";
 import svg43 from "../../../assets/svg/svg43.svg";
 import { fetchDistinctSenderNames } from "../../../features/filter/filterSlice";
 import ScheduleManyGroupsModal from "./modal/ScheduleManyGroupsModal";
+import { senderNameOptions } from "../../../utils";
 
 const { TextArea } = Input;
 const SmsManyGroupModal = ({
@@ -156,11 +157,7 @@ const SmsManyGroupModal = ({
                 handleSelectChange(value, "senderId");
               }}
               options={
-                senderNamesData?.length > 0 &&
-                senderNamesData?.map((item) => ({
-                  value: item,
-                  label: item,
-                }))
+                senderNameOptions(senderNamesData)
               }
               showSearch
               optionFilterProp="children"

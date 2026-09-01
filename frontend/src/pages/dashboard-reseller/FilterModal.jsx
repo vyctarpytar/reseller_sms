@@ -19,6 +19,7 @@ import { fetchDistinctSenderNames, fetchDistinctStatus } from "../../features/fi
 import moment from "moment";
 import { fetchDash } from "../../features/dashboard/dashboardSlice";
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
+import { senderNameOptions } from "../../utils";
 
 const { TextArea } = Input;
 const FilterModal = ({
@@ -506,11 +507,7 @@ const FilterModal = ({
                           handleSelectChange(value, "msgSenderId");
                         }}
                         options={
-                          senderNamesData?.length > 0 &&
-                          senderNamesData?.map((item) => ({
-                            value: item,
-                            label: item,
-                          }))
+                          senderNameOptions(senderNamesData)
                         }
                         showSearch
                         optionFilterProp="children"

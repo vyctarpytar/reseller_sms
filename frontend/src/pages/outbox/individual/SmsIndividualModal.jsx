@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import PhoneInput from "react-phone-input-2";
 import { save } from "../../../features/save/saveSlice";
-import { addSpaces } from "../../../utils";
+import { addSpaces, senderNameOptions } from "../../../utils";
 import MessageTemplate from "../../mesage-template/MessageTemplate";
 import "./mention.css";
 import { fetchDistinctSenderNames } from "../../../features/filter/filterSlice";
@@ -115,11 +115,7 @@ const SmsIndividualModal = ({ isModalOpen, setIsModalOpen, rowId }) => {
                   handleSelectChange(value, "senderId");
                 }}
                 options={
-                  senderNamesData?.length > 0 &&
-                  senderNamesData?.map((item) => ({
-                    value: item,
-                    label: item,
-                  }))
+                  senderNameOptions(senderNamesData)
                 }
                 showSearch
                 optionFilterProp="children"

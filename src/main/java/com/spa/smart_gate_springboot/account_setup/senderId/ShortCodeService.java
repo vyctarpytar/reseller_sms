@@ -165,9 +165,10 @@ public class ShortCodeService {
 
     public StandardJsonResponse fetchDistinctResellerSenderNames(User user) {
         StandardJsonResponse response = new StandardJsonResponse();
-        List<String> msgQueues = new ArrayList<>();
+        List<SenderNameDto> msgQueues = new ArrayList<>();
         if (user.getLayer().equals(Layers.RESELLER)) {
-            msgQueues = shortCodeRepository.findDistinctSenderNames(user.getUsrResellerId());
+            msgQueues = MsgShortcodeSetupService.toSenderNames(
+                    shortCodeRepository.findDistinctSenderNames(user.getUsrResellerId()));
         } else {
             return msgShortcodeSetupService.fetchDistinctResellerSenderNames(user);
         }

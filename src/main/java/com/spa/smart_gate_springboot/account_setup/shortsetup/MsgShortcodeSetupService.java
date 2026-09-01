@@ -8,6 +8,7 @@ import com.spa.smart_gate_springboot.account_setup.request.ReStatus;
 import com.spa.smart_gate_springboot.account_setup.request.RequestEntity;
 import com.spa.smart_gate_springboot.account_setup.request.RequestService;
 import com.spa.smart_gate_springboot.account_setup.senderId.MsnProvider;
+import com.spa.smart_gate_springboot.account_setup.senderId.SenderNameDto;
 import com.spa.smart_gate_springboot.account_setup.senderId.ShortCode;
 import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.errorhandling.ApplicationExceptionHandler;
@@ -148,20 +149,34 @@ public class MsgShortcodeSetupService {
 
     public StandardJsonResponse fetchDistinctResellerSenderNames(User user) {
         StandardJsonResponse response = new StandardJsonResponse();
-        List<String> msgQueues = new ArrayList<>();
+        List<Object[]> rows = new ArrayList<>();
 
         if (user.getLayer().equals(Layers.ACCOUNT)) {
-            msgQueues = msgShortcodeSetupRepository.findDistinctSenderNames(null, user.getUsrAccId());
+            rows = msgShortcodeSetupRepository.findDistinctSenderNames(null, user.getUsrAccId());
         } else if (user.getLayer().equals(Layers.TOP)) {
-            msgQueues = msgShortcodeSetupRepository.findDistinctSenderNames(null, null);
+            rows = msgShortcodeSetupRepository.findDistinctSenderNames(null, null);
         } else if (user.getLayer().equals(Layers.RESELLER)) {
-            msgQueues = msgShortcodeSetupRepository.findDistinctSenderNames(user.getUsrResellerId(), null);
+            rows = msgShortcodeSetupRepository.findDistinctSenderNames(user.getUsrResellerId(), null);
         } else {
 
         }
+        List<SenderNameDto> msgQueues = toSenderNames(rows);
         response.setData("result", msgQueues, response);
         response.setTotal(msgQueues.size());
         return response;
+    }
+
+    /**
+     * {@code [sh_code, sh_msn_provider]} rows to the shape the sender-name pickers read. A null
+     * network only survives if the boot backfill could not run, so it is reported as SAFARICOM —
+     * the value every sender ID predating the column carries.
+     */
+    public static List<SenderNameDto> toSenderNames(List<Object[]> rows) {
+        return rows.stream()
+                .map(row -> new SenderNameDto(
+                        (String) row[0],
+                        row[1] == null ? MsnProvider.SAFARICOM.name() : (String) row[1]))
+                .toList();
     }
 
 

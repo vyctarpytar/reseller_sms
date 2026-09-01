@@ -44,13 +44,19 @@ public interface MsgShortcodeSetupRepository extends JpaRepository<MsgShortcodeS
 
 
 
+    /**
+     * Distinct on (name, network) rather than on the name alone: a sender ID is registered once per
+     * network, so collapsing on the name hides that e.g. MERIDIANBET exists on both Safaricom and
+     * Airtel. Returns {@code [sh_code, sh_msn_provider]} pairs.
+     */
     @Query(value = """
-            SELECT DISTINCT m.sh_code FROM msg.shortcode_setup m
+            SELECT DISTINCT m.sh_code, m.sh_msn_provider FROM msg.shortcode_setup m
             where sh_code is not null
               and case when cast(:usrAccId as UUID) is not null then sh_acc_id = cast(:usrAccId as UUID) else 1=1 end
                  and case when cast( :usrResellerId as UUID) is not null then sh_reseller_id = cast(:usrResellerId as UUID) else 1=1 end
+            order by 1, 2
             """, nativeQuery = true)
-    List<String> findDistinctSenderNames(@Param("usrResellerId") UUID usrResellerId, @Param("usrAccId") UUID usrAccId);
+    List<Object[]> findDistinctSenderNames(@Param("usrResellerId") UUID usrResellerId, @Param("usrAccId") UUID usrAccId);
 
 
     @Query(value = """
