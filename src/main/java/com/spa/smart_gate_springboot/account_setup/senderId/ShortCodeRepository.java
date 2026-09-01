@@ -16,7 +16,14 @@ import java.util.UUID;
 @Repository
 public interface ShortCodeRepository extends JpaRepository<ShortCode, UUID> {
 
-    Optional<ShortCode> findByShCodeAndShResellerId(String shortCode, UUID resellerId);
+    /**
+     * A sender ID name can now exist on more than one network for the same reseller, so this returns
+     * every network variant. Callers that need one specific row must say which network.
+     */
+    List<ShortCode> findByShCodeAndShResellerId(String shortCode, UUID resellerId);
+
+    /** The one row identified by (code, reseller, network) — what uniqueness is defined on. */
+    Optional<ShortCode> findByShCodeAndShResellerIdAndShMsnProvider(String shortCode, UUID resellerId, MsnProvider msnProvider);
 
     /**
      * The reseller's sender ID for one network — how the Airtel gateway finds its sender ID instead

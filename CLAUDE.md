@@ -82,8 +82,15 @@ only (`menu`, `blacklist`, `management/**` which is role-gated, `auth/logout`). 
    carry `sh_msn_provider` (enum `MsnProvider`: SAFARICOM/AIRTEL/TELKOM), and `AiretelService` picks
    the account's — else the reseller's — sender ID registered on AIRTEL, falling back to
    `sms.airtel.defaultSenderId`. A Safaricom sender ID is not valid on Airtel, so never reuse the one
-   that arrived on the message. Rows predating the column are stamped SAFARICOM by an idempotent
-   boot-time backfill (`ShortCodeService.backfillMsnProvider`) — no manual DB step. (An Infobip Java client is also a dependency under `messaging`.)
+   that arrived on the message. **The network is part of a sender ID's identity**: the same name is
+   registered once per network it lives on (MERIDIANBET on Safaricom and on Airtel are two rows), so
+   uniqueness is `(sh_code, sh_reseller_id, sh_msn_provider)` on the registry and
+   `(sh_code, sh_acc_id, sh_msn_provider)` on the mappings — never on `sh_code` alone, and assigning
+   by name maps every network variant. Rows predating the column are stamped SAFARICOM, and the old
+   pre-network UNIQUEs are swept, by an idempotent boot-time routine
+   (`ShortCodeService.backfillMsnProvider` / `dropLegacySenderIdUniques`) — `ddl-auto: update` only
+   ever ADDS constraints, so without that sweep the old ones survive and still reject the second
+   network. No manual DB step in any environment. (An Infobip Java client is also a dependency under `messaging`.)
 4. **Delivery reports**: carriers POST to `/api/v2/public/dlr` (`IncomingController`), which republishes
    to a DLR queue consumed by `SafDlrService`, which updates `message_queue_arc` by `msg_code`+msisdn.
 5. **Client callbacks**: for API-originated sends with a `msgCallbackUrl`, the `crons` package

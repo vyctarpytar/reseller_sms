@@ -53,13 +53,28 @@ public class MsgShortcodeSetupService {
                 .map(MsgShortcodeSetup::getShCode);
     }
 
+    /** Re-point this reseller's mappings of one sender ID at a different network. */
+    public int updateMsnProviderByShCode(String shCode, UUID resellerId, MsnProvider provider) {
+        return this.msgShortcodeSetupRepository.updateMsnProviderByShCode(shCode, resellerId, provider);
+    }
+
     /** @see com.spa.smart_gate_springboot.account_setup.senderId.ShortCodeService#backfillMsnProvider() */
     public int backfillMsnProvider() {
         return this.msgShortcodeSetupRepository.backfillMsnProvider();
     }
 
+    /**
+     * The setup row the Safaricom senders read the sender type / package from. A name mapped on more
+     * than one network yields several rows, so prefer the Safaricom one — these callers are the
+     * SDP/Daraja path, and picking e.g. the Airtel row would read the wrong package.
+     */
     public MsgShortcodeSetup findByShCodeAndShAccId(String shCode, UUID shAccId) {
-        return this.msgShortcodeSetupRepository.findByShCodeAndShAccId(shCode, shAccId).orElseThrow(() -> new ApplicationExceptionHandler.resourceNotFoundException("Short COde Setup not found with code : " + shCode));
+        List<MsgShortcodeSetup> setups = this.msgShortcodeSetupRepository.findByShCodeAndShAccId(shCode, shAccId);
+        return setups.stream()
+                .filter(s -> s.getShMsnProvider() == null || s.getShMsnProvider() == MsnProvider.SAFARICOM)
+                .findFirst()
+                .or(() -> setups.stream().findFirst())
+                .orElseThrow(() -> new ApplicationExceptionHandler.resourceNotFoundException("Short COde Setup not found with code : " + shCode));
     }
 
     public StandardJsonResponse assignSenderId(UUID reqId, User auth, MsgShortcodeSetup setup) {

@@ -14,13 +14,15 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Builder
-    @Table(schema = "msg",uniqueConstraints = {@UniqueConstraint(columnNames = {"sh_code", "sh_acc_id"})})
+    @Table(schema = "msg", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"sh_code", "sh_acc_id", "sh_msn_provider"})})
 @Entity(name = "shortcode_setup")
 public class MsgShortcodeSetup {
     @Id
     @GeneratedValue
     private UUID shId;
-    @Column(unique = true, nullable = false,name = "sh_code")
+    /** Not globally unique — see {@code ShortCode.shCode}. One row per network per account. */
+    @Column(nullable = false, name = "sh_code")
     @NotNull(message = "field cannot be Empty")
     private String shCode;
     private String shUser;

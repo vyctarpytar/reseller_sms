@@ -13,13 +13,19 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @ToString
-@Table(schema = "msg")
+@Table(schema = "msg", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"sh_code", "sh_reseller_id", "sh_msn_provider"})})
 @Entity(name = "shortcode")
 public class ShortCode {
     @Id
     @GeneratedValue
     private UUID shId;
-    @Column(unique = true, nullable = false)
+    /**
+     * NOT globally unique: the same sender ID string is registered once per network it lives on
+     * (MERIDIANBET on Safaricom and on Airtel are two rows), and two resellers may hold the same
+     * name. Uniqueness is the (code, reseller, network) constraint on the table.
+     */
+    @Column(name = "sh_code", nullable = false)
     @NotNull(message = "shCode field cannot be Empty")
     private String shCode;
     private String shUser;
@@ -28,7 +34,7 @@ public class ShortCode {
     private String shChannel;
     private String shPrsp;
 
-    @Column(nullable = false,updatable = false)
+    @Column(name = "sh_reseller_id", nullable = false, updatable = false)
     @NotNull(message = "shResellerId field cannot be Empty")
     private UUID shResellerId;
 

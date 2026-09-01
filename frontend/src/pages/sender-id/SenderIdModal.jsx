@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { 
   Form, 
   Modal,
@@ -14,6 +14,20 @@ import toast from "react-hot-toast";
 import {  fetchSenderIds, save } from "../../features/save/saveSlice"; 
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
 import { fetchSenderId } from "../../features/sms-request/smsRequestSlice";
+
+// Sender IDs are per-network (backend MsnProvider), and a Safaricom sender ID is not valid on
+// Airtel — so the network has to be visible while assigning, not just the code. Colours borrow the
+// existing badge palette to match each carrier (Safaricom green, Airtel red, Telkom blue).
+const msnBadgeClass = (provider) => {
+  switch (provider) {
+    case "AIRTEL":
+      return "badge-rejected";
+    case "TELKOM":
+      return "badge-open";
+    default:
+      return "badge-approved";
+  }
+};
 
 const SenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
  
@@ -76,7 +90,26 @@ const SenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   }
  
 
-  const [initialSelectedAccounts, setInitialSelectedAccounts] = useState([]);  
+  // One row per sender ID name, carrying every network it is registered on. The backend assigns by
+  // name and maps all of that name's network variants, so listing the variants separately would put
+  // two options with the same value in the Select — antd cannot tell those apart.
+  const groupedSenderIds = useMemo(() => {
+    const byCode = new Map();
+    (senderIdData ?? []).forEach((option) => {
+      if (!option?.shCode) return;
+      const entry = byCode.get(option.shCode) ?? {
+        shCode: option.shCode,
+        shId: option.shId,
+        providers: [],
+      };
+      const provider = option.shMsnProvider || "SAFARICOM";
+      if (!entry.providers.includes(provider)) entry.providers.push(provider);
+      byCode.set(option.shCode, entry);
+    });
+    return Array.from(byCode.values());
+  }, [senderIdData]);
+
+  const [initialSelectedAccounts, setInitialSelectedAccounts] = useState([]);
  
   
   useEffect(() => {
@@ -145,9 +178,9 @@ const SenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
                 size="large"
                 className=""
                 showSearch
-                optionFilterProp="children"
+                optionFilterProp="value"
                 filterOption={(input, option) =>
-                  (option?.children?.toLowerCase() ?? "").includes(
+                  (option?.value?.toLowerCase() ?? "").includes(
                     input.toLowerCase()
                   )
                 }
@@ -185,9 +218,25 @@ const SenderIdModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
                   </>
                 )}
               >
-                {senderIdData?.map((option) => (
-                  <Select.Option key={option?.shId} value={option?.shCode}>
-                    {option?.shCode}
+                {groupedSenderIds?.map((option) => (
+                  <Select.Option
+                    key={option?.shId}
+                    value={option?.shCode}
+                    label={option?.shCode}
+                  >
+                    <span className="inline-flex items-center gap-x-2">
+                      <span>{option?.shCode}</span>
+                      {option?.providers?.map((provider) => (
+                        <span
+                          key={provider}
+                          className={`${msnBadgeClass(
+                            provider
+                          )} !text-[10px] !px-2 !py-0`}
+                        >
+                          {provider}
+                        </span>
+                      ))}
+                    </span>
                   </Select.Option>
                 ))}
               </Select>

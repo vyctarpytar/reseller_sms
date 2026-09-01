@@ -27,6 +27,15 @@ public interface MsgShortcodeSetupRepository extends JpaRepository<MsgShortcodeS
      */
     Optional<MsgShortcodeSetup> findFirstByShAccIdAndShMsnProviderOrderByShPriorityAsc(UUID shAccId, MsnProvider msnProvider);
 
+    /**
+     * Keep the account mappings on the same network as the registry entry they were copied from —
+     * the send path checks the mapping first, so leaving it stale would hide the correction.
+     */
+    @Modifying
+    @Transactional
+    @Query("update shortcode_setup s set s.shMsnProvider = :provider where s.shCode = :shCode and s.shResellerId = :resellerId")
+    int updateMsnProviderByShCode(@Param("shCode") String shCode, @Param("resellerId") UUID resellerId, @Param("provider") MsnProvider provider);
+
     /** Backfill counterpart of {@code ShortCodeRepository.backfillMsnProvider()}. */
     @Modifying
     @Transactional
@@ -57,5 +66,10 @@ public interface MsgShortcodeSetupRepository extends JpaRepository<MsgShortcodeS
     List<MsgShortcodeSetup> findByShStatusIsNull();
     List<MsgShortcodeSetup> findByShResellerIdIsNull();
 
-    Optional<MsgShortcodeSetup> findByShCodeAndShAccId(String shCode, UUID shAccId);
+    /**
+     * Every network variant of one sender ID mapped to an account. Returns a list, not an Optional:
+     * the same name can be mapped on both Safaricom and Airtel, and an Optional query would throw
+     * {@code IncorrectResultSizeDataAccessException} the moment that happens.
+     */
+    List<MsgShortcodeSetup> findByShCodeAndShAccId(String shCode, UUID shAccId);
 }

@@ -86,6 +86,15 @@ public class ShortCodeController {
         return resp;
     }
 
+    @PostMapping("update-provider")
+    public StandardJsonResponse updateSenderIdProvider(HttpServletRequest request, @RequestBody @Valid ShortCodeProviderDto dto, @RequestParam(required = false) String reseller_id) {
+        var auth = userService.getCurrentUser(request);
+        if (reseller_id != null) {
+            auth.setUsrResellerId(UUID.fromString(reseller_id));
+        }
+        return shortCodeService.updateSenderIdProvider(dto, auth);
+    }
+
     /** Options for the network selector on the Add Sender ID form. */
     @GetMapping("distinct-providers")
     public StandardJsonResponse fetchDistinctMsnProviders() {
