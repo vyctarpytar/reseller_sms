@@ -14,9 +14,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -34,6 +39,9 @@ public class AiretelService {
     private static final Set<String> AIRTEL_PREFIXES = Set.of(
             "25473" // adjust as needed
     );
+
+    /** Total tries at the Airtel gateway per send — the first attempt plus four retries. */
+    private static final int AIRTEL_SEND_ATTEMPTS = 5;
 
     @Value("${sms.airtel.allowForAll}")
     private  String allowForAll;
@@ -169,8 +177,7 @@ public class AiretelService {
 
 
         try {
-            String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
-            SMSReport responsee = restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
+            SMSReport responsee = postToAirtelWithRetry(requestBody);
             msgMessageQueueArc.setMsgCreatedDate(AppTime.now());
             msgMessageQueueArc.setMsgCreatedTime(AppTime.now());
             msgMessageQueueArc.setMsgStatus(responsee.responses.get(0).responseDescription);
@@ -193,6 +200,73 @@ public class AiretelService {
         }
     }
 
+
+    /**
+     * POST the send to the Airtel gateway, retrying transient connection failures up to
+     * {@value #AIRTEL_SEND_ATTEMPTS} times. The gateway drops out intermittently (DNS/connect
+     * failures on bulksms.switchportltd.com), and without this a single blip leaves the message for
+     * the retry cron minutes later.
+     *
+     * <p>Only failures that provably never reached the gateway are retried — see
+     * {@link #neverLeftThisHost(ResourceAccessException)}. An HTTP error or a malformed response
+     * means the gateway answered, so re-posting would risk a second SMS to a real recipient.
+     *
+     * <p>Note this runs on a {@code @Scheduled} thread when the retry cron calls it, and a dead host
+     * can take ~10s per attempt, so the backoff is deliberately short.
+     */
+    private SMSReport postToAirtelWithRetry(Map<String, String> requestBody) {
+        String AIRTEL_END_POINT = "https://bulksms.switchportltd.com/api/services/sendsms";
+        long backoffMs = 500L;
+
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return restTemplate.postForObject(AIRTEL_END_POINT, requestBody, SMSReport.class);
+            } catch (ResourceAccessException e) {
+                if (!neverLeftThisHost(e)) {
+                    log.error("Airtel send failed and may already have been delivered — not retrying. mobile={}, cause={}",
+                            requestBody.get("mobile"), String.valueOf(e.getCause()));
+                    throw e;
+                }
+                if (attempt >= AIRTEL_SEND_ATTEMPTS) {
+                    log.error("Airtel gateway unreachable after {} attempts. mobile={}",
+                            attempt, requestBody.get("mobile"));
+                    throw e;
+                }
+                log.warn("Airtel gateway unreachable (attempt {}/{}): {}. Retrying in {}ms",
+                        attempt, AIRTEL_SEND_ATTEMPTS, e.getMessage(), backoffMs);
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+                backoffMs = Math.min(backoffMs * 2, 4000L);
+            }
+        }
+    }
+
+    /**
+     * Whether the request demonstrably never reached the gateway, making a retry free of any risk of
+     * sending the SMS twice.
+     *
+     * <p>DNS, connection-refused and no-route failures all happen before a single byte goes out. A
+     * <em>read</em> timeout is the dangerous one: the POST was delivered and the gateway simply did
+     * not answer within 30s, so the SMS may well have gone out and re-posting would bill the account
+     * again and double-text a real person. Connect timeouts never established a socket, so they are
+     * safe — the two share {@link SocketTimeoutException}, and only the message distinguishes them.
+     */
+    private boolean neverLeftThisHost(ResourceAccessException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof UnknownHostException
+                || cause instanceof ConnectException
+                || cause instanceof NoRouteToHostException) {
+            return true;
+        }
+        if (cause instanceof SocketTimeoutException) {
+            return String.valueOf(cause.getMessage()).toLowerCase().contains("connect");
+        }
+        return false;
+    }
 
     public void saveAirtelNumberWithRetry(String msisdn) {
         final int maxAttempts = 100;
