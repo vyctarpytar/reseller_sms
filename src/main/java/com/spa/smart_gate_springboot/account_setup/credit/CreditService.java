@@ -496,10 +496,11 @@ public class CreditService {
         if (user.getLayer().equals(Layers.ACCOUNT)) filterDto.setAccId(user.getUsrAccId());
         if (user.getLayer().equals(Layers.RESELLER)) filterDto.setResellerId(user.getUsrResellerId());
         if (user.getRole().equals(Role.SALE)) filterDto.setSaleUserId(user.getUsrId());
-        if (user.getLayer().equals(Layers.TOP) && (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a")))) { // sync TOP
+       
+       /*  if (user.getLayer().equals(Layers.TOP) && (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a")))) { // sync TOP
             filterDto.setResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // sync Reseller
         }
-
+*/
         if (filterDto.getLimit() == 0) filterDto.setLimit(10);
         filterDto.setSortColumn("sms_created_date");
         Pageable pageable = PageRequest.of(filterDto.getStart(), filterDto.getLimit(), Sort.by(filterDto.getSortColumn()).descending());

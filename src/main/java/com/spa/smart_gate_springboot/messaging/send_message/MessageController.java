@@ -166,9 +166,10 @@ public class MessageController {
         if (user.getLayer().equals(Layers.ACCOUNT)) filterDto.setMsgAccId(user.getUsrAccId());
         if (user.getLayer().equals(Layers.RESELLER)) filterDto.setMsgResellerId(user.getUsrResellerId());
         if (user.getRole().equals(Role.SALE)) filterDto.setMsgSaleUserId(user.getUsrId());
-        if (user.getLayer().equals(Layers.TOP) && (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a")))) { // sync TOP
+     /*    if (user.getLayer().equals(Layers.TOP) && (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a")))) { // sync TOP
             filterDto.setMsgResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // sync Reseller
         }
+        */
         // Drill-down: keep the export scoped to the single account being viewed.
         UUID accScope = accountService.resolveAccountScope(user, account_id);
         if (accScope != null) {
