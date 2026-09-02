@@ -32,11 +32,15 @@ public class ReportController {
 
         } else if (user.getLayer().equals(Layers.RESELLER)) {
             filterDto.setMsgResellerId(user.getUsrResellerId());
-        } else if (user.getLayer().equals(Layers.TOP)) {
+        } 
+        
+        /*else if (user.getLayer().equals(Layers.TOP)) {
             if (user.getUsrId().equals(UUID.fromString("50b0ad9d-7471-4143-8f4b-57838360cb4a"))) { // top synq-Africa
                 filterDto.setMsgResellerId(UUID.fromString("c3a1822b-72f3-4176-9b64-093fbf0a8c0d")); // show synq tel
             }
-        }
+        }*/
+
+            
         // Drill-down: scope reports to the single account being viewed (ownership enforced).
         UUID accScope = accountService.resolveAccountScope(user, accountId);
         if (accScope != null) {
