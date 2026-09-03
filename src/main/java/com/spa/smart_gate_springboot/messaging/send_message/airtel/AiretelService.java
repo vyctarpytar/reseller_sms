@@ -189,9 +189,7 @@ public class AiretelService {
             msgMessageQueueArc.setMsgSenderLevel("switchport".toUpperCase());
             arcRepository.save(msgMessageQueueArc);
 
-            if (!airtelNumberRepository.existsByAnNumber(msgMessageQueueArc.getMsgSubMobileNo())) {
-                saveAirtelNumberWithRetry(msgMessageQueueArc.getMsgSubMobileNo());
-            }
+            rememberAirtelNumber(msgMessageQueueArc.getMsgSubMobileNo());
 
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
@@ -266,6 +264,50 @@ public class AiretelService {
             return String.valueOf(cause.getMessage()).toLowerCase().contains("connect");
         }
         return false;
+    }
+
+    /**
+     * Learn a recipient into {@code msg.airtel_numbers}, which {@link #checkIsAirtel(String)} later uses
+     * to route sends whose prefix isn't a known Airtel one.
+     *
+     * <p>Reaching this method only means the send went out through the Airtel gateway — not that the
+     * number lives on Airtel. The gateway also carries Safaricom traffic (the retry cron falls back to
+     * it when a Safaricom send fails), so recording every recipient was filling the table with
+     * Safaricom numbers and then permanently routing them to Airtel, with an Airtel sender ID.
+     *
+     * <p>So before recording, check the arc for a {@code DeliveredToTerminal} against this number: if a
+     * carrier has ever confirmed terminal delivery to it, we already have a working route and must not
+     * claim it for Airtel. A genuine Airtel number has no such history — Safaricom cannot deliver to
+     * it — so it is still learned on its first successful Airtel send.
+     */
+    private void rememberAirtelNumber(String msisdn) {
+        if (msisdn == null || msisdn.isBlank()) return;
+
+        if (airtelNumberRepository.existsByAnNumber(msisdn)) return;
+
+        if (arcRepository.existsDeliveredToTerminal(msisdnVariants(msisdn))) {
+            log.info("Not recording {} as an Airtel number — it has been DeliveredToTerminal before", msisdn);
+            return;
+        }
+
+        saveAirtelNumberWithRetry(msisdn);
+    }
+
+    /**
+     * Every form the same subscriber number can be stored as on the arc — recipients are persisted
+     * exactly as they were submitted (0722…, 254722…, +254722…), so a lookup by one form alone would
+     * miss the history written under another.
+     */
+    private Set<String> msisdnVariants(String msisdn) {
+        String normalized = normalizeMsisdn(msisdn);
+        Set<String> variants = new LinkedHashSet<>();
+        variants.add(msisdn);
+        variants.add(normalized);
+        variants.add("+" + normalized);
+        if (normalized.startsWith("254") && normalized.length() > 3) {
+            variants.add("0" + normalized.substring(3));
+        }
+        return variants;
     }
 
     public void saveAirtelNumberWithRetry(String msisdn) {

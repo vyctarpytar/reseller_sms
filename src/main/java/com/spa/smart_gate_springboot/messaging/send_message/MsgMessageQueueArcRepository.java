@@ -306,6 +306,27 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
                            @Param("deliveredDate") java.time.LocalDateTime deliveredDate);
 
 
+    /**
+     * Whether this msisdn has ever been reported {@code DeliveredToTerminal} — the carrier's terminal
+     * success status. Used by the Airtel path to avoid learning a number into {@code msg.airtel_numbers}
+     * that Safaricom has already delivered to.
+     *
+     * <p>Recipients are stored exactly as they were submitted (0722…, 254722…, +254722…), so callers
+     * pass every equivalent form of the number and we match on the set.
+     *
+     * <p>Served by the partial index {@code idx_mqa_delivered_msisdn} — see
+     * {@code db/performance_indexes.sql}; without it this seq-scans the arc table on the send path.
+     */
+    @Query(nativeQuery = true, value = """
+            select exists(
+                select 1 from msg.message_queue_arc
+                where msg_status = 'DeliveredToTerminal'
+                  and msg_sub_mobile_no in (:msisdns)
+            )
+            """)
+    boolean existsDeliveredToTerminal(@Param("msisdns") Collection<String> msisdns);
+
+
 }
 
 

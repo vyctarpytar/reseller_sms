@@ -50,6 +50,15 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_mqa_pending_callbacks
     WHERE msg_callback_url IS NOT NULL AND msg_client_delivery_status = 'PENDING';
 
 
+-- Airtel-number learning (AiretelService.rememberAirtelNumber -> existsDeliveredToTerminal):
+-- after an Airtel send we ask whether the recipient has ever been DeliveredToTerminal
+-- before recording it as an Airtel number. Partial index — only terminal-success rows,
+-- which is exactly the predicate — keeps it small and avoids a seq-scan per send.
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_mqa_delivered_msisdn
+    ON msg.message_queue_arc (msg_sub_mobile_no)
+    WHERE msg_status = 'DeliveredToTerminal';
+
+
 -- ── js_core.jsc_accounts ────────────────────────────────────────────────────
 
 -- Dashboards/reports scope by reseller via EXISTS(... acc_reseller_id = :rs ...),
