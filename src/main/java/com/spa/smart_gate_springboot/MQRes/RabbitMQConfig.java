@@ -42,7 +42,9 @@ public class RabbitMQConfig {
      * consumer thread, these ARE the concurrent-send counts, and throughput is exactly
      * {@code concurrency / per-message-latency} — at 16 consumers and a ~296ms per-message round trip
      * the queue drained at ~54 msg/s with every consumer busy 100% of the time (unacked == consumers).
-     * Externalised so the ceiling can be retuned against the carrier's real TPS limit without a rebuild.
+     * Externalised so the ceiling is a config value, not a recompile. NOTE: these live in the packaged
+     * application.properties, so changing them there is still a deploy — the no-rebuild dial is
+     * SPRING_APPLICATION_JSON in /opt/apps/sms-app.env (see application.properties for the exact line).
      */
     @Value("${sms.listener.concurrency:16}")
     private int smsConcurrency;

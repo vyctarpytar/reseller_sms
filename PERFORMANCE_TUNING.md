@@ -1,28 +1,32 @@
 # Performance tuning — heavy-load runbook
 
-Target box: **Contabo VM, 4 vCPU, 12 GB RAM** (8 GB originally), with **Postgres, RabbitMQ and the JVM
-all co-located** (`spring.datasource.url` and `spring.rabbitmq.host` both point at `localhost`). Every GB
-and core is shared, so the guiding principle is **bounded concurrency**: a bounded DB pool, bounded
-worker pools, and hard timeouts — never let one slow dependency pin the whole box.
+Target box: **Contabo VM, 4 vCPU, 7.8 GB RAM, no swap**, with **Postgres, RabbitMQ and the JVM all
+co-located** (`spring.datasource.url` and `spring.rabbitmq.host` both point at `localhost`). Every GB and
+core is shared, so the guiding principle is **bounded concurrency**: a bounded DB pool, bounded worker
+pools, and hard timeouts — never let one slow dependency pin the whole box.
+
+**No swap means there is no soft landing.** Over-committing memory here is an OOM kill, not a slowdown,
+so every pool on this box is explicitly capped rather than left to grow.
 
 **Bounded is not the same as small.** The send path is *network-latency-bound*, not CPU- or RAM-bound:
 a send thread spends most of its life blocked on the carrier's socket holding no DB connection, so the
 right concurrency is far higher than a core count would suggest — see §1b.
 
-## RAM budget (≈12 GB)
+## RAM budget (≈8 GB)
 
 | Component        | Target          | Where to set |
 |------------------|-----------------|--------------|
 | OS + nginx       | ~0.75 GB        | — |
-| Postgres         | ~3 GB           | `postgresql.conf` (below) |
+| Postgres         | ~2 GB           | `postgresql.conf` (below) |
 | RabbitMQ (Erlang)| ~1 GB           | `rabbitmq.conf` watermark (below) |
-| **JVM (app)**    | ~3 GB heap      | default (¼ of physical) — see §3 |
-| Headroom         | ~4 GB           | page cache / spikes |
+| **JVM (app)**    | ~1.95 GB heap   | default (¼ of physical) — see §3 |
+| Headroom         | ~1.5 GB         | page cache / spikes |
 
-⚠️ **RAM is not the throughput lever here.** A thread waiting on a Safaricom socket does not want memory.
-The extra 4 GB was absorbed automatically (the JVM runs with no `-Xmx`, so its default heap is ¼ of
-physical and grew from ~2 GB to ~3 GB on its own); the only deliberate spend is giving Postgres more
-cache below.
+⚠️ **RAM is not the throughput lever here.** A thread waiting on a Safaricom socket does not want memory —
+it wants a socket and a scheduler slot. The §1b concurrency raise costs roughly **70–90 MB total**
+(~24 extra thread stacks, the bounded Caffeine caches, the 8192-event async log queue, ~7 extra Postgres
+backends), most of it on the Postgres side. Sizing the send pipeline is a **CPU and connection** question
+on this box, not a memory one.
 
 ---
 
@@ -58,10 +62,17 @@ five SELECTs re-read the *same rows* for every message in a campaign.
 
 **What changed:**
 
-- **Send concurrency 8/16 → 16/32** (`sms.listener.concurrency` / `.max-concurrency`, now externalised
-  so the ceiling is retunable without a rebuild). These threads block on the carrier's socket and hold
-  **no DB connection while they wait**, so they were never bounded by the pool the way a DB-bound worker
-  would be.
+- **Send concurrency 8/16 → 16/32** (`sms.listener.concurrency` / `.max-concurrency`). These threads
+  block on the carrier's socket and hold **no DB connection while they wait**, so they were never bounded
+  by the pool the way a DB-bound worker would be.
+
+  To back it off **without a rebuild** (the properties ship inside the jar), add to
+  `/opt/apps/sms-app.env` — already loaded by systemd as an `EnvironmentFile` — and restart:
+  ```
+  SPRING_APPLICATION_JSON='{"sms":{"listener":{"max-concurrency":20}}}'
+  ```
+  A plain `SMS_LISTENER_MAX_CONCURRENCY` will **not** work: these are read with `@Value`, which resolves
+  the placeholder literally and applies no relaxed binding to the hyphen.
 - **Hikari 25 → 32** to match. Raising `sms.listener.max-concurrency` further means raising this too.
 - **DLR listener 4/8 → 8/16** (`dlr.listener.*`). Carriers post ~1 DLR per sent SMS, and the DLR queue was
   already running at ~42/s deliver against ~46/s inbound — i.e. barely keeping up at the *old* send rate.
@@ -116,10 +127,11 @@ large `message_queue_arc` table on every request.
 ## 3. JVM heap — OPTIONAL (not currently applied)
 
 ⚠️ **This drop-in has never been applied in prod** (`systemctl cat sms-app` shows no `Environment=`), and
-that is a deliberate choice, not an oversight. With no `-Xmx` the JVM takes ¼ of physical RAM as its
-heap, which self-adjusted from ~2 GB to ~3 GB when the box went 8 GB → 12 GB. Low idle free-RAM is
-expected and is not worth chasing. Apply this only if you want `ExitOnOutOfMemoryError` so systemd
-restarts a wedged JVM instead of letting it limp — and re-check the numbers against 12 GB, not 8 GB.
+that is a deliberate choice, not an oversight. With no `-Xmx` the JVM takes ¼ of physical RAM as its heap
+— ~1.95 GB on this 7.8 GB box — which is why `free -h` shows the app resident well under 2.5 GB. Low idle
+free-RAM is expected and is not worth chasing. The one real argument for applying it is
+`ExitOnOutOfMemoryError`: **there is no swap on this box**, so a heap runaway is an OOM kill, and this
+drop-in at least lets systemd restart the JVM instead of leaving it wedged.
 
 The jar runs under the `sms-app` unit. To cap the heap so it can't balloon into Postgres/RabbitMQ's RAM:
 
@@ -140,15 +152,13 @@ vs `/opt/app` gotcha.)
 
 ---
 
-## 4. Postgres — `postgresql.conf` (12 GB / 4-core, shared box)
-
-This is where the extra 4 GB is worth spending: more of `message_queue_arc` and its indexes stay cached,
-which helps the dashboards and the retry cron far more than it helps the sends.
+## 4. Postgres — `postgresql.conf` (8 GB / 4-core, shared box)
 
 ```conf
-max_connections = 100               # >= Hikari pool (32) + psql/admin headroom
-shared_buffers = 2GB                # was 1280MB on the 8GB box
-effective_cache_size = 6GB          # was 3GB — an estimate of OS cache, not an allocation
+max_connections = 100               # >= Hikari pool (32) + psql/admin headroom. VERIFY this: the pool
+                                    # was raised to 32 in §1b, and PG refuses connections past the cap
+shared_buffers = 1280MB
+effective_cache_size = 3GB
 work_mem = 8MB                      # per sort/hash; keep low — many can run at once
 maintenance_work_mem = 256MB
 checkpoint_completion_target = 0.9
