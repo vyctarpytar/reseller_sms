@@ -31,7 +31,21 @@ public class HttpPublisherInterceptor implements Interceptor {
     private static final String ERROR_REQUEST_URL_NOT_DEFINED = "Request URL Not Defined";
     private static final String ERROR_REQUEST_BODY_NOT_DEFINED = "Request Body Not Defined";
 
+    /**
+     * When true, a SUCCESSFUL (2xx) call logs its request/response bodies at DEBUG instead of INFO.
+     * Set only on the SMS carrier client, which runs this interceptor once per message: at hundreds of
+     * sends a second, stringifying and writing both bodies is real work on the consumer thread and fills
+     * the journal fast. Non-2xx keeps its existing warn/error level everywhere, so failures are never
+     * quietened, and low-volume clients (M-PESA gateway, Infobip) keep logging successes at INFO.
+     */
+    private final boolean quietOnSuccess;
+
     public HttpPublisherInterceptor() {
+        this(false);
+    }
+
+    public HttpPublisherInterceptor(final boolean quietOnSuccess) {
+        this.quietOnSuccess = quietOnSuccess;
     }
 
     @Override
@@ -114,7 +128,7 @@ public class HttpPublisherInterceptor implements Interceptor {
             return LoggingFactory::warn;
         }
 
-        return LoggingFactory::info;
+        return quietOnSuccess ? LoggingFactory::debug : LoggingFactory::info;
     }
 
     private String getRequestUrl(final Request request) {

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Async logging for the SMS send path.
+
+  The app runs under systemd and logs to stdout (journald). Spring Boot's default CONSOLE appender is
+  SYNCHRONOUS: every log call writes on the calling thread. The SMS consumers process each message
+  synchronously, so at hundreds of sends a second that write time lands directly on the throughput
+  budget. Wrapping CONSOLE in an AsyncAppender hands log events to a background writer instead.
+
+  Everything Boot normally sets up still applies — defaults.xml supplies the colour/pattern properties
+  and `logging.level.*` in application.properties keeps working — only the appender is swapped.
+
+  neverBlock=true is the important switch: if the queue ever fills, events are DROPPED rather than
+  stalling a consumer thread. That is the right trade here (a send must not wait on a log write), but
+  it does mean a log storm can lose lines. discardingThreshold=0 stops logback's default behaviour of
+  binning INFO/DEBUG as soon as the queue is 80% full, so nothing is discarded until it is genuinely
+  full.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="CONSOLE"/>
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <!-- Caller data (file/line) means a stack walk per event — far too costly on the hot path. -->
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_CONSOLE"/>
+    </root>
+</configuration>

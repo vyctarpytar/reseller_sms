@@ -2,6 +2,7 @@ package com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest;
 
 import com.spa.smart_gate_springboot.config.intercept.HttpPublisherInterceptor;
 import lombok.RequiredArgsConstructor;
+import okhttp3.ConnectionPool;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
@@ -39,6 +40,12 @@ public class SafaricomRestRetrofitConfig {
                 // v1's SDP endpoint ran HTTP/1.1, giving each in-flight send its own pooled connection, so
                 // a single stalled connection never took out the others. Force the same behaviour here.
                 .protocols(List.of(Protocol.HTTP_1_1))
+                // Keep-alive pool sized ABOVE the send concurrency (sms.listener.max-concurrency). One
+                // connection per in-flight send follows from pinning HTTP/1.1 above, and OkHttp's default
+                // pool retains only 5 IDLE connections — past that it evicts, so bursty load re-dials and
+                // pays a fresh TCP+TLS handshake to the carrier on the hot path. Sized generously; idle
+                // sockets cost nothing and are reaped after 5 minutes anyway.
+                .connectionPool(new ConnectionPool(64, 5, TimeUnit.MINUTES))
                 .build();
 
         return new Retrofit.Builder()
@@ -54,6 +61,9 @@ public class SafaricomRestRetrofitConfig {
     }
 
     private Interceptor createLoggingInterceptor() {
-        return new HttpPublisherInterceptor();
+        // quietOnSuccess: this client runs once per SMS, so successful sends log their bodies at DEBUG.
+        // The per-send outcome (and its carrier round-trip time) is logged by SafaricomRestBulkService,
+        // and failures still surface here at warn/error.
+        return new HttpPublisherInterceptor(true);
     }
 }

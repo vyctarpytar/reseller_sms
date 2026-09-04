@@ -50,7 +50,7 @@ public class SafDlrService {
 
     private void consumerAction(Message message) {
         byte[] payload = message.getBody();
-        log.info("Safaricom response: {}", new String(payload, StandardCharsets.UTF_8));
+        log.debug("Safaricom response: {}", new String(payload, StandardCharsets.UTF_8)); // ~1 per sent SMS
 
         SmsDlr res;
         try {
@@ -58,7 +58,7 @@ public class SafDlrService {
         } catch (IOException exc) {
             throw new RuntimeException(exc);
         }
-        log.info("safaricom res: {} ", res);
+        log.debug("safaricom res: {} ", res); // ~1 per sent SMS
 
         if (res == null || TextUtils.isEmpty(res.getRequestId())) {
             return;

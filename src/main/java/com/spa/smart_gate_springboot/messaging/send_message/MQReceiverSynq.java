@@ -4,11 +4,6 @@ package com.spa.smart_gate_springboot.messaging.send_message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
-import com.spa.smart_gate_springboot.account_setup.account.Account;
-import com.spa.smart_gate_springboot.account_setup.account.AccountService;
-import com.spa.smart_gate_springboot.account_setup.reseller.Reseller;
-import com.spa.smart_gate_springboot.account_setup.reseller.ResellerService;
-import com.spa.smart_gate_springboot.user.UserService;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -23,19 +18,21 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 @EnableRabbit
 @Slf4j
 public class MQReceiverSynq {
-    private final AccountService accountService;
-    private final ResellerService resellerService;
     private final ObjectMapper objectMapper;
-    private final UserService userService;
     private final GlobalUtils gu;
     private final SmsDispatchService smsDispatchService;
+    /**
+     * Account / reseller / creator-email reads for this path. Every message in a bulk send resolves the
+     * SAME rows, so these are read through a short-TTL cache rather than re-queried per SMS. Balances are
+     * never cached — the debit is a guarded UPDATE against the live row.
+     */
+    private final SendMetadataCache metadataCache;
 
     @RabbitListener(queues = {MQConfig.SYNQ_QUEUE,MQConfig.QUEUE}, containerFactory = "smsListenerContainerFactory")
     public void consumeMessage(Channel channel, Message message) {
@@ -57,7 +54,7 @@ public class MQReceiverSynq {
      * fill the reseller/sender fields. {@code msgId} is left null so this is an INSERT; the unique index
      * on {@code msgDedupKey} is what dedupes a redelivery when {@link SmsDispatchService} saves it.
      */
-    private MsgMessageQueueArc buildArc(MsgQueue msgQueue, Reseller reseller) {
+    private MsgMessageQueueArc buildArc(MsgQueue msgQueue, SendMetadataCache.ResellerMeta reseller) {
         MsgMessageQueueArc arc = new MsgMessageQueueArc();
         BeanUtils.copyProperties(msgQueue, arc, gu.getNullPropertyNames(msgQueue));
         arc.setMsgId(null);
@@ -66,14 +63,10 @@ public class MQReceiverSynq {
         arc.setMsgRetryCount(0);
         arc.setMsgClientDeliveryStatus("PENDING");
         arc.setMsgSenderIdName(msgQueue.getMsgSenderId());
-        arc.setMsgResellerId(reseller.getRsId());
-        arc.setMsgResellerName(reseller.getRsCompanyName());
+        arc.setMsgResellerId(reseller.rsId());
+        arc.setMsgResellerName(reseller.companyName());
         if (arc.getMsgCreatedBy() != null) {
-            try {
-                arc.setMsgCreatedByEmail(userService.findById(arc.getMsgCreatedBy()).getEmail());
-            } catch (Exception e) {
-                log.error("Error while creating email address : {}", e.getLocalizedMessage());
-            }
+            metadataCache.creatorEmail(arc.getMsgCreatedBy()).ifPresent(arc::setMsgCreatedByEmail);
         }
         arc.setMsgSenderLevel("WEISER");
         arc.setMsgCode(new UniqueCodeGenerator().generateSecureApiKey());
@@ -98,25 +91,27 @@ public class MQReceiverSynq {
             }
             msgQueue.setMsgExternalId(String.valueOf(msgQueue.getMsgExternalId()));
             msgQueue.setMsgClientDeliveryStatus("PENDING");
-            Account acc = accountService.findByAccId(msgQueue.getMsgAccId());
+            SendMetadataCache.AccountMeta acc = metadataCache.account(msgQueue.getMsgAccId());
 
             //todo handle transactional to not use stop
             if (!msgQueue.getMsgSenderId().contains("WasteCo_Ltd") && !msgQueue.getMsgSenderId().equalsIgnoreCase("WARETECH")){
                 if(!msgQueue.getMsgMessage().contains("STOP*")) {
-                    log.info("add stop to message : {}",msgQueue.getMsgSenderId());
+                    log.debug("add stop to message : {}",msgQueue.getMsgSenderId()); // hot path: once per SMS
                     msgQueue.setMsgMessage(msgQueue.getMsgMessage() + "\nSTOP*456*9*5#");
                 }
             }
-            msgQueue.setMsgAccName(acc.getAccName());
+            msgQueue.setMsgAccName(acc.accName());
 
             int no_of_msg = getNoOfMessage(msgQueue);
-            BigDecimal totalCost = getCostPerSMS(msgQueue.getMsgAccId()).multiply(new BigDecimal(no_of_msg));
+            // Price comes off the account we already resolved above; the old getCostPerSMS(accId) re-read
+            // the very same row from the DB a second time for every single message.
+            BigDecimal totalCost = costPerSms(acc).multiply(new BigDecimal(no_of_msg));
             msgQueue.setMsgPage(no_of_msg);
             msgQueue.setMsgCostId(totalCost);
 
-            Reseller reseller = resellerService.findById(acc.getAccResellerId());
-            msgQueue.setMsgResellerId(reseller.getRsId());
-            msgQueue.setMsgResellerName(reseller.getRsCompanyName());
+            SendMetadataCache.ResellerMeta reseller = metadataCache.reseller(acc.resellerId());
+            msgQueue.setMsgResellerId(reseller.rsId());
+            msgQueue.setMsgResellerName(reseller.companyName());
 
             arc = buildArc(msgQueue, reseller);
 
@@ -171,9 +166,9 @@ public class MQReceiverSynq {
 
 
 
-    private BigDecimal getCostPerSMS(UUID msgAccId) {
-        Account acc = this.accountService.findByAccId(msgAccId);
-        BigDecimal _sms_price = acc.getAccSmsPrice();
+    /** Per-SMS price for an already-resolved account, defaulting when the account carries none. */
+    private BigDecimal costPerSms(SendMetadataCache.AccountMeta acc) {
+        BigDecimal _sms_price = acc.smsPrice();
         return _sms_price == null ? new BigDecimal("1.50") : _sms_price;
     }
 

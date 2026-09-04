@@ -45,7 +45,7 @@ public class SafaricomRestAuthService {
     public String getAccessToken() throws IOException {
         String token = getFromRedis(ACCESS_KEY);
         if (!TextUtils.isEmpty(token)) {
-            log.info("[DSDP] Using cached access token from Redis");
+            log.debug("[DSDP] Using cached access token from Redis"); // hot path: once per SMS
             return token;
         }
         log.info("[DSDP] No cached token in Redis — performing fresh login");

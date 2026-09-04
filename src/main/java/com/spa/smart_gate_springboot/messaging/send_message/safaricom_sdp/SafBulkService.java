@@ -66,7 +66,7 @@ public class SafBulkService {
         }
 
         if ("v2".equalsIgnoreCase(safApiVersion)) {
-            log.info("[SAF] Using Daraja REST API (v2) for msgCode={}", msg.getMsgCode());
+            log.debug("[SAF] Using Daraja REST API (v2) for msgCode={}", msg.getMsgCode()); // hot path: once per SMS
             safaricomRestBulkService.sendSms(msg);
             return;
         }

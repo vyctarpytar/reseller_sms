@@ -236,6 +236,14 @@
             <version>5.2.6</version>
         </dependency>
 
+        <!-- In-process TTL cache for the SMS hot path (SendMetadataCache): a bulk send repeats the
+             same account/reseller/sender-ID/creator lookups once per message. Version is managed by
+             spring-boot-starter-parent, so it stays in step with the Boot release. -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
 
 
     </dependencies>

@@ -1,9 +1,8 @@
 package com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest;
 
-import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetup;
-import com.spa.smart_gate_springboot.account_setup.shortsetup.MsgShortcodeSetupService;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArc;
 import com.spa.smart_gate_springboot.messaging.send_message.MsgMessageQueueArcRepository;
+import com.spa.smart_gate_springboot.messaging.send_message.SendMetadataCache;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.dto.DsdpBulkDataSet;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.dto.SafaricomRestSendRequest;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_rest.dto.SafaricomRestSendResponse;
@@ -30,7 +29,8 @@ public class SafaricomRestBulkService {
     private final SafaricomRestInterface safaricomRestInterface;
     private final SafaricomRestAuthService safaricomRestAuthService;
     private final MsgMessageQueueArcRepository msgMessageQueueArcRepository;
-    private final MsgShortcodeSetupService msgShortcodeSetupService;
+    /** Sender-ID setup was re-queried per message; every SMS in a campaign resolves the same row. */
+    private final SendMetadataCache metadataCache;
     private final SafaricomRestProperties safaricomRestProperties;
     /** Field name matters: it selects the v2 Retrofit bean over the v1 {@code safComRetrofit} one. */
     private final Retrofit safComRestRetrofit;
@@ -41,22 +41,22 @@ public class SafaricomRestBulkService {
             throw new RuntimeException("[DSDP] Failed to obtain access token");
         }
 
-        MsgShortcodeSetup shortcodeSetup = msgShortcodeSetupService.findByShCodeAndShAccId(
+        SendMetadataCache.SenderMeta shortcodeSetup = metadataCache.sender(
                 msg.getMsgSenderIdName().trim(), msg.getMsgAccId()
         );
 
-        if (TextUtils.isEmpty(shortcodeSetup.getShSenderType())) {
+        if (TextUtils.isEmpty(shortcodeSetup.senderType())) {
             throw new RuntimeException("Sender ID type not mapped for sender: " + msg.getMsgSenderIdName());
         }
 
-        String packageId = shortcodeSetup.getShSenderType().equalsIgnoreCase("TRANSACTION")
+        String packageId = shortcodeSetup.senderType().equalsIgnoreCase("TRANSACTION")
                 ? safaricomRestProperties.getTransactionalPackageId()
                 : safaricomRestProperties.getPromotionalPackageId();
 
         DsdpBulkDataSet dataSet = DsdpBulkDataSet.builder()
                 .userName(safaricomRestProperties.getSenderUserName())
                 .channel(AppUtils.CHANNEL_SMS)
-                .oa(shortcodeSetup.getShCode())
+                .oa(shortcodeSetup.code())
                 .msisdn(msg.getMsgSubMobileNo())
                 .message(msg.getMsgMessage())
                 .uniqueId(msg.getMsgCode())
@@ -70,8 +70,14 @@ public class SafaricomRestBulkService {
                 .dataSet(List.of(dataSet))
                 .build();
 
-        log.info("[DSDP] Sending to={} sender={} accId={}", msg.getMsgSubMobileNo(), shortcodeSetup.getShCode(), msg.getMsgAccId());
+        log.debug("[DSDP] Sending to={} sender={} accId={}", msg.getMsgSubMobileNo(), shortcodeSetup.code(), msg.getMsgAccId());
 
+        // Time the carrier round trip. The send runs synchronously on a RabbitMQ consumer thread, so
+        // this span IS the per-message latency that caps throughput (throughput = consumers / latency).
+        // It is the one number that says whether more consumers or request batching is the right lever,
+        // so it is logged per send at INFO — one short line, unlike the full body dump the OkHttp
+        // interceptor writes at DEBUG.
+        long startNanos = System.nanoTime();
         Response<SafaricomRestSendResponse> res = executeSend(request, accessToken);
 
         // One-shot 401 recovery: the token may have been revoked/expired between scheduled refreshes.
@@ -80,6 +86,7 @@ public class SafaricomRestBulkService {
             accessToken = safaricomRestAuthService.refreshOnUnauthorized(accessToken);
             res = executeSend(request, accessToken);
         }
+        long carrierMillis = (System.nanoTime() - startNanos) / 1_000_000L;
 
         // These codes can come back on either side of isSuccessful(), so parse the error body too rather
         // than collapsing every non-2xx to "HTTP_<code>" — that hid the carrier's own status code.
@@ -100,9 +107,11 @@ public class SafaricomRestBulkService {
         boolean success = res.isSuccessful()
                 && AppUtils.BULK_SMS_SEND_SUCCESS_STATUS_CODE.equalsIgnoreCase(statusCode);
         if (success) {
-            log.info("[DSDP] Response — status={} statusCode={}", body.getStatus(), statusCode);
+            log.info("[DSDP] sent msgCode={} carrierMs={} status={} statusCode={}",
+                    msg.getMsgCode(), carrierMillis, body.getStatus(), statusCode);
         } else {
-            log.error("[DSDP] Send failed — HTTP {} statusCode={}", res.code(), statusCode);
+            log.error("[DSDP] Send failed — HTTP {} statusCode={} carrierMs={}",
+                    res.code(), statusCode, carrierMillis);
         }
         updateMessageStatus(success, msg.getMsgCode(), res.code(), statusCode);
     }
