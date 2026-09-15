@@ -11,6 +11,7 @@ import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -33,7 +34,9 @@ public class CreditController {
 
     //logged in as top level
     @PostMapping("reseller")
-    public StandardJsonResponse getCreditHistoryAsReseller(HttpServletRequest request, @RequestBody CreditFilter creditFilter,@RequestParam(required = false) String reseller_id) {
+    public StandardJsonResponse getCreditHistoryAsReseller(HttpServletRequest request,
+                                                           @RequestBody CreditFilter creditFilter,
+                                                           @RequestParam( required = false ,name = "reseller_id") String reseller_id) {
 
         if (reseller_id != null) {
             creditFilter.setResellerId(UUID.fromString(reseller_id));
