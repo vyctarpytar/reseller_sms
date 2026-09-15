@@ -39,8 +39,8 @@ public interface CreditRepository extends JpaRepository<Credit, UUID> {
 
     @Query(nativeQuery = true,
     value = """
-select * from js_core.jsc_accounts_sms_payment where exists(select 1 from js_core.reseller where sms_reseller_id = rs_id and sms_acc_id is null and rs_created_by = :rsCreatedBy)""")
-    Page<Credit> getCreditLoadedToResellers(@Param("rsCreatedBy") UUID rsCreatedBy,
-                                                  Pageable pageable);
+select * from js_core.jsc_accounts_sms_payment where sms_reseller_id =:resellerId  and sms_acc_id is null order by sms_created_date desc
+""")
+    Page<Credit> getCreditLoadedToResellers(@Param("resellerId") UUID resellerId,Pageable pageable);
 }
 

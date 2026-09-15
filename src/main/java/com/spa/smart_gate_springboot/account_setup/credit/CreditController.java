@@ -44,7 +44,7 @@ public class CreditController {
 
         var user = userService.getCurrentUser(request);
         if (user.getLayer().equals(Layers.TOP)) {
-            return creditService.getCreditLoadedToResellers(user, creditFilter);
+            return creditService.getCreditLoadedToResellers(creditFilter);
 //            return creditService.getAllResellerCreditHistory(user, creditFilter);
         } else {
             return creditService.getResellerCreditHistory(user.getUsrResellerId());

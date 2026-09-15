@@ -584,13 +584,12 @@ public class CreditService {
         return dateTime.getMonth().getValue();
     }
 
-    public StandardJsonResponse getCreditLoadedToResellers(User user, CreditFilter filterDto) {
+    public StandardJsonResponse getCreditLoadedToResellers(CreditFilter filterDto) {
         if (filterDto.getLimit() == 0) filterDto.setLimit(10);
-        if(filterDto.getResellerId() != null)    log.info("Reseller ID: " + filterDto.getResellerId());
 
         filterDto.setSortColumn("sms_created_date");
         Pageable pageable = PageRequest.of(filterDto.getStart(), filterDto.getLimit(), Sort.by(filterDto.getSortColumn()).descending());
-        Page<Credit> pagedData = creditRepository.getCreditLoadedToResellers(user.getUsrId(), pageable);
+        Page<Credit> pagedData = creditRepository.getCreditLoadedToResellers(filterDto.getResellerId(), pageable);
         StandardJsonResponse response = new StandardJsonResponse();
 
         response.setData("result", pagedData.getContent(), response);
