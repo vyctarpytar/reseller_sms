@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -300,9 +301,10 @@ public class QueueMsgService {
         while (hasMore) {
             Pageable pageable = PageRequest.of(pageNumber, batchSize);
             Page<MsgMessageQueueArc> pendingPage = arcRepository.getMsgPendingCreditForAccountPaginated(
-                    accId, "PENDING_CREDIT", AppTime.today().minusDays(3), pageable);
+                    accId, "PENDING_CREDIT", LocalDate.now().minusDays(3), pageable);
             
             List<MsgMessageQueueArc> pending = pendingPage.getContent();
+            log.info("Resending  {}/{}  pending SMS credit for account {}",pending.size(), pendingPage.getNumber(), accId);
             
             // In-place top-up resend: debit the existing PENDING_CREDIT arc and, if now funded, send it.
             // No delete + republish (which destroyed the archive row, re-inserted, and re-debited); the arc
