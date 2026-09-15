@@ -1,7 +1,5 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
-import com.spa.smart_gate_springboot.utils.AppTime;
-
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.MQRes.RMQPublisher;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
@@ -9,12 +7,12 @@ import com.spa.smart_gate_springboot.account_setup.account.AccountService;
 import com.spa.smart_gate_springboot.account_setup.member.ChMember;
 import com.spa.smart_gate_springboot.account_setup.member.MemberService;
 import com.spa.smart_gate_springboot.dto.Layers;
-import com.spa.smart_gate_springboot.messaging.delivery.MsgDelivery;
 import com.spa.smart_gate_springboot.messaging.delivery.MsgDeliveryRepository;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.FilterDto;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.GroupMessageDto;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.SingleMessageDto;
 import com.spa.smart_gate_springboot.user.User;
+import com.spa.smart_gate_springboot.utils.AppTime;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +28,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,8 +39,9 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Service
@@ -289,30 +290,29 @@ public class QueueMsgService {
         return response;
     }
 
-    @Transactional
-    public void updateArcDnR(MsgDelivery msgDelivery) {
 
-        MsgMessageQueueArc msgMessageQueueArc = arcRepository.findById(msgDelivery.getMsgdMsgId()).orElse(null);
-        if (msgMessageQueueArc != null) {
-            msgMessageQueueArc.setMsgStatus(msgDelivery.getMsgdStatus().trim());
-            msgMessageQueueArc.setMsgDeliveredDate(AppTime.now());
-            msgMessageQueueArc.setMsgClientDeliveryStatus("PENDING");
-            msgMessageQueueArc.setMsgRetryCount(0);
-            MsgMessageQueueArc msgMessageQueueArc2 = arcRepository.save(msgMessageQueueArc);
-            if (msgMessageQueueArc2.getMsgStatus().equalsIgnoreCase(msgDelivery.getMsgdStatus().trim()))
-                msgDeliveryRepository.delete(msgDelivery);
+    @Async
+    public void resendPendingSMSAccountCredit(UUID accId) {
+        int batchSize = 500;
+        int pageNumber = 0;
+        boolean hasMore = true;
+
+        while (hasMore) {
+            Pageable pageable = PageRequest.of(pageNumber, batchSize);
+            Page<MsgMessageQueueArc> pendingPage = arcRepository.getMsgPendingCreditForAccountPaginated(
+                    accId, "PENDING_CREDIT", AppTime.today().minusDays(3), pageable);
+            
+            List<MsgMessageQueueArc> pending = pendingPage.getContent();
+            
+            // In-place top-up resend: debit the existing PENDING_CREDIT arc and, if now funded, send it.
+            // No delete + republish (which destroyed the archive row, re-inserted, and re-debited); the arc
+            // is the source of truth. debitAndResend leaves it pending if credit still can't cover it.
+            pending.forEach(smsDispatchService::debitAndResend);
+            
+            hasMore = pendingPage.hasNext();
+            pageNumber++;
         }
     }
-
-    public void resendPendingSMSAccountCredit(UUID accId) {
-        List<MsgMessageQueueArc> pending = arcRepository.getMsgPendingCreditForAccount(
-                accId, "PENDING_CREDIT", AppTime.today().minusDays(3));
-        // In-place top-up resend: debit the existing PENDING_CREDIT arc and, if now funded, send it.
-        // No delete + republish (which destroyed the archive row, re-inserted, and re-debited); the arc
-        // is the source of truth. debitAndResend leaves it pending if credit still can't cover it.
-        pending.forEach(smsDispatchService::debitAndResend);
-    }
-
 
     public byte[] downloadMsgExcell(FilterDto filterDto, User user) {
         // Use SXSSFWorkbook for better memory management with large datasets

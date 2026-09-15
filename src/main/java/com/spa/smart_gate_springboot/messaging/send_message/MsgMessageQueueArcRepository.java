@@ -143,6 +143,16 @@ public interface MsgMessageQueueArcRepository extends JpaRepository<MsgMessageQu
                                                            @Param("msgStatus") String msgStatus,
                                                            @Param("createdAfter") java.time.LocalDate createdAfter);
 
+    @Query(value = """
+            SELECT * FROM msg.message_queue_arc m WHERE cast(m.msg_acc_id as UUID) = cast( :accountId as UUID)
+                        AND m.msg_status = :msgStatus
+                        AND cast(m.msg_created_date as date) > :createdAfter
+            """, nativeQuery = true)
+    Page<MsgMessageQueueArc> getMsgPendingCreditForAccountPaginated(@Param("accountId") UUID accountId,
+                                                                     @Param("msgStatus") String msgStatus,
+                                                                     @Param("createdAfter") java.time.LocalDate createdAfter,
+                                                                     Pageable pageable);
+
 
 
 

@@ -1,8 +1,10 @@
 package com.spa.smart_gate_springboot.messaging.send_message;
 
+import com.spa.smart_gate_springboot.account_setup.credit.CreditRepository;
 import com.spa.smart_gate_springboot.utils.AppTime;
 
 import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 @Component
 @EnableScheduling
@@ -25,6 +28,8 @@ public class SchedulingConfig {
     private final MsgMessageQueueArcRepository arcRepository;
     private final AiretelService airetelService;
     private final SmsDispatchService smsDispatchService;
+    private final CreditRepository creditRepository;
+    private final QueueMsgService queueMsgService;
 
     /** Statuses that mean "the send failed — try again". */
     private static final List<String> RETRYABLE_STATUSES =
@@ -101,7 +106,29 @@ public class SchedulingConfig {
         }
 
     }
-    
+
+    @Scheduled(fixedDelayString = "${sms.credit-resend.interval-ms:60000}")
+    @PostConstruct
+    public void resendPendingSMSForCreditsLoadedToday() {
+        try {
+            List<UUID> accountIds = creditRepository.findAccountIdsWithCreditsLoadedToday(AppTime.today());
+            if (accountIds.isEmpty()) {
+                return;
+            }
+            
+            log.info("Credit resend cron: processing {} account(s) with credits loaded today", accountIds.size());
+            
+            for (UUID accId : accountIds) {
+                try {
+                    queueMsgService.resendPendingSMSAccountCredit(accId);
+                } catch (Exception e) {
+                    log.error("Failed to resend pending SMS for account {}: {}", accId, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error in credit resend cron: {}", e.getMessage());
+        }
+    }
 
 
 }

@@ -48,5 +48,13 @@ select * from js_core.jsc_accounts_sms_payment order by sms_created_date desc
 select * from js_core.jsc_accounts_sms_payment where sms_reseller_id =:resellerId  and sms_acc_id is null order by sms_created_date desc
 """)
     Page<Credit> getCreditLoadedToResellers(@Param("resellerId") UUID resellerId,Pageable pageable);
+
+    @Query(nativeQuery = true, value = """
+            SELECT DISTINCT sms_acc_id FROM js_core.jsc_accounts_sms_payment
+            WHERE cast(sms_created_date as date) = :today
+              AND sms_acc_id IS NOT NULL
+              AND cr_status = 'PROCESSED'
+            """)
+    List<UUID> findAccountIdsWithCreditsLoadedToday(@Param("today") java.time.LocalDate today);
 }
 

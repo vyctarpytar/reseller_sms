@@ -121,25 +121,22 @@ public class SmsDispatchService {
      * Resend an arc that was persisted but never billed (PENDING_CREDIT / RS_CREDIT_ISSUE), used when an
      * account/reseller tops up. Debits the existing arc in place and, if funded, sends it. No new row,
      * no delete.
-     *
-     * @return true if it was funded and dispatched, false if still short on credit (left pending).
      */
-    public boolean debitAndResend(MsgMessageQueueArc arc) {
+    public void debitAndResend(MsgMessageQueueArc arc) {
         if (arc.getMsgCostId() == null) {
             // A pending arc must carry its cost (every persist path records it); guard so a stray
             // null-cost row can't NPE the whole top-up batch — log and leave it for inspection.
             log.error("[SMS] PENDING_CREDIT arc {} has null cost — skipping resend (dedup {})",
                     arc.getMsgId(), arc.getMsgDedupKey());
-            return false;
+            return;
         }
         if (!accountService.tryDebitAccountMsgBal(arc.getMsgAccId(), arc.getMsgCostId())) {
-            return false; // still no credit — leave it pending for the next top-up
+            return; // still no credit — leave it pending for the next top-up
         }
         arc.setMsgCode(new UniqueCodeGenerator().generateSecureApiKey());
         arc.setMsgStatus("PENDING_PROCESSING");
         arcRepo.save(arc);
         dispatchSend(arc);
-        return true;
     }
 
     /**
