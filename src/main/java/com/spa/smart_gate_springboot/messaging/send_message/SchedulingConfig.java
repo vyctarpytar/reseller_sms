@@ -107,8 +107,12 @@ public class SchedulingConfig {
 
     }
 
-    @Scheduled(fixedDelayString = "${sms.credit-resend.interval-ms:60000}")
     @PostConstruct
+    public void resendPendingSMSForCreditsLoadedTodayOnStartup() {
+        resendPendingSMSForCreditsLoadedToday();
+    }
+
+    @Scheduled(fixedDelayString = "${sms.credit-resend.interval-ms:60000}")
     public void resendPendingSMSForCreditsLoadedToday() {
         try {
             List<UUID> accountIds = creditRepository.findAccountIdsWithCreditsLoadedToday(AppTime.today());
