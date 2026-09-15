@@ -374,6 +374,7 @@ public class CreditService {
         recordAccountPurchaseUnitLegs(credit, rs, unitsLoaded, rs.getRsAllocatableUnit(),
                 gu.getDivide(newBal, accSmsPrice));
 
+        save(credit);
         queueMsgService.resendPendingSMSAccountCredit(account.getAccId());
 
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Balance : " + newBal, response);
@@ -429,6 +430,7 @@ public class CreditService {
         recordResellerFromTopUnitLegs(reseller.getRsId(), reseller.getRsCompanyName(), unitsLoaded,
                 rsAllocatableUnits, credit.getSmsPaymentRef(), credit.getSmsCreatedBy());
 
+        save(credit);
         response.setMessage("message", "Top of amount " + credit.getSmsPayAmount() + "  done successfully. New Ballocatable Balance : " + rsAllocatableUnits, response);
 
     }

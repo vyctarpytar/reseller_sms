@@ -15,6 +15,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
@@ -115,11 +117,9 @@ public class SchedulingConfig {
     @Scheduled(fixedDelayString = "${sms.credit-resend.interval-ms:60000}")
     public void resendPendingSMSForCreditsLoadedToday() {
         try {
-            List<UUID> accountIds = creditRepository.findAccountIdsWithCreditsLoadedToday(AppTime.today());
-            if (accountIds.isEmpty()) {
-                return;
-            }
-            
+            List<UUID> accountIds = creditRepository.findAccountIdsWithCreditsLoadedToday(LocalDate.now());
+            if (accountIds.isEmpty())  return;
+
             log.info("Credit resend cron: processing {} account(s) with credits loaded today", accountIds.size());
             
             for (UUID accId : accountIds) {
