@@ -55,9 +55,11 @@ public class ResellerControler{
 
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN')")
-    public StandardJsonResponse getAllResellers ( HttpServletRequest request){
+    public StandardJsonResponse getAllResellers ( HttpServletRequest request,
+     @RequestParam( required = false ,name = "reseller_id") String reseller_id
+    ){
         var user  =  userService.getCurrentUser(request);
-        return  resellerService.getAllReseller(user);
+        return  resellerService.getAllReseller(user, reseller_id);
     }
 
     @GetMapping("/balance")

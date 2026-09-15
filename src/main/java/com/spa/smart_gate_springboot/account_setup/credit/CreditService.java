@@ -1,7 +1,5 @@
 package com.spa.smart_gate_springboot.account_setup.credit;
 
-import com.spa.smart_gate_springboot.utils.AppTime;
-
 import com.spa.smart_gate_springboot.account_setup.account.AcStatus;
 import com.spa.smart_gate_springboot.account_setup.account.Account;
 import com.spa.smart_gate_springboot.account_setup.account.AccountService;
@@ -18,6 +16,7 @@ import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.messaging.send_message.QueueMsgService;
 import com.spa.smart_gate_springboot.user.Role;
 import com.spa.smart_gate_springboot.user.User;
+import com.spa.smart_gate_springboot.utils.AppTime;
 import com.spa.smart_gate_springboot.utils.GlobalUtils;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
@@ -136,7 +135,7 @@ public class CreditService {
     }
 
 
-@Transactional
+    @Transactional
     public StandardJsonResponse saveCreditMajiByte(Credit credit) {
         StandardJsonResponse response = new StandardJsonResponse();
 
@@ -160,11 +159,9 @@ public class CreditService {
 
         if (layers.name().equalsIgnoreCase(Layers.TOP.name())) {
             topLevelLoadCredit(credit, response);
-        }
-        else if (credit.getSmsAccId() != null && (layers.name().equalsIgnoreCase(Layers.RESELLER.name()))) {
+        } else if (credit.getSmsAccId() != null && (layers.name().equalsIgnoreCase(Layers.RESELLER.name()))) {
             resellerLoadCredit(credit, response);
-        }
-        else if (layers.name().equalsIgnoreCase(Layers.RESELLER.name())) {
+        } else if (layers.name().equalsIgnoreCase(Layers.RESELLER.name())) {
             resellerLoadSelfCredit(credit, response);
         } else if (layers.name().equalsIgnoreCase(Layers.ACCOUNT.name())) {
             accountLoadCredit(credit, response);
@@ -535,12 +532,12 @@ public class CreditService {
         return response;
     }
 
-  public StandardJsonResponse reverseCredit(UUID crId) {
+    public StandardJsonResponse reverseCredit(UUID crId) {
         StandardJsonResponse response = new StandardJsonResponse();
         Credit credit = findById(crId);
         credit.setCrStatus(CrStatus.REVERSED);
 
-        if(credit.getSmsAccId() != null) {
+        if (credit.getSmsAccId() != null) {
             accountReverseCredit(credit);
         }
 
@@ -584,12 +581,19 @@ public class CreditService {
         return dateTime.getMonth().getValue();
     }
 
-    public StandardJsonResponse getCreditLoadedToResellers(CreditFilter filterDto) {
+    public StandardJsonResponse getCreditLoadedToResellers(User user, CreditFilter filterDto) {
         if (filterDto.getLimit() == 0) filterDto.setLimit(10);
 
         filterDto.setSortColumn("sms_created_date");
         Pageable pageable = PageRequest.of(filterDto.getStart(), filterDto.getLimit(), Sort.by(filterDto.getSortColumn()).descending());
-        Page<Credit> pagedData = creditRepository.getCreditLoadedToResellers(filterDto.getResellerId(), pageable);
+
+        Page<Credit> pagedData;
+        if (filterDto.getResellerId() != null) {
+            pagedData = creditRepository.getCreditLoadedToResellers(filterDto.getResellerId(), pageable);
+        } else {
+            pagedData = creditRepository.getCreditLoadedTop(pageable);
+        }
+
         StandardJsonResponse response = new StandardJsonResponse();
 
         response.setData("result", pagedData.getContent(), response);

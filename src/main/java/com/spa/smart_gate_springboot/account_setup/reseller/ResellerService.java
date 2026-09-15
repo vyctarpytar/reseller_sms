@@ -23,9 +23,7 @@ import org.webjars.NotFoundException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -117,10 +115,18 @@ public class ResellerService {
     }
 
 
-    public StandardJsonResponse getAllReseller(User user) {
+    public StandardJsonResponse getAllReseller(User user, String reseller_id) {
         StandardJsonResponse resp = new StandardJsonResponse();
         if (user.getLayer().equals(Layers.TOP)) {
-            List<Reseller> list = resellerRepo.findAll();
+            List<Reseller> list =  new ArrayList<>();
+            if( reseller_id != null ){
+                Optional<Reseller> reseller = resellerRepo.findById(UUID.fromString(reseller_id));
+                if(reseller.isPresent()){
+                    list.add(reseller.get());
+                }
+            }else {
+                list =  resellerRepo.findAll();
+            }
             attachWalletBalances(list);
             resp.setData("result", list, resp);
         }
