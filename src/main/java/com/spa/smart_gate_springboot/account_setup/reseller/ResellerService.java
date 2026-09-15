@@ -93,6 +93,10 @@ public class ResellerService {
 
     public StandardJsonResponse getResellersBalance(UUID rsId) {
         StandardJsonResponse resp = new StandardJsonResponse();
+        if (rsId == null) {
+            resp.setMessage("message", "Invalid reseller id", resp);
+            return resp;
+        }
         Reseller reseller = findById(rsId);
 //        BigDecimal rsMsgBal = reseller.getRsMsgBal() == null ? new BigDecimal("-1") : reseller.getRsMsgBal();
 //        BigDecimal allocatedBalance = accountRepository.getAccountBalancesForReseller(reseller.getRsId());
@@ -127,7 +131,7 @@ public class ResellerService {
             }else {
                 list =  resellerRepo.findAll();
             }
-            attachWalletBalances(list);
+             attachWalletBalances(list);
             resp.setData("result", list, resp);
         }
 
