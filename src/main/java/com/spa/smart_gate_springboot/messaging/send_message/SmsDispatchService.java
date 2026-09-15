@@ -7,7 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.util.List;
 import java.util.StringJoiner;
@@ -39,6 +43,7 @@ public class SmsDispatchService {
     private final MsgMessageQueueArcRepository arcRepo;
     private final AccountService accountService;
     private final SafBulkService safBulkService;
+    private final PlatformTransactionManager transactionManager;
 
     public enum Reservation {
         /** Inserted + debited; caller should now dispatch the carrier send. */
@@ -56,15 +61,26 @@ public class SmsDispatchService {
      * @throws DataIntegrityViolationException if the dedup key already exists (redelivery) — the whole
      *         transaction rolls back (nothing inserted, nothing debited) and the caller skips the message.
      */
-    @Transactional
     public Reservation reserveAndDebit(MsgMessageQueueArc arc) {
-        arcRepo.saveAndFlush(arc); // flush now so a duplicate dedup key surfaces here (rolls back the tx)
-        if (accountService.tryDebitAccountMsgBal(arc.getMsgAccId(), arc.getMsgCostId())) {
-            arc.setMsgStatus("PENDING_PROCESSING");
-            return Reservation.RESERVED;
+        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+        def.setName("reserveAndDebitTx");
+        def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        
+        TransactionStatus status = transactionManager.getTransaction(def);
+        try {
+            arcRepo.saveAndFlush(arc); // flush now so a duplicate dedup key surfaces here (rolls back the tx)
+            if (accountService.tryDebitAccountMsgBal(arc.getMsgAccId(), arc.getMsgCostId())) {
+                arc.setMsgStatus("PENDING_PROCESSING");
+                transactionManager.commit(status);
+                return Reservation.RESERVED;
+            }
+            arc.setMsgStatus("PENDING_CREDIT"); // managed entity — flushed on commit; resend-credit picks it up
+            transactionManager.commit(status);
+            return Reservation.NO_CREDIT;
+        } catch (Exception e) {
+            transactionManager.rollback(status);
+            throw e;
         }
-        arc.setMsgStatus("PENDING_CREDIT"); // managed entity — flushed on commit; resend-credit picks it up
-        return Reservation.NO_CREDIT;
     }
 
     /**

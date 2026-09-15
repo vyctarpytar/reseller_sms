@@ -74,6 +74,7 @@ public class MQReceiverSynq {
     }
 
 
+    @Transactional(rollbackFor = Exception.class)
     private void receiver(Message message, Channel channel) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         MsgQueue msgQueue = null;
@@ -141,6 +142,7 @@ public class MQReceiverSynq {
             // log loudly and let the finally block ack it off the broker.
             log.error("SMS processing failed for delivery {} (arc persisted: {}): {}",
                     deliveryTag, arc != null, em.getMessage(), em);
+            throw em; // Re-throw to ensure transaction is rolled back if one exists
         } finally {
             // Always ack exactly once, on this consumer thread (which owns the Channel). The design is
             // "ack-and-record; never requeue" — failures live on as DB rows for the retry cron, so a
