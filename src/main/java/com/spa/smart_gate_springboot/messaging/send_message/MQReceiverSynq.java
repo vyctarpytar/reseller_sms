@@ -36,14 +36,6 @@ public class MQReceiverSynq {
 
     @RabbitListener(queues = {MQConfig.SYNQ_QUEUE,MQConfig.QUEUE}, containerFactory = "smsListenerContainerFactory")
     public void consumeMessage(Channel channel, Message message) {
-        // Process SYNCHRONOUSLY on the container consumer thread that owns this Channel. RabbitMQ
-        // Channels are not thread-safe, so the ack must be issued on this very thread — the previous
-        // taskExecutor hand-off acked from a foreign worker thread and, whenever that worker outlived
-        // the channel (a slow carrier send vs. a recycled/closed channel), the `if (channel.isOpen())`
-        // guard silently skipped the ack and the message sat unacked forever. receiver() now issues
-        // exactly one ack in a finally block, on this thread, so a delivery always leaves the broker.
-        // Throughput comes from the container's consumer concurrency (smsListenerContainerFactory),
-        // not from a separate pool; prefetch=1 there gives true backpressure under a slow carrier.
         receiver(message, channel);
     }
 
@@ -74,7 +66,6 @@ public class MQReceiverSynq {
     }
 
 
-    @Transactional(rollbackFor = Exception.class)
     private void receiver(Message message, Channel channel) {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         MsgQueue msgQueue = null;
@@ -142,7 +133,6 @@ public class MQReceiverSynq {
             // log loudly and let the finally block ack it off the broker.
             log.error("SMS processing failed for delivery {} (arc persisted: {}): {}",
                     deliveryTag, arc != null, em.getMessage(), em);
-            throw em; // Re-throw to ensure transaction is rolled back if one exists
         } finally {
             // Always ack exactly once, on this consumer thread (which owns the Channel). The design is
             // "ack-and-record; never requeue" — failures live on as DB rows for the retry cron, so a
