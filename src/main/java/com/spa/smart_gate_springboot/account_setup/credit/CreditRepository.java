@@ -39,8 +39,7 @@ public interface CreditRepository extends JpaRepository<Credit, UUID> {
 
     @Query(nativeQuery = true,
     value = """
-select * from js_core.jsc_accounts_sms_payment where sms_acc_id is not null
-order by sms_created_date desc
+select * from js_core.jsc_accounts_sms_payment order by sms_created_date desc
 """)
     Page<Credit> getCreditLoadedTop(Pageable pageable);
 
