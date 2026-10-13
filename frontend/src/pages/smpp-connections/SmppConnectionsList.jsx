@@ -12,7 +12,8 @@ import { fetchSmppConnections } from "../../features/smpp/smppSlice";
 import { fetchResellerAccounts } from "../../features/reseller-account/resellerAccountSlice";
 import { dateForHumans } from "../../utils";
 import SmppConnectionModal from "./SmppConnectionModal";
-import { connectionDetailsText, isUpstream } from "./smppCredentials";
+import SmppShareModal from "./SmppShareModal";
+import { isUpstream } from "./smppCredentials";
 
 // "DISABLED", not "INACTIVE": StatusBadge matches on substrings and would paint
 // anything containing ACTIVE green.
@@ -42,13 +43,10 @@ function SmppConnectionsList() {
     setOpenToggle(true);
   };
 
-  const handleCopy = async (item) => {
-    try {
-      await navigator.clipboard.writeText(connectionDetailsText(item));
-      toast.success("Connection details copied");
-    } catch (e) {
-      toast.error("Could not copy. Copy the details from the table instead.");
-    }
+  const [openShare, setOpenShare] = useState(false);
+  const handleShare = (item) => {
+    setProdd(item);
+    setOpenShare(true);
   };
 
   const handleToggle = async () => {
@@ -72,8 +70,8 @@ function SmppConnectionsList() {
   const actions = (item) => (
     <div className="flex gap-x-4 whitespace-nowrap">
       {!isUpstream(item) && (
-        <button className="text-primary" onClick={() => handleCopy(item)}>
-          Copy details
+        <button className="text-primary" onClick={() => handleShare(item)}>
+          Share settings
         </button>
       )}
       <button className="text-primary" onClick={() => handleEdit(item)}>
@@ -222,6 +220,12 @@ function SmppConnectionsList() {
       <SmppConnectionModal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
+        prodd={prodd}
+      />
+
+      <SmppShareModal
+        open={openShare}
+        handleCancel={() => setOpenShare(false)}
         prodd={prodd}
       />
 

@@ -51,14 +51,47 @@ export const CONNECTION_TYPES = [
 
 export const isUpstream = (c) => c?.connectionType === "CLIENT";
 
-/** The block a reseller pastes to their client. */
-export function connectionDetailsText(c) {
+// What a client's SMSC team needs besides the credentials. These describe how
+// the gateway (sms_smmp_gateway) behaves today — change them there first.
+export const GATEWAY_SETTINGS = [
+  ["Protocol", "SMPP v3.4"],
+  ["Keep-alive", "enquire_link every 30 seconds"],
+  ["Destination number", "International format, digits only (e.g. 2547XXXXXXXX)"],
+  ["Message length", "160 characters, single part"],
+  ["Encoding", "GSM 7-bit (data_coding 0)"],
+  ["Delivery reports", "Set registered_delivery = 1; sent as deliver_sm on a transceiver or receiver bind"],
+  ["Report statuses", "DELIVRD, UNDELIV, REJECTD, EXPIRED"],
+  ["Report message id", "The message_id from submit_sm_resp (id: field and receipted_message_id)"],
+  ["If you are offline", "Reports are held and retried for up to 48 hours"],
+];
+
+const BIND_LABELS = {
+  TRANSCEIVER: "Transceiver",
+  TRANSMITTER: "Transmitter",
+  RECEIVER: "Receiver",
+};
+
+/** The credentials half: what is unique to this one connection. */
+export function connectionCredentials(c) {
   return [
-    `Host: ${c?.host}`,
-    `Port: ${c?.port}`,
-    `System ID: ${c?.systemId}`,
-    `Password: ${c?.password}`,
-    `Bind mode: ${c?.bindType}`,
-    "Protocol: SMPP v3.4",
+    ["Host", c?.host],
+    ["Port", c?.port],
+    ["System ID", c?.systemId],
+    ["Password", c?.password],
+    ["Bind mode", BIND_LABELS[c?.bindType] ?? c?.bindType],
+  ];
+}
+
+/** The whole sheet as plain text, ready to paste into an email or an interconnect form. */
+export function connectionDetailsText(c) {
+  const lines = (rows) => rows.map(([label, value]) => `${label}: ${value}`);
+  return [
+    "SMPP CONNECTION DETAILS",
+    "",
+    ...lines(connectionCredentials(c)),
+    "",
+    "SETTINGS",
+    "",
+    ...lines(GATEWAY_SETTINGS),
   ].join("\n");
 }
