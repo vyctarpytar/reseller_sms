@@ -5,11 +5,12 @@ import MaterialIcon from "material-icons-react";
 import { fetchDashOverview } from "../../features/dashboard/dashboardSlice";
 import { fetchTopSummary } from "../../features/billing/billingSlice";
 import { cashConverter, numberWithCommas } from "../../utils";
+import { useTenantScope } from "../../custom_hooks/useTenantScope";
 
 // Unified overview tier. A TOP user at platform level sees all 8 cards (3 platform-cash + 5 census)
 // in one 4-up grid; drilling into a reseller, or a reseller logging in, scopes to that reseller and
 // drops the platform-only cards. The cash cards come from the TOP-only /wallet/top-summary endpoint,
-// so we only fetch it for TOP-layer users — the axios 403 interceptor would log a reseller out.
+// so we only fetch it for TOP-layer users — anyone else is refused (403).
 function OverviewCards() {
   const dispatch = useDispatch();
   const { overview, overviewLoading } = useSelector((state) => state.dash);
@@ -17,7 +18,7 @@ function OverviewCards() {
   const user = useSelector((state) => state.auth?.user);
   const isTopUser = user?.layer === "TOP";
   // Re-fetch when the selected org changes so a TOP drill-down into a reseller cascades.
-  const selectedOrg = localStorage.getItem("selectedOrg");
+  const { selectedOrg } = useTenantScope();
 
   useEffect(() => {
     dispatch(fetchDashOverview());

@@ -61,14 +61,20 @@ export const menuSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
-      .addCase(fetchMenu.pending, (state) => {
+      // The menu depends on the tenant scope, which can change while a fetch is
+      // in flight. Only the latest request may set it, or a slow reply for the old
+      // scope lands last and leaves the wrong sidebar in place.
+      .addCase(fetchMenu.pending, (state, action) => {
         state.menuLoading = true;
+        state.menuRequestId = action.meta.requestId;
       })
       .addCase(fetchMenu.fulfilled, (state, action) => {
+        if (state.menuRequestId !== action.meta.requestId) return;
         state.menuLoading = false;
         state.menuData = action.payload;
       })
-      .addCase(fetchMenu.rejected, (state) => {
+      .addCase(fetchMenu.rejected, (state, action) => {
+        if (state.menuRequestId !== action.meta.requestId) return;
         state.menuLoading = false;
         state.menuData = [];
       })

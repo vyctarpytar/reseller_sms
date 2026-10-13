@@ -13,8 +13,9 @@ const initialState = {
 export const fetchReseller = createAsyncThunk(
 	"resellerSlice/fetchReseller",
 	async (data) => {
+	  // `{ all: true }` lists every reseller regardless of the one currently drilled into.
 	  const res = await axiosInstance
-		.get(`${url}/api/v2/res`)
+		.get(`${url}/api/v2/res`, { skipTenantScope: !!data?.all })
 		.then((res) => res.data?.data?.result); 
 	  return res;
 	}

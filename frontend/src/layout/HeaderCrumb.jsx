@@ -41,8 +41,12 @@ const CheckIcon = () => (
 const HeaderCrumb = () => {
   const navigate = useNavigate();
   // Reactive tenant scope — updates live no matter which page changes it.
-  const { selectedOrg, selectedAccount, selectedAccountName: scopeAccountName } =
-    useTenantScope();
+  const {
+    selectedOrg,
+    selectedOrgName: scopeOrgName,
+    selectedAccount,
+    selectedAccountName: scopeAccountName,
+  } = useTenantScope();
 
   const { resellerData } = useSelector((state) => state.reseller);
   const { topResellerAccountData } = useSelector(
@@ -54,7 +58,12 @@ const HeaderCrumb = () => {
   const dispatch = useDispatch();
 
   const handleOrgClick = (item) => {
-    setTenantScope({ org: item?.rsId, account: null, accountName: null });
+    setTenantScope({
+      org: item?.rsId,
+      orgName: item?.rsCompanyName,
+      account: null,
+      accountName: null,
+    });
     setOrgOpen(false);
     navigate("/dashboard-main");
   };
@@ -79,9 +88,11 @@ const HeaderCrumb = () => {
 
   const selectedOrgName = React.useMemo(() => {
     if (!selectedOrg) return null;
+    // resellerData is shared with every screen that lists resellers and may be
+    // narrowed or emptied by them; the name stored with the scope is the fallback.
     const found = resellerData?.find((r) => r?.rsId === selectedOrg);
-    return found?.rsCompanyName ?? null;
-  }, [selectedOrg, resellerData]);
+    return found?.rsCompanyName ?? scopeOrgName ?? "Reseller";
+  }, [selectedOrg, resellerData, scopeOrgName]);
 
   const selectedAccountName = React.useMemo(() => {
     if (!selectedAccount) return null;
@@ -176,7 +187,12 @@ const HeaderCrumb = () => {
   // Pick a reseller: set scope, load its accounts, and KEEP the sheet open so the
   // user can immediately choose an account in the section that appears below.
   const mPickReseller = (item) => {
-    setTenantScope({ org: item?.rsId, account: null, accountName: null });
+    setTenantScope({
+      org: item?.rsId,
+      orgName: item?.rsCompanyName,
+      account: null,
+      accountName: null,
+    });
     setMAccountSearch("");
     dispatch(fetchTopResellerAccounts({ resellerId: item?.rsId }));
     navigate("/dashboard-main");
@@ -312,7 +328,7 @@ const HeaderCrumb = () => {
           onOpenChange={(visible) => {
             setOrgOpen(visible);
             setSearchValue("");
-            if (visible) dispatch(fetchReseller());
+            if (visible) dispatch(fetchReseller({ all: true }));
           }}
         >
           <button
@@ -368,7 +384,7 @@ const HeaderCrumb = () => {
             if (visible) {
               setMResellerSearch("");
               setMAccountSearch("");
-              dispatch(fetchReseller());
+              dispatch(fetchReseller({ all: true }));
               if (selectedOrg)
                 dispatch(fetchTopResellerAccounts({ resellerId: selectedOrg }));
             }

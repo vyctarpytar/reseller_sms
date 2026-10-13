@@ -25,6 +25,7 @@ import billingReducer from '../features/billing/billingSlice';
 import templateReducer from '../features/sms-template/smsTemplateSlice';
 import sandBoxReducer from '../features/sandbox/sandboxSlice';
 import smppReducer from '../features/smpp/smppSlice';
+import { clearTenantScope } from '../custom_hooks/useTenantScope';
 
 const persistConfig = {
 	key: 'root',
@@ -55,12 +56,22 @@ const rootReducer = combineReducers({
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
+// A session that ends, or is reset on the login page, must not hand its reseller /
+// account scope to the next one. Done here, after the reducer has run, so no
+// logout path can forget it (the scope notifies React, which a reducer must not).
+const sessionEnd = ['auth/logout', 'auth/clearAuthObj'];
+const tenantScopeGuard = () => (next) => (action) => {
+	const result = next(action);
+	if (sessionEnd.includes(action?.type)) clearTenantScope();
+	return result;
+};
+
 export const store = configureStore({
 	reducer: persistedReducer,
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware({
 			serializableCheck: false,
-		}),
+		}).concat(tenantScopeGuard),
 });
 
 export const persistor = persistStore(store);

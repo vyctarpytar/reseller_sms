@@ -1,79 +1,92 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
-// Tenant scope (which reseller / account the TOP or RESELLER user is currently
-// "acting as") lives in localStorage so the axios interceptor can stamp every
-// request with reseller_id / account_id. localStorage is NOT reactive though:
-// writing it from a drill-down page (ResellersList, AccountsList, the breadcrumb
-// switchers, ...) does not tell the persistent <HeaderCrumb> / <Root> to re-read
-// it, so the breadcrumb went stale and the menu/balance kept the old scope until
-// a full page reload. These helpers centralize the writes and fire a same-tab
-// event so every subscriber updates immediately.
-
-const SCOPE_EVENT = "tenant-scope-changed";
+// Tenant scope = which reseller / account the TOP or RESELLER user is currently
+// "acting as". The axios interceptor stamps every request with it (reseller_id /
+// account_id), and <Root> picks the sidebar menu from it.
+//
+// It is kept PER TAB, in sessionStorage. It used to live in localStorage, which
+// every tab shares and which several unrelated paths wipe wholesale
+// (`localStorage.clear()` on the login page, on logout, on a 401/403): opening the
+// login page in a second tab, or one rejected request, silently dropped the
+// reseller an operator was working in. sessionStorage survives a reload of the tab
+// and belongs to nobody else.
+//
+// This module is the only reader and writer of those keys. Everything goes through
+// one in-memory snapshot, so a consumer can never hold a different value from the
+// one the interceptor is sending — a stale copy in <Root> was why re-entering the
+// same reseller after a re-login left the TOP sidebar in place.
 
 const KEYS = {
   org: "selectedOrg",
+  orgName: "selectedOrgName",
   account: "selectedAccount",
   accountName: "selectedAccountName",
 };
 
-function emit() {
-  // CustomEvent works in all supported browsers; storage events only fire in
-  // OTHER tabs, so we need our own for the tab that made the change.
-  window.dispatchEvent(new Event(SCOPE_EVENT));
+function read() {
+  return {
+    selectedOrg: sessionStorage.getItem(KEYS.org),
+    selectedOrgName: sessionStorage.getItem(KEYS.orgName),
+    selectedAccount: sessionStorage.getItem(KEYS.account),
+    selectedAccountName: sessionStorage.getItem(KEYS.accountName),
+  };
+}
+
+let snapshot = read();
+const listeners = new Set();
+
+function subscribe(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function commit() {
+  const next = read();
+  const changed = Object.keys(next).some((k) => next[k] !== snapshot[k]);
+  if (!changed) return;
+  snapshot = next;
+  listeners.forEach((listener) => listener());
 }
 
 function write(key, value) {
   if (value === undefined) return; // leave untouched
   if (value === null || value === "") {
-    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   } else {
-    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
   }
 }
 
+// Non-reactive read of the current scope, for code outside React (the axios
+// interceptor). Components should use the hook below.
+export function getTenantScope() {
+  return snapshot;
+}
+
 // Update any subset of the scope. Pass `null` to clear a field, omit it to keep.
-// e.g. setTenantScope({ org: rsId, account: null, accountName: null })
-export function setTenantScope({ org, account, accountName } = {}) {
+// e.g. setTenantScope({ org: rsId, orgName: name, account: null, accountName: null })
+// A name always belongs to the id beside it: naming a reseller / account without
+// its name drops the previous one's name rather than keeping it on the wrong id.
+export function setTenantScope({ org, orgName, account, accountName } = {}) {
   write(KEYS.org, org);
+  write(KEYS.orgName, org !== undefined && orgName === undefined ? null : orgName);
   write(KEYS.account, account);
-  write(KEYS.accountName, accountName);
-  emit();
+  write(
+    KEYS.accountName,
+    account !== undefined && accountName === undefined ? null : accountName
+  );
+  commit();
 }
 
 export function clearTenantScope() {
-  localStorage.removeItem(KEYS.org);
-  localStorage.removeItem(KEYS.account);
-  localStorage.removeItem(KEYS.accountName);
-  emit();
+  Object.values(KEYS).forEach((key) => sessionStorage.removeItem(key));
+  commit();
 }
 
-function readScope() {
-  return {
-    selectedOrg: localStorage.getItem(KEYS.org),
-    selectedAccount: localStorage.getItem(KEYS.account),
-    selectedAccountName: localStorage.getItem(KEYS.accountName),
-  };
-}
-
-// Reactive read of the current tenant scope. Re-renders the consumer whenever
-// the scope changes in this tab (custom event) or another tab (storage event).
+// Reactive read of the current tenant scope. Re-renders the consumer whenever the
+// scope changes in this tab.
 export function useTenantScope() {
-  const [scope, setScope] = useState(readScope);
-
-  useEffect(() => {
-    const sync = () => setScope(readScope());
-    window.addEventListener(SCOPE_EVENT, sync);
-    window.addEventListener("storage", sync);
-    // Re-sync once on mount in case the scope changed between render and effect.
-    sync();
-    return () => {
-      window.removeEventListener(SCOPE_EVENT, sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
-
-  return scope;
+  return useSyncExternalStore(subscribe, getTenantScope);
 }
 
 // The layer the user is currently ACTING as, which is what a screen should branch

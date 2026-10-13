@@ -9,6 +9,7 @@ import MaterialIcon from "material-icons-react";
 import FilterModal from "./FilterModal";
 import { cleanLegendClickStatus } from "../../features/global/globalSlice";
 import { formatDate, getDate30DaysAgo, getDate7DaysAgo } from "../../utils";
+import { useTenantScope } from "../../custom_hooks/useTenantScope";
 
 function DashboardAccount() {
   const { dashData, loading } = useSelector((state) => state.dash);
@@ -27,9 +28,8 @@ function DashboardAccount() {
   const { topResellerAccountData } = useSelector(
     (state) => state.resellerAccount
   );
-  const [selectedAccount, setSelectedAccount] = useState(
-    localStorage.getItem("selectedAccount")
-  );
+  const { selectedAccount, selectedAccountName: scopeAccountName } =
+    useTenantScope();
 
   const selectedAccountName = React.useMemo(() => {
     if (!selectedAccount) return null;
@@ -38,11 +38,9 @@ function DashboardAccount() {
     );
     // topResellerAccountData is only populated for TOP users; for a reseller
     // who drilled in from the account cards, fall back to the name we stashed
-    // in localStorage at drill time.
-    return (
-      found?.accName ?? localStorage.getItem("selectedAccountName") ?? null
-    );
-  }, [selectedAccount, topResellerAccountData]);
+    // with the scope at drill time.
+    return found?.accName ?? scopeAccountName ?? null;
+  }, [selectedAccount, topResellerAccountData, scopeAccountName]);
 
   const handleClearFilter = async (event) => {
     await setFormData({});

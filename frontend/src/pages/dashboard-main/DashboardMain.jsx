@@ -7,13 +7,13 @@ import {
   fetchResellerBalance,
   fetchTopBalance,
 } from "../../features/menu/menuSlice";
+import { useTenantScope } from "../../custom_hooks/useTenantScope";
 
 function DashboardMain() {
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const orgId = localStorage.getItem("selectedOrg");
-  const accId = localStorage.getItem("selectedAccount");
+  const { selectedOrg: orgId, selectedAccount: accId } = useTenantScope();
 
   const fetchBalanceData = () => {
     if (user?.layer === "ACCOUNT" || accId) {

@@ -1,11 +1,13 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import Header from "./layout/Header";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, useStore } from "react-redux";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { cleanAuthLoading, logout } from "./features/auth/authSlice";
 import { cleanBalanceHeader, fetchMenu } from "./features/menu/menuSlice";
 import { useTenantScope } from "./custom_hooks/useTenantScope";
+import { setSessionEndedHandler } from "./instance";
 
 export default function Root() {
   const { isLoggedIn, user, token } = useSelector((state) => state.auth);
@@ -43,6 +45,24 @@ export default function Root() {
       setTokenExpired(false);
     }
   }, [token, dispatch, navigate]);
+  // The axios layer calls this once the backend has confirmed the token is dead
+  // (revoked by a newer login, or expired): sign out properly instead of leaving
+  // a signed-in looking page whose every request fails.
+  const store = useStore();
+  useEffect(() => {
+    setSessionEndedHandler(() => {
+      if (!store.getState().auth.isLoggedIn) return;
+      dispatch(logout());
+      dispatch(cleanBalanceHeader());
+      dispatch(cleanAuthLoading());
+      toast.error("Your session has ended. Please sign in again.", {
+        id: "session-ended",
+      });
+      navigate("/login");
+    });
+    return () => setSessionEndedHandler(() => {});
+  }, [store, dispatch, navigate]);
+
   // Reactive scope so the menu + balance header refetch the moment the tenant
   // is switched anywhere in the app, instead of only after a full page reload.
   const { selectedOrg: orgId, selectedAccount: accId } = useTenantScope();

@@ -10,6 +10,7 @@ import MaterialIcon from "material-icons-react";
 import FilterModal from "./FilterModal";
 import { cleanLegendClickStatus } from "../../features/global/globalSlice";
 import { formatDate, getDate30DaysAgo, getDate7DaysAgo } from "../../utils";
+import { useTenantScope } from "../../custom_hooks/useTenantScope";
 
 function DashboardReseller() {
   const { dashData, loading } = useSelector((state) => state.dash);
@@ -26,15 +27,13 @@ function DashboardReseller() {
   };
 
   const { resellerData } = useSelector((state) => state.reseller);
-  const [selectedOrg, setSelectedOrg] = useState(
-    localStorage.getItem("selectedOrg")
-  );
+  const { selectedOrg, selectedOrgName: scopeOrgName } = useTenantScope();
 
   const selectedOrgName = React.useMemo(() => {
     if (!selectedOrg) return null;
     const found = resellerData?.find((r) => r?.rsId === selectedOrg);
-    return found?.rsCompanyName ?? null;
-  }, [selectedOrg, resellerData]);
+    return found?.rsCompanyName ?? scopeOrgName ?? null;
+  }, [selectedOrg, resellerData, scopeOrgName]);
 
   const handleClearFilter = async (event) => {
     await setFormData({});

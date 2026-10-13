@@ -48,7 +48,12 @@ function ResellersList() {
   // dashboard-main which lands a TOP user on /dashboard-reseller.
   const handleEnterReseller = (item) => {
     if (item?.rsStatus === "DELETED") return;
-    setTenantScope({ org: item?.rsId, account: null, accountName: null });
+    setTenantScope({
+      org: item?.rsId,
+      orgName: item?.rsCompanyName,
+      account: null,
+      accountName: null,
+    });
     navigate("/dashboard-main");
   };
 
