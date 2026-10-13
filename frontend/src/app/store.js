@@ -24,6 +24,7 @@ import invoiceReducer from '../features/invoice/invoiceSlice';
 import billingReducer from '../features/billing/billingSlice';
 import templateReducer from '../features/sms-template/smsTemplateSlice';
 import sandBoxReducer from '../features/sandbox/sandboxSlice';
+import smppReducer from '../features/smpp/smppSlice';
 
 const persistConfig = {
 	key: 'root',
@@ -49,6 +50,7 @@ const rootReducer = combineReducers({
 	billing:billingReducer,
 	template:templateReducer,
 	sand:sandBoxReducer,
+	smpp:smppReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

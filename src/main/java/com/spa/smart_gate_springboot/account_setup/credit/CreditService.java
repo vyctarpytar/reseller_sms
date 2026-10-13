@@ -22,6 +22,7 @@ import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import com.spa.smart_gate_springboot.utils.UniqueCodeGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.http.util.TextUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -138,10 +139,36 @@ public class CreditService {
 
 
     public StandardJsonResponse saveCredit(Credit credit, User user) {
+        return saveCredit(credit, user, null);
+    }
+
+    /**
+     * @param resellerScope the reseller a TOP user is drilled into ({@code reseller_id}), or null.
+     *                      A TOP user who names an account is loading that ACCOUNT on its reseller's
+     *                      behalf — same units movement as the reseller doing it — not loading a reseller.
+     */
+    public StandardJsonResponse saveCredit(Credit credit, User user, String resellerScope) {
         StandardJsonResponse response = new StandardJsonResponse();
 
+        // The reseller whose allocatable units fund this load (null when TOP loads a reseller).
+        UUID fundingResellerId = user.getLayer().equals(Layers.RESELLER) ? user.getUsrResellerId() : null;
+        // Manual loads only: the payment-settled path (smsPaymentId set) keeps its existing routing.
+        boolean topForAccount = user.getLayer().equals(Layers.TOP) && credit.getSmsAccId() != null
+                && credit.getSmsPaymentId() == null;
+        if (topForAccount) {
+            Account account = accountService.findByAccId(credit.getSmsAccId());
+            fundingResellerId = account.getAccResellerId();
+            if (fundingResellerId == null
+                    || (!TextUtils.isEmpty(resellerScope) && !fundingResellerId.equals(UUID.fromString(resellerScope)))) {
+                response.setStatus(HttpStatus.BAD_REQUEST.value());
+                response.setSuccess(false);
+                response.setMessage("message", "That account does not belong to the reseller you are viewing", response);
+                return response;
+            }
+        }
+
         if (credit.getSmsPaymentId() == null) {
-            boolean canLoad = validateResellerBalance(user, credit.getSmsPayAmount());
+            boolean canLoad = validateResellerBalance(user, fundingResellerId, credit.getSmsPayAmount());
             if (!canLoad) {
                 log.error("You cannot Assign more than your Allocatable Units");
                 response.setStatus(HttpStatus.FORBIDDEN.value());
@@ -158,7 +185,9 @@ public class CreditService {
         credit.setSmsCreatedDate(AppTime.now());
         credit.setCrStatus(CrStatus.PROCESSED);
 
-        if (layers.name().equalsIgnoreCase(Layers.TOP.name())) {
+        if (topForAccount) {
+            resellerLoadCredit(credit, response);
+        } else if (layers.name().equalsIgnoreCase(Layers.TOP.name())) {
             topLevelLoadCredit(credit, response);
         } else if (credit.getSmsAccId() != null && (layers.name().equalsIgnoreCase(Layers.RESELLER.name()))) {
             resellerLoadCredit(credit, response);
@@ -179,7 +208,10 @@ public class CreditService {
             UniqueCodeGenerator ug = new UniqueCodeGenerator();
             String xPlainCode = ug.getUniqueCode();
 
-            Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(user.getUsrResellerId()).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(user.getLayer()).invoCreatedByEmail(user.getEmail()).invoCreatedDate(AppTime.now()).invoDueDate(AppTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).invoMonthName(getMonthNameFromDate(AppTime.now())).invoMonthId(getMonthIdFromDate(AppTime.now())).build();
+            // Filed where the reseller would have filed it, so it shows on the reseller's invoice list.
+            UUID invoResellerId = topForAccount ? fundingResellerId : user.getUsrResellerId();
+            Layers invoLayer = topForAccount ? Layers.RESELLER : user.getLayer();
+            Invoice invoice = Invoice.builder().invoCode("SMS" + xPlainCode).invoResellerId(invoResellerId).invoAccId(credit.getSmsAccId()).invoStatus(InvoStatus.PENDING_PAYMENT).invoPayerMobileNumber(null).invoLayer(invoLayer).invoCreatedByEmail(user.getEmail()).invoCreatedDate(AppTime.now()).invoDueDate(AppTime.now().plusDays(1)).invoCreatedBy(user.getUsrId()).invoAmount(credit.getSmsPayAmount()).invoTaxRate(BigDecimal.ZERO).invoAmountAfterTax(credit.getSmsPayAmount()).invoMonthName(getMonthNameFromDate(AppTime.now())).invoMonthId(getMonthIdFromDate(AppTime.now())).build();
             invoiceRepository.saveAndFlush(invoice);
         }
 
@@ -191,10 +223,11 @@ public class CreditService {
         return dateTime.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
     }
 
-    private boolean validateResellerBalance(User user, BigDecimal incomingAMount) {
+    private boolean validateResellerBalance(User user, UUID fundingResellerId, BigDecimal incomingAMount) {
 
-        if (user.getLayer().equals(Layers.RESELLER)) {
-            Reseller res = resellerService.findById(user.getUsrResellerId());
+        // Whoever is clicking, an account load comes out of its reseller's allocatable units.
+        if (fundingResellerId != null) {
+            Reseller res = resellerService.findById(fundingResellerId);
             return res.getRsAllocatableUnit().compareTo(incomingAMount) >= 0;
         } else return user.getLayer().equals(Layers.TOP);
 

@@ -58,9 +58,10 @@ public class CreditController {
 
     @PreAuthorize("hasAnyAuthority('super_admin:create','accountant:load_credit')")
     @PostMapping
-    public StandardJsonResponse saveCredit(@RequestBody Credit credit, HttpServletRequest request) {
+    public StandardJsonResponse saveCredit(@RequestBody Credit credit, HttpServletRequest request,
+                                           @RequestParam(required = false) String reseller_id) {
         var user = userService.getCurrentUser(request);
-        return creditService.saveCredit(credit, user);
+        return creditService.saveCredit(credit, user, reseller_id);
     }
 
     // logged in as account / reseller -self
@@ -89,10 +90,18 @@ public class CreditController {
 
     //logged in as reseller - show account credits
     @PostMapping("reseller-account")
-    public StandardJsonResponse getCreditHistoryAsAccountByReseller(@RequestBody CreditFilter creditFilter, HttpServletRequest request, @RequestParam(required = false) String account_id) {
+    public StandardJsonResponse getCreditHistoryAsAccountByReseller(@RequestBody CreditFilter creditFilter, HttpServletRequest request,
+                                                                    @RequestParam(required = false) String account_id,
+                                                                    @RequestParam(required = false) String reseller_id) {
         var user = userService.getCurrentUser(request);
 
         if (user.getLayer().equals(Layers.ACCOUNT)) creditFilter.setAccId(user.getUsrAccId());
+        // A TOP user drilled into a reseller sees what that reseller sees. Only TOP may name the
+        // reseller: a RESELLER is pinned to its own inside getAllResellerCreditHistory, and the
+        // filter body must not let anyone else widen it.
+        if (user.getLayer().equals(Layers.TOP)) {
+            creditFilter.setResellerId(TextUtils.isEmpty(reseller_id) ? null : UUID.fromString(reseller_id));
+        }
 
         // Drill-down: scope to the single account being viewed (ownership enforced).
         UUID accScope = accountService.resolveAccountScope(user, account_id);

@@ -20,6 +20,7 @@ import {
   fetchResellerBalance,
   fetchTopBalance,
 } from "../../features/menu/menuSlice";
+import { useActingLayer, useTenantScope } from "../../custom_hooks/useTenantScope";
 
 const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   const handleOk = () => {
@@ -35,6 +36,10 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   const { saving } = useSelector((state) => state.save);
   const { resellerId } = useSelector((state) => state.global);
   const { resellerAccountData } = useSelector((state) => state.resellerAccount);
+  // Branch on the layer being acted as: a TOP user inside a reseller loads that
+  // reseller's ACCOUNTS (out of the reseller's units), exactly as the reseller would.
+  const layer = useActingLayer(user?.layer);
+  const { selectedOrg, selectedAccount } = useTenantScope();
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -90,11 +95,11 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
     const res = await dispatch(
       fetchCreditReseller({
         url:
-          user?.layer === "TOP"
+          layer === "TOP"
             ? "api/v2/credit/reseller"
-            : user?.layer === "RESELLER"
+            : layer === "RESELLER"
             ? "api/v2/credit/reseller-account"
-            : user?.layer === "ACCOUNT"
+            : layer === "ACCOUNT"
             ? "api/v2/credit/account"
             : null,
       })
@@ -119,8 +124,12 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   // }
  
   const onFinish = async (data) => {
-    if (!formData?.smsResellerId && user?.layer === "TOP") {
+    if (!formData?.smsResellerId && layer === "TOP") {
       toast.error("Please select a reseller");
+      return;
+    }
+    if (!formData?.smsAccId && layer === "RESELLER") {
+      toast.error("Please select an account");
       return;
     }
     if (formData?.smsPayAmount == 0) {
@@ -138,9 +147,9 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
     // }
     const res = await dispatch(
       save({
-        smsAccId: user?.layer === "RESELLER" ? formData?.smsAccId : "",
+        smsAccId: layer === "RESELLER" ? formData?.smsAccId : "",
         // smsResellerId: user?.layer === "RESELLER" ? resellerId : "",
-        smsResellerId: user?.layer === "TOP" ? formData?.smsResellerId : null,
+        smsResellerId: layer === "TOP" ? formData?.smsResellerId : null,
         smsPayAmount: removeCommas(formData?.smsPayAmount),
         smsPayerMobileNumber: formData?.smsPayerMobileNumber,
         smsLoadingMethod:value,
@@ -153,6 +162,7 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
     if (res?.payload?.success) {
       await toast.success(res?.payload?.messages?.message);
       form.resetFields();
+      setFormData({});
       await setValue('')
       await fetchCreditData();
       await fetchBalanceData();
@@ -185,15 +195,24 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
     dispatch(fetchResellerAccounts());
   }
 
+  // Refetch when the reseller being viewed changes, so the dropdown never offers
+  // another reseller's accounts.
   useEffect(() => {
-    fetchResellerAccountData();
-  }, []);
+    if (layer === "RESELLER") fetchResellerAccountData();
+  }, [layer, selectedOrg]);
+
+  // Opened from inside one account: that account is the obvious target.
+  useEffect(() => {
+    if (!isModalOpen || layer !== "RESELLER" || !selectedAccount) return;
+    form.setFieldsValue({ smsResellerId: selectedAccount });
+    setFormData((prev) => ({ ...prev, smsAccId: selectedAccount }));
+  }, [isModalOpen, layer, selectedAccount]);
 
   return (
     <>
       <Modal
         className=""
-        title="Add Account Credit"
+        title={layer === "TOP" ? "Add Reseller Credit" : "Add Account Credit"}
         open={isModalOpen}
         onOk={onFinish}
         onCancel={handleCancel}
@@ -210,7 +229,7 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
           }}
           form={form}
         >
-          {user?.layer === "TOP" && (
+          {layer === "TOP" && (
             <Form.Item
               name="smsResellerId"
               className=""
@@ -258,7 +277,7 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
             </Form.Item>
           )}
 
-          {user?.layer === "RESELLER" && (
+          {layer === "RESELLER" && (
             <Form.Item
               name="smsResellerId"
               className=""
@@ -366,11 +385,13 @@ const CreditAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
             </Form.Item>
           )}
 
-          {user?.layer === "RESELLER" && (
+          {layer === "RESELLER" && (
             <div className="mt-4 rounded-[6px] border border-[#E0A800]/40 bg-[#FFF8E1] px-4 py-3">
               <p className="text-[.8rem] text-[#8A6D00] m-0">
-                <span className="font-semibold">Note:</span> This amount will not
-                reflect on your wallet balance.
+                <span className="font-semibold">Note:</span>{" "}
+                {user?.layer === "TOP"
+                  ? "The units come out of this reseller's allocatable units. No wallet balance changes."
+                  : "This amount will not reflect on your wallet balance."}
               </p>
             </div>
           )}

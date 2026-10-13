@@ -75,3 +75,13 @@ export function useTenantScope() {
 
   return scope;
 }
+
+// The layer the user is currently ACTING as, which is what a screen should branch
+// on — not `user.layer`, the layer they logged in with. A TOP user who has drilled
+// into a reseller (or straight into an account) is doing the reseller's job there:
+// they manage that reseller's accounts, not the list of resellers.
+export function useActingLayer(userLayer) {
+  const { selectedOrg, selectedAccount } = useTenantScope();
+  if (userLayer === "TOP" && (selectedOrg || selectedAccount)) return "RESELLER";
+  return userLayer;
+}

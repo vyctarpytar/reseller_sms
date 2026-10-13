@@ -100,6 +100,31 @@ only (`menu`, `blacklist`, `management/**` which is role-gated, `auth/logout`). 
 Scheduled/bulk: `messaging/shedules/ScheduleService` dispatches `msg_schedule` rows when their release
 time matches; `messaging/send_message/SchedulingConfig` retries failed sends (with Airtel fallback).
 
+### SMPP connections (`account_setup/smpp`)
+Accounts can send over SMPP **as well as** the API key — it is a second channel on the same balance,
+not an account type. `SmppConnectionService` / `POST|GET /api/v2/smpp-connection` (reseller menu
+"SMPP Connections", `frontend/src/pages/smpp-connections`) issue the credentials a client binds with.
+- The rows live in **`smpp.smpp_connections`, a table owned by the SMPP gateway** (`sms_smmp_gateway`),
+  which reads it on every bind. The entity here mirrors the gateway's column names exactly and maps the
+  gateway's enums as plain strings; do not add columns from this side.
+- **`SERVER`** rows (the client binds to us; we issue the credentials) are what resellers manage.
+  `acc_id` is what the gateway stamps as `msgAccId` on every `submit_sm` it publishes to
+  `MQReceiverSynq`, i.e. who gets billed.
+- **`CLIENT`** rows (we bind out to an upstream SMSC such as AIM, with credentials they issued, plus
+  `host`/`port`/`priority`) are **TOP only** — created while drilled into the owning reseller, for one
+  account or (no account) the whole reseller — and are never listed to a reseller user. The gateway
+  chooses among them per send by tenant, so no connection or reseller UUID is hard-coded anywhere.
+  Nothing in this service publishes to the gateway's `smpp.send.requests` yet; when something does, it
+  must put `accId`/`resellerId` on the message.
+- **`system_id` is immutable and rows are never deleted** (deactivate instead): the gateway caches
+  system_id -> account in Redis for 30 minutes, so a recycled one would bill the previous account.
+- SMPP 3.4 caps `system_id` at 15 chars and `password` at 8; the password is stored plaintext because
+  the gateway compares it to the bind PDU.
+- `jsc_accounts.acc_smpp_enabled` mirrors "has an active SERVER connection". It is written only by
+  `AccountRepository.updateSmppEnabled` (a single-column UPDATE — saving the entity would clobber
+  `acc_msg_bal`) and backfilled at boot for rows created before the column existed.
+- `smpp.gateway.public-host` / `smpp.gateway.port` are what the screen shows clients to connect to.
+
 ### Wallet / billing (double-entry ledger) — see [WALLET_DEPLOYMENT.md](WALLET_DEPLOYMENT.md)
 A real **M-PESA cash wallet (KES)** for RESELLER and TOP, plus SMS-unit inventory, recorded in one
 append-only ledger. Core in `account_setup/wallet`:

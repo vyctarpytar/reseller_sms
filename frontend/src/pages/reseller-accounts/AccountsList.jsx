@@ -255,8 +255,11 @@ function AccountsList() {
                           </div>
 
                           <div className="flex flex-col  ">
-                            <div className="reseller_card_title">
+                            <div className="reseller_card_title flex items-center gap-x-2">
                               {item?.accName}
+                              {item?.accSmppEnabled && (
+                                <span className="badge-neutral">SMPP</span>
+                              )}
                             </div>
                             <div className="reseller_card_sub_title">
                               +{addSpaces(item?.accAdminMobile)}

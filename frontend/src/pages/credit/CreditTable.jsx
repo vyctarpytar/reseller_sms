@@ -21,6 +21,7 @@ import MaterialIcon from "material-icons-react";
 import svg30 from "../../assets/svg/svg30.svg";
 import ExportExcelButton from "../../components/ExportExcelButton";
 import ResponsiveTable, { hideBelow } from "../../components/ResponsiveTable";
+import { useActingLayer } from "../../custom_hooks/useTenantScope";
 
 function CreditTable() {
   const { loading, creditData, creditCount } = useSelector(
@@ -28,6 +29,9 @@ function CreditTable() {
   );
   const { user } = useSelector((state) => state.auth);
   const { resellerId } = useSelector((state) => state.global);
+  // A TOP user inside a reseller gets the reseller's statement (its accounts'
+  // credits), and the Load button then loads an account, not a reseller.
+  const layer = useActingLayer(user?.layer);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -209,7 +213,7 @@ function CreditTable() {
     await setFormData({});
     const res = await dispatch(
       fetchCreditReseller({
-        url:user?.layer === "TOP" ? "api/v2/credit/reseller" : user?.layer === "RESELLER" ? "api/v2/credit/reseller-account": user?.layer === "ACCOUNT"? "api/v2/credit/account" : null,
+        url:layer === "TOP" ? "api/v2/credit/reseller" : layer === "RESELLER" ? "api/v2/credit/reseller-account": layer === "ACCOUNT"? "api/v2/credit/account" : null,
         // smsResellerName: null,
         smsAccountName: null,
         smsCreatedByName: null,
@@ -224,7 +228,7 @@ function CreditTable() {
   async function fetchCreditData(page, size) { 
       const res = await dispatch(
         fetchCreditReseller({
-          url:user?.layer === "TOP" ? "api/v2/credit/reseller" : user?.layer === "RESELLER" ? "api/v2/credit/reseller-account": user?.layer === "ACCOUNT"? "api/v2/credit/account" : null,
+          url:layer === "TOP" ? "api/v2/credit/reseller" : layer === "RESELLER" ? "api/v2/credit/reseller-account": layer === "ACCOUNT"? "api/v2/credit/account" : null,
           limit: size ?? pageSize,
           start: page ?? pageIndex,
           // smsResellerName: formData?.smsResellerName,
@@ -241,7 +245,7 @@ function CreditTable() {
 
   useEffect(() => {
     fetchCreditData();
-  }, []);
+  }, [layer]);
 
   return (
     <>
@@ -253,7 +257,7 @@ function CreditTable() {
             onClick={showModal}
           >
             <img src={svg30} alt="svg30" />
-            Load Account Credit
+            {layer === "TOP" ? "Load Reseller Credit" : "Load Account Credit"}
           </button>
         </div>
         <div className="flex items-center">

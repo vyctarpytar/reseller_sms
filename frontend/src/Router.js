@@ -42,6 +42,7 @@ import DashboardMain from './pages/dashboard-main/DashboardMain';
 import SmsTemplateList from './pages/template/SmsTemplateList';
 import ApproveSms from './pages/admin-sms-approval/ApproveSms';
 import SenderList from './pages/sender-id/SenderList';
+import SmppConnectionsList from './pages/smpp-connections/SmppConnectionsList';
 import DynamicTable from './pages/outbox/individual/DynamicTable';
 import Report from './pages/reports/Report';
 import ContactEdit from './pages/outbox/group/ContactEdit'; 
@@ -235,6 +236,10 @@ export const router = createHashRouter([
 					{
 						path:'/sender-id-list',
 						element: <SenderList />,
+					}, 
+					{
+						path:'/smpp-connections',
+						element: <SmppConnectionsList />,
 					}, 
 					{
 						path:'/dynamic-table',

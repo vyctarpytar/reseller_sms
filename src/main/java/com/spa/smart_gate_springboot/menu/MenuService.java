@@ -43,6 +43,7 @@ public class MenuService {
         Menu m7 = Menu.builder().mnLink("product-request-list").mnName("Process Request").mnOwner(Layers.TOP).mnIcons("requestSvg").build();
 
         Menu m9 = Menu.builder().mnLink("account-list").mnName("Account").mnOwner(Layers.RESELLER).mnIcons("accountSvg").build();
+        Menu mSmpp = Menu.builder().mnLink("smpp-connections").mnName("SMPP Connections").mnOwner(Layers.RESELLER).mnIcons("externalSvg").build();
 
         Menu m10 = Menu.builder().mnLink("credit").mnName("Credits Statement").mnOwner(Layers.TOP).mnIcons("creditSvg").build();
         Menu m11 = Menu.builder().mnLink("credit").mnName("Credits Statement").mnOwner(Layers.RESELLER).mnIcons("creditSvg").build();
@@ -63,7 +64,7 @@ public class MenuService {
 
 
 
-        menuRepo.saveAllAndFlush(List.of(m1, m2, m3, m14, m4, m5, m6, m7,  m9, m10, m11,  m13,m15,m16, m17,m18,m19, mNotif));
+        menuRepo.saveAllAndFlush(List.of(m1, m2, m3, m14, m4, m5, m6, m7,  m9, mSmpp, m10, m11,  m13,m15,m16, m17,m18,m19, mNotif));
 
 //        Menu m4a = Menu.builder().mnLink("sms-request-list").mnName("request").mnOwner(Layers.ACCOUNT).mnParentId(m4.getMnId()).build();
 //        Menu m4b = Menu.builder().mnLink("inbox").mnName("inbox").mnOwner(Layers.ACCOUNT).mnParentId(m4.getMnId()).build();

@@ -173,6 +173,7 @@ public class AccountService {
         if (acc != null) {
             account = findByAccId(acc);
         }
+        accountdto.setAccSmppEnabled(null); // owned by SmppConnectionService; the edit form echoes it back
         BeanUtils.copyProperties(accountdto, account, gu.getNullPropertyNames(accountdto));
 
         StandardJsonResponse resp = new StandardJsonResponse();

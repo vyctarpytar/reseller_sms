@@ -91,4 +91,11 @@ public class Account {
      * Used to throttle alerts to at most one per hour.
      */
     private LocalDateTime accLastLowBalAlert;
+
+    /**
+     * True while the account holds at least one active SMPP connection ({@code smpp.smpp_connections}).
+     * It is a channel flag, not an account type: the API key keeps working alongside it. Maintained by
+     * {@code SmppConnectionService} — never set it from a request body.
+     */
+    private Boolean accSmppEnabled;
 }

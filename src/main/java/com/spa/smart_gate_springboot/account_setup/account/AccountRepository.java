@@ -104,6 +104,25 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findAllByAccResellerId(UUID rsId);
 
+    // Targeted single-column write: saving the whole entity here would write back a stale acc_msg_bal
+    // and undo a debit that landed in between.
+    @Transactional
+    @Modifying
+    @Query(value = """
+            update js_core.jsc_accounts set acc_smpp_enabled = :enabled where acc_id = :accId
+            """, nativeQuery = true)
+    void updateSmppEnabled(@Param("accId") UUID accId, @Param("enabled") boolean enabled);
+
+    @Transactional
+    @Modifying
+    @Query(value = """
+            update js_core.jsc_accounts a set acc_smpp_enabled = true
+            where a.acc_smpp_enabled is distinct from true
+              and exists(select 1 from smpp.smpp_connections c
+                         where c.acc_id = a.acc_id and c.is_active and c.connection_type = 'SERVER')
+            """, nativeQuery = true)
+    int backfillSmppEnabled();
+
 
     @Query(nativeQuery = true,value = """
             select * from js_core.jsc_accounts where not exists(select 1 from js_core.api_key where acc_id = api_acc_id)
