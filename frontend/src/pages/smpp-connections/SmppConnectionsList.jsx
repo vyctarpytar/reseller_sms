@@ -15,9 +15,23 @@ import SmppConnectionModal from "./SmppConnectionModal";
 import SmppShareModal from "./SmppShareModal";
 import { isUpstream } from "./smppCredentials";
 
-// "DISABLED", not "INACTIVE": StatusBadge matches on substrings and would paint
+// "PAUSED", not "INACTIVE": StatusBadge matches on substrings and would paint
 // anything containing ACTIVE green.
-const statusOf = (item) => (item?.isActive ? "ACTIVE" : "DISABLED");
+const statusOf = (item) => (item?.isActive ? "ACTIVE" : "PAUSED");
+
+// The gateway drops a paused connection's live session on its next sweep (~10s),
+// so these describe what actually happens to a client that is bound right now.
+const toggleMessage = (item) => {
+  if (!item) return "";
+  if (isUpstream(item)) {
+    return item.isActive
+      ? `Pause upstream ${item.systemId}? We disconnect from it within a few seconds and stop sending through it. Messages routed to it go to the tenant's next upstream, or fail if it has none.`
+      : `Activate upstream ${item.systemId}? We reconnect to it on the next message routed to it.`;
+  }
+  return item.isActive
+    ? `Pause ${item.systemId}? If it is connected right now it is disconnected within a few seconds, and it cannot reconnect until you activate it again. Delivery reports owed to it are held and sent once it reconnects.`
+    : `Activate ${item.systemId}? It will be able to connect and send again.`;
+};
 
 function SmppConnectionsList() {
   const dispatch = useDispatch();
@@ -78,7 +92,7 @@ function SmppConnectionsList() {
         Edit
       </button>
       <button className="text-primary" onClick={() => handleAskToggle(item)}>
-        {item?.isActive ? "Deactivate" : "Activate"}
+        {item?.isActive ? "Pause" : "Activate"}
       </button>
     </div>
   );
@@ -234,13 +248,9 @@ function SmppConnectionsList() {
         handleCancel={() => setOpenToggle(false)}
         handleSubmit={handleToggle}
         loading={saving}
-        content={
-          prodd?.isActive
-            ? `Deactivate ${prodd?.systemId}? New binds will be refused. A session that is already connected stays up until it disconnects.`
-            : `Activate ${prodd?.systemId}? It will be able to bind again.`
-        }
+        content={toggleMessage(prodd)}
         type="info"
-        btnTitle={prodd?.isActive ? "Deactivate" : "Activate"}
+        btnTitle={prodd?.isActive ? "Pause" : "Activate"}
       />
     </>
   );

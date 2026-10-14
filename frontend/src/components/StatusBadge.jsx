@@ -34,6 +34,7 @@ const classFor = (status = "") => {
     k.includes("SUBMIT") ||
     k.includes("PROCESS") ||
     k.includes("WAIT") ||
+    k.includes("PAUS") ||
     k.includes("EXCEPTION")
   )
     return "badge-pending";

@@ -45,11 +45,14 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li><b>{@code system_id} is immutable and rows are never deleted.</b> The gateway caches
  *       system_id -> (connection, reseller, account) in Redis for 30 minutes, so a renamed or recycled
- *       system_id would bill the previous owner until that entry expired. Deactivate instead.</li>
+ *       system_id would bill the previous owner until that entry expired. Pause instead.</li>
  *   <li><b>Credential lengths are SMPP 3.4's, not the column widths:</b> system_id is at most 15
  *       characters and password at most 8. jsmpp rejects the bind PDU past those.</li>
  *   <li><b>Edits to a CLIENT row reach the gateway on its next bind</b>, not instantly: it keeps the
  *       session it already holds, and the config it bound with, in memory.</li>
+ *   <li><b>Pausing ({@code is_active = false}) does reach live sessions:</b> the gateway's
+ *       {@code ConnectionPauseEnforcer} polls the table and drops any bound session of a paused row
+ *       within ~10s, then refuses its rebinds. Nothing here calls the gateway.</li>
  * </ul>
  */
 @Service
@@ -239,7 +242,7 @@ public class SmppConnectionService {
         }
 
         if (dto.getSystemId() != null && !dto.getSystemId().trim().equals(connection.getSystemId())) {
-            return failure("The username cannot be changed once saved — deactivate this connection and add a new one");
+            return failure("The username cannot be changed once saved — pause this connection and add a new one");
         }
         if (dto.getPassword() == null) {
             dto.setPassword(connection.getPassword());
@@ -267,9 +270,11 @@ public class SmppConnectionService {
         if (dto.getPriority() != null) {
             connection.setPriority(Math.max(1, dto.getPriority()));
         }
+        boolean wasActive = Boolean.TRUE.equals(connection.getIsActive());
         if (dto.getIsActive() != null) {
             connection.setIsActive(dto.getIsActive());
         }
+        boolean nowActive = Boolean.TRUE.equals(connection.getIsActive());
         connection.setUpdatedAt(AppTime.now());
         connection = smppConnectionRepo.saveAndFlush(connection);
         if (!upstream) {
@@ -277,7 +282,10 @@ public class SmppConnectionService {
         }
 
         log.info("[SMPP] connection {} updated (active={}) by user={}", connection.getSystemId(), connection.getIsActive(), user.getUsrId());
-        return success(connection, accName(account, connection), "SMPP connection updated");
+        String message = wasActive == nowActive ? "SMPP connection updated"
+                : nowActive ? "SMPP connection activated"
+                : "SMPP connection paused — a live session is dropped within a few seconds";
+        return success(connection, accName(account, connection), message);
     }
 
     /** Fields every new row shares, whichever way it faces. */

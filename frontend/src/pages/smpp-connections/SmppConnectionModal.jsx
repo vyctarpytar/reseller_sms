@@ -174,7 +174,7 @@ const SmppConnectionModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
             ]}
             extra={
               isEdit
-                ? "Cannot be changed once saved. Deactivate this connection and add a new one instead."
+                ? "Cannot be changed once saved. Pause this connection and add a new one instead."
                 : isUpstream
                 ? "As issued by the upstream provider."
                 : "Generated from the account name. You can change it."
