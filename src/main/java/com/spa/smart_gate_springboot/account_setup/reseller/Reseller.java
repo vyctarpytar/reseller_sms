@@ -68,8 +68,18 @@ public class Reseller {
 
     private String rsStatus;
     private String rsKraPin;
+    /**
+     * Allocatable-unit balance at or below which the reseller gets a low-balance alert (email + SMS).
+     * Null falls back to the platform default {@code sms.low-balance.threshold}; 0 turns alerts off.
+     * Stored as text because the column already existed as varchar ({@code ddl-auto: update} never
+     * changes a column's type), so {@code ResellerService.saveReseller} only accepts a whole number
+     * and the alert query ignores anything that is not one.
+     */
     private String rsReorderLevel;
     private BigDecimal rsAllocatableUnit;
+
+    /** Last low-balance alert sent to the reseller; throttles alerts like {@code acc_last_low_bal_alert}. */
+    private LocalDateTime rsLastLowBalAlert;
 
     /**
      * Available cash-wallet balance (KES) for this reseller — populated on listing from the separate

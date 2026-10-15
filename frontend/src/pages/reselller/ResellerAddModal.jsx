@@ -16,6 +16,9 @@ import {
 
 const url = import.meta.env.VITE_API_BASE_URL;
 
+// Mirrors the backend's sms.low-balance.threshold, used for resellers that never set their own.
+const DEFAULT_REORDER_LEVEL = 100;
+
 const ResellerAddModal = ({
   isModalOpen,
   setIsModalOpen,
@@ -48,7 +51,10 @@ const ResellerAddModal = ({
     toast.dismiss();
   }
 
-  const [formData, setFormData] = useState({ ...prodd });
+  const [formData, setFormData] = useState({
+    ...prodd,
+    rsReorderLevel: prodd?.rsReorderLevel ?? DEFAULT_REORDER_LEVEL,
+  });
 
   function handleSelectChange(value, formName) {
     setFormData((prevData) => ({
@@ -67,7 +73,10 @@ const ResellerAddModal = ({
   };
 
   useEffect(() => {
-    setFormData(prodd);
+    setFormData({
+      ...prodd,
+      rsReorderLevel: prodd?.rsReorderLevel ?? DEFAULT_REORDER_LEVEL,
+    });
   }, [prodd]);
 
   const onChange = async (e) => {
@@ -158,6 +167,10 @@ const ResellerAddModal = ({
         raState: formData?.raState,
         raPostalCode: formData?.raPostalCode,
         rsMsgBal:formData?.rsMsgBal,
+        rsReorderLevel:
+          formData?.rsReorderLevel === "" || formData?.rsReorderLevel == null
+            ? null
+            : String(Math.max(0, Math.floor(Number(formData?.rsReorderLevel)) || 0)),
         rsLogo: profile,
       })
     );
@@ -312,6 +325,21 @@ const ResellerAddModal = ({
                 name="rsSmsUnitPrice"
                 onChange={onChange}
                 value={formData?.rsSmsUnitPrice}
+                className="input"
+              />
+            </Form.Item>
+            <Form.Item
+              label="Low Balance Alert Level (units)"
+              extra="Email + SMS alert to the reseller when allocatable units fall to this level. Set 0 to turn alerts off."
+            >
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                name="rsReorderLevel"
+                onChange={onChange}
+                value={formData?.rsReorderLevel}
+                placeholder={String(DEFAULT_REORDER_LEVEL)}
                 className="input"
               />
             </Form.Item>

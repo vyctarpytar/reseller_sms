@@ -39,6 +39,15 @@ public class ResellerService {
 
     public StandardJsonResponse saveReseller(Reseller resellerDto) {
         StandardJsonResponse resp = new StandardJsonResponse();
+        if (resellerDto.getRsReorderLevel() != null) {
+            String level = resellerDto.getRsReorderLevel().trim();
+            if (!level.matches("[0-9]+")) {
+                resp.setSuccess(false);
+                resp.setMessage("message", "Reorder level must be a whole number of 0 or more", resp);
+                return resp;
+            }
+            resellerDto.setRsReorderLevel(level);
+        }
         UUID rdId = resellerDto.getRsId();
 
         Reseller reseller = new Reseller();
