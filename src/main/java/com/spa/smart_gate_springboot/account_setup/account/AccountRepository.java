@@ -131,7 +131,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
 
     /**
-     * Active accounts whose balance is below {@code threshold} and that have not been
+     * Active accounts whose balance is at or below their reorder level ({@code acc_reorder_level},
+     * or {@code defaultThreshold} when the account has not set one) and that have not been
      * alerted since {@code alertBefore} (i.e. due for a low-balance alert). Used by the
      * {@code LowBalanceAlertCron} to throttle alerts to one per account per interval.
      * <p>
@@ -142,7 +143,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
      */
     @Query(nativeQuery = true, value = """
             select * from js_core.jsc_accounts a
-            where a.acc_msg_bal <= :threshold
+            where a.acc_msg_bal <= coalesce(a.acc_reorder_level, :defaultThreshold)
+              and coalesce(a.acc_reorder_level, :defaultThreshold) > 0
               and a.acc_deleted_date is null
               and (a.acc_last_low_bal_alert is null or a.acc_last_low_bal_alert <= :alertBefore)
               and exists (
@@ -151,7 +153,7 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
                       and m.msg_created_date >= :sentSince
               )
             """)
-    List<Account> findAccountsForLowBalanceAlert(@Param("threshold") BigDecimal threshold,
+    List<Account> findAccountsForLowBalanceAlert(@Param("defaultThreshold") BigDecimal defaultThreshold,
                                                  @Param("alertBefore") java.time.LocalDateTime alertBefore,
                                                  @Param("sentSince") java.time.LocalDateTime sentSince);
 

@@ -168,6 +168,12 @@ public class AccountService {
 
     @Transactional
     public StandardJsonResponse saveAccount(Account accountdto, User user) {
+        if (accountdto.getAccReorderLevel() != null && accountdto.getAccReorderLevel() < 0) {
+            StandardJsonResponse resp = new StandardJsonResponse();
+            resp.setSuccess(false);
+            resp.setMessage("message", "Reorder level cannot be negative", resp);
+            return resp;
+        }
         UUID acc = accountdto.getAccId();
         Account account = new Account();
         if (acc != null) {

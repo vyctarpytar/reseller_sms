@@ -23,22 +23,24 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Alerts the account admin (email + SMS) when their SMS balance drops to or below a
- * threshold, so they can top up quickly.
+ * Alerts the account admin (email + SMS) when their SMS balance drops to or below the
+ * account's reorder level ({@code acc_reorder_level}, set on the account edit form), so they
+ * can top up quickly. Accounts that have not set one use {@code defaultThreshold}; a level of
+ * 0 turns alerts off for that account.
  * <p>
  * Alerts are throttled to at most one per account every {@code alertIntervalMinutes}
- * (default 60) via the {@code acc_last_low_bal_alert} column. The threshold (default
- * 100) sits well above the hard send cut-off (balance &lt; 10), so the account still has
- * credit to pay for its own alert SMS, which is sent through its own registered sender.
+ * (default 180) via the {@code acc_last_low_bal_alert} column. The alert SMS is sent through
+ * the account's own registered sender and paid from its own balance, so a level below the
+ * hard send cut-off (balance &lt; 10) gets the email only.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class LowBalanceAlertCron {
 
-    /** Balance at or below which an alert is sent. */
+    /** Reorder level for accounts that have not set their own. */
     @Value("${sms.low-balance.threshold:100}")
-    private BigDecimal threshold;
+    private BigDecimal defaultThreshold;
 
     /** Minimum time between alerts for the same account. */
     @Value("${sms.low-balance.alert-interval-minutes:180}")
@@ -56,7 +58,7 @@ public class LowBalanceAlertCron {
             LocalDateTime now = AppTime.now();
             LocalDateTime alertBefore = now.minusMinutes(alertIntervalMinutes);
             List<Account> accounts = accountRepository.findAccountsForLowBalanceAlert(
-                    threshold, alertBefore, now.toLocalDate().atStartOfDay());
+                    defaultThreshold, alertBefore, now.toLocalDate().atStartOfDay());
             if (accounts.isEmpty()) {
                 return;
             }
@@ -94,8 +96,8 @@ public class LowBalanceAlertCron {
         if (anySent) {
             // Stamp the throttle only once at least one channel was dispatched.
             accountRepository.updateLowBalanceAlertTime(acc.getAccId(), now);
-            log.info("Low-balance alert sent acc={} bal={} email={} mobile={}",
-                    acc.getAccId(), acc.getAccMsgBal(), acc.getAccAdminEmail(), acc.getAccAdminMobile());
+            log.info("Low-balance alert sent acc={} bal={} level={} email={} mobile={}",
+                    acc.getAccId(), acc.getAccMsgBal(), reorderLevel(acc), acc.getAccAdminEmail(), acc.getAccAdminMobile());
         }
     }
 
@@ -149,13 +151,18 @@ public class LowBalanceAlertCron {
     private String lowBalanceEmailBody(Account acc) {
         return "Dear " + acc.getAccName() + ",\n\n"
                 + "Your SMS account balance is running low.\n"
-                + "Current balance: " + acc.getAccMsgBal() + "\n\n"
+                + "Current balance: " + acc.getAccMsgBal() + "\n"
+                + "Your reorder level: " + reorderLevel(acc) + "\n\n"
                 + "Please top up to avoid interruption to your messaging.\n\n"
                 + "Regards,\nSynq-Africa";
     }
 
     private String lowBalanceSmsBody(Account acc) {
         return "Synq: Your SMS balance is low (" + acc.getAccMsgBal() + "). Please top up to keep sending messages.";
+    }
+
+    private BigDecimal reorderLevel(Account acc) {
+        return acc.getAccReorderLevel() != null ? BigDecimal.valueOf(acc.getAccReorderLevel()) : defaultThreshold;
     }
 
     /** Normalise a Kenyan mobile number to 2547XXXXXXXX form. */

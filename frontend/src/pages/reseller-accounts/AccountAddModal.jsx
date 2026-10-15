@@ -20,6 +20,9 @@ import { fetchResellerAccounts } from "../../features/reseller-account/resellerA
 import uplooadSimple from "../../assets/svg/UploadSimple.svg";
 
 const { TextArea } = Input;
+// Mirrors the backend's sms.low-balance.threshold, used for accounts that never set their own.
+const DEFAULT_REORDER_LEVEL = 100;
+
 const AccountAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
   const handleOk = () => {
     setIsModalOpen(false);
@@ -41,7 +44,10 @@ const AccountAddModal = ({ isModalOpen, setIsModalOpen, prodd }) => {
     toast.dismiss();
   }
 
-  const [formData, setFormData] = useState({ ...prodd });
+  const [formData, setFormData] = useState({
+    ...prodd,
+    accReorderLevel: prodd?.accReorderLevel ?? DEFAULT_REORDER_LEVEL,
+  });
 
   function handleSelectChange(value, formName) {
     setFormData((prevData) => ({
@@ -66,6 +72,7 @@ useEffect(() => {
       accLicenceValidity: prodd?.accLicenceValidity
       ? dayjs(prodd?.accLicenceValidity.toString(), "YYYY")  
       : null,
+      accReorderLevel: prodd?.accReorderLevel ?? DEFAULT_REORDER_LEVEL,
     });
   }
 }, [prodd]);
@@ -116,7 +123,11 @@ useEffect(() => {
         accIncorporationCertFileName: fileIncop,
         accAuthorizationFileName: fileAuth,
         accLicenceValidity:normalizeDateToLocalYearOnly(formData?.accLicenceValidity),
-        accMsgBal:formData?.accMsgBal
+        accMsgBal:formData?.accMsgBal,
+        accReorderLevel:
+          formData?.accReorderLevel === "" || formData?.accReorderLevel == null
+            ? null
+            : Math.max(0, Math.floor(Number(formData?.accReorderLevel))),
       })
     );
     if (res?.payload?.success) {
@@ -348,6 +359,22 @@ useEffect(() => {
             }
             
             
+
+            <Form.Item
+              label="Low Balance Alert Level (units)"
+              extra="Email + SMS alert to the admin when units fall to this level. Set 0 to turn alerts off."
+            >
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                name="accReorderLevel"
+                onChange={onChange}
+                value={formData?.accReorderLevel}
+                placeholder={String(DEFAULT_REORDER_LEVEL)}
+                className="input"
+              />
+            </Form.Item>
 
             <Form.Item
               label="Website"

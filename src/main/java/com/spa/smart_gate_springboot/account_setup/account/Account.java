@@ -69,6 +69,11 @@ public class Account {
     @NotNull(message = "accAdminEmail cannot be null")
     private String accAdminEmail;
 
+    /**
+     * Unit balance at or below which the account admin gets a low-balance alert (email + SMS).
+     * Null falls back to the platform default {@code sms.low-balance.threshold}; 0 turns alerts off.
+     * See {@code LowBalanceAlertCron}.
+     */
     private Long accReorderLevel;
     private String accKraFileName;
     private String accIncorporationCertFileName;
