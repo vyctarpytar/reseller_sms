@@ -164,4 +164,16 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
             update js_core.jsc_accounts set acc_last_low_bal_alert = :alertTime where acc_id = :accId
             """)
     void updateLowBalanceAlertTime(@Param("accId") UUID accId, @Param("alertTime") java.time.LocalDateTime alertTime);
+
+    /**
+     * Sets (or, with null, clears back to the platform default) the account's low-balance reorder
+     * level. Single-column UPDATE for the same reason as {@link #updateSmppEnabled}: saving the
+     * entity would write back a stale {@code acc_msg_bal}.
+     */
+    @Modifying(clearAutomatically = true) // so the re-read in the same request sees the new level
+    @Transactional
+    @Query(nativeQuery = true, value = """
+            update js_core.jsc_accounts set acc_reorder_level = cast(:level as bigint) where acc_id = :accId
+            """)
+    void updateReorderLevel(@Param("accId") UUID accId, @Param("level") Long level);
 }

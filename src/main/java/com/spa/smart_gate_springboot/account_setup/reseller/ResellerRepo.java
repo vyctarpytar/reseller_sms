@@ -32,9 +32,9 @@ public interface ResellerRepo extends JpaRepository<Reseller, UUID> {
     @Query(nativeQuery = true, value = """
             select * from js_core.reseller r
             where coalesce(r.rs_allocatable_unit, 0) <= coalesce(case when r.rs_reorder_level ~ '^[0-9]+$'
-                                                                then r.rs_reorder_level::numeric end, :defaultThreshold)
+                                                                then cast(r.rs_reorder_level as numeric) end, :defaultThreshold)
               and coalesce(case when r.rs_reorder_level ~ '^[0-9]+$'
-                                then r.rs_reorder_level::numeric end, :defaultThreshold) > 0
+                                then cast(r.rs_reorder_level as numeric) end, :defaultThreshold) > 0
               and r.is_active
               and r.rs_deleted_date is null
               and (r.rs_last_low_bal_alert is null or r.rs_last_low_bal_alert <= :alertBefore)
@@ -55,4 +55,15 @@ public interface ResellerRepo extends JpaRepository<Reseller, UUID> {
             update js_core.reseller set rs_last_low_bal_alert = :alertTime where rs_id = :rsId
             """)
     void updateLowBalanceAlertTime(@Param("rsId") UUID rsId, @Param("alertTime") LocalDateTime alertTime);
+
+    /**
+     * Sets (or, with null, clears back to the platform default) the reseller's low-balance reorder
+     * level. Single-column UPDATE so a self-service change never writes back stale unit balances.
+     */
+    @Modifying(clearAutomatically = true) // so the re-read in the same request sees the new level
+    @Transactional
+    @Query(nativeQuery = true, value = """
+            update js_core.reseller set rs_reorder_level = cast(:level as varchar) where rs_id = :rsId
+            """)
+    void updateReorderLevel(@Param("rsId") UUID rsId, @Param("level") String level);
 }

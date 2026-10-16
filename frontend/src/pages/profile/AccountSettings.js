@@ -7,12 +7,17 @@ import { save } from "../../features/save/saveSlice";
 import { addSpaces } from "../../utils";
 import InsideHeader from "../../components/InsideHeader";
 import PasswordManagement from "../password-management/PasswordManagement";
+import LowBalanceAlertCard from "./LowBalanceAlertCard";
+import { useTenantScope } from "../../custom_hooks/useTenantScope";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
+  const { selectedOrg, selectedAccount } = useTenantScope();
+  // TOP manages alert levels only once drilled into a reseller or account.
+  const showAlerts = user?.layer !== "TOP" || selectedOrg || selectedAccount;
   console.log("user", user);
 
   async function handleGetPhoneOpt() {
@@ -38,6 +43,14 @@ export default function AccountSettings() {
         <ProfileHeader />
         <div className="mt-[1.12rem]"> 
         </div>
+
+        {showAlerts && (
+          <div className="flex justify-center w-full px-4 sm:px-6 mb-8">
+            <div className="w-full lg:w-[500px] max-w-full">
+              <LowBalanceAlertCard />
+            </div>
+          </div>
+        )}
 
         <div className="mt-[0px]  flex items-center justify-center w-full">
           <PasswordManagement />
