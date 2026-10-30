@@ -130,11 +130,37 @@ public class UserService {
         return resp;
     }
 
-    public StandardJsonResponse saveUser(UserDto userDto, User authed) {
+    /** The tenant a user belongs to: its layer plus the reseller/account it is pinned to. */
+    public record UserScope(Layers layer, UUID resellerId, UUID accId) {}
+
+    /**
+     * Creates or edits a user. {@code scope} is where the caller is working (resolved from the
+     * drill-down params in UserController); a new user is stamped with it. An existing user keeps
+     * its own tenancy, and may only be edited from a scope that contains it.
+     */
+    public StandardJsonResponse saveUser(UserDto userDto, User authed, UserScope scope) {
         StandardJsonResponse resp = new StandardJsonResponse();
         try {
+            boolean isNew = userDto.getUsrId() == null;
+            User user = isNew ? new User() : findById(userDto.getUsrId());
 
-            User user = userDto.getUsrId() == null ? new User() : findById(userDto.getUsrId());
+            if (!isNew && !isWithinScope(user, scope)) {
+                resp.setSuccess(false);
+                resp.setMessage("message", "You can't edit a user outside the reseller/account you're working in", resp);
+                return resp;
+            }
+            Layers targetLayer = isNew ? scope.layer() : user.getLayer();
+            if (userDto.getRole() == null) {
+                resp.setSuccess(false);
+                resp.setMessage("message", "Select a role for the user", resp);
+                return resp;
+            }
+            if ((isNew || userDto.getRole() != user.getRole())
+                    && targetLayer != null && !rolesFor(targetLayer).contains(userDto.getRole())) {
+                resp.setSuccess(false);
+                resp.setMessage("message", "Role " + userDto.getRole() + " is not available for " + targetLayer + " users", resp);
+                return resp;
+            }
 
             BeanUtils.copyProperties(userDto, user, gu.getNullPropertyNames(userDto));
             user.setCreatedBy(authed.getUsrId());
@@ -146,14 +172,16 @@ public class UserService {
             }
 
             if(user.getUsrStatus() != UsrStatus.ACTIVE) revokeAllUserTokens(user);
-            user.setLayer(authed.getLayer());
-            user.setUsrAccId(authed.getUsrAccId());
-            user.setUsrResellerId(authed.getUsrResellerId());
+            if (isNew) {
+                user.setLayer(scope.layer());
+                user.setUsrAccId(scope.accId());
+                user.setUsrResellerId(scope.resellerId());
+            }
             user.setRole(userDto.getRole());
             Set<Permission> permissions = userDto.getRole().getPermissions();
             user.getPermissions().clear();
             user.getPermissions().addAll(permissions);
-            if (userDto.getUsrId() == null) {
+            if (isNew) {
                 createDefaultAdminUser(user);
                 resp.setMessage("message", "user saved Successfully", resp);
             } else {
@@ -165,10 +193,22 @@ public class UserService {
             return resp;
         } catch (Exception e) {
             log.error("error modifying user ", e);
+            resp.setSuccess(false);
+            resp.setMessage("message", "Could not save the user. Please try again.", resp);
         }
 
         return resp;
 
+    }
+
+    /** True when {@code user} sits inside the tenant the caller is working in. */
+    private boolean isWithinScope(User user, UserScope scope) {
+        return switch (scope.layer()) {
+            case TOP -> true;
+            case RESELLER -> Objects.equals(user.getUsrResellerId(), scope.resellerId());
+            case ACCOUNT -> Objects.equals(user.getUsrAccId(), scope.accId());
+            default -> false;
+        };
     }
 
     public StandardJsonResponse assignPermissionsToUser(UUID userId, Set<Permission> permissions) {
@@ -302,32 +342,28 @@ public class UserService {
         return response;
     }
 
-    public StandardJsonResponse getRoles(User user) {
+    /** Roles that can be given to a user of {@code layer}. */
+    public StandardJsonResponse getRoles(Layers layer) {
         StandardJsonResponse resp = new StandardJsonResponse();
-
-        Set<String> acceptableRoles = new HashSet<>();
-        acceptableRoles.add(Role.ADMIN.name());
-        acceptableRoles.add(Role.VIEWER.name());
-
-
-        if (user.getLayer().equals(Layers.ACCOUNT)) {
-            acceptableRoles.add(Role.VIEWER.name());
-            acceptableRoles.add(Role.CAMPAIGN_ADMIN.name());
-        } else if (user.getLayer().equals(Layers.RESELLER)) {
-            acceptableRoles.add(Role.SALE.name());
-            acceptableRoles.add(Role.MANAGER.name());
-            acceptableRoles.add(Role.ACCOUNTANT.name());
-        } else {
-            acceptableRoles.add(Role.SUPER_ADMIN.name());
-
-        }
-
-        List<RoleDto> roles = Arrays.stream(Role.values()).filter(role -> acceptableRoles.contains(role.name())).map(r -> RoleDto.builder().rlName(r.name()).build()).collect(Collectors.toList());
+        Set<Role> acceptableRoles = rolesFor(layer);
+        List<RoleDto> roles = Arrays.stream(Role.values()).filter(acceptableRoles::contains).map(r -> RoleDto.builder().rlName(r.name()).build()).collect(Collectors.toList());
 
         resp.setTotal(roles.size());
         resp.setData("result", roles, resp);
 
         return resp;
+    }
+
+    private Set<Role> rolesFor(Layers layer) {
+        Set<Role> roles = new HashSet<>(Set.of(Role.ADMIN, Role.VIEWER));
+        if (layer == Layers.ACCOUNT) {
+            roles.add(Role.CAMPAIGN_ADMIN);
+        } else if (layer == Layers.RESELLER) {
+            roles.addAll(Set.of(Role.SALE, Role.MANAGER, Role.ACCOUNTANT));
+        } else {
+            roles.add(Role.SUPER_ADMIN);
+        }
+        return roles;
     }
 
     private String getResellerDomain(UUID usrResellerId, String coreGatewayUrl) {

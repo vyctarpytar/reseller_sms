@@ -2,10 +2,14 @@ package com.spa.smart_gate_springboot.user;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spa.smart_gate_springboot.account_setup.account.Account;
+import com.spa.smart_gate_springboot.account_setup.account.AccountService;
+import com.spa.smart_gate_springboot.dto.Layers;
 import com.spa.smart_gate_springboot.utils.StandardJsonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.http.util.TextUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,14 +21,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final AccountService accountService;
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping("/get")
     public StandardJsonResponse getAllUsers(HttpServletRequest request , @RequestBody UserDto userFilter,
-                                            @RequestParam(required = false) String reseller_id) {
+                                            @RequestParam(required = false) String reseller_id,
+                                            @RequestParam(required = false) String account_id) {
         User user = userService.getCurrentUser(request);
 
         if(reseller_id != null) userFilter.setResellerId(UUID.fromString(reseller_id));
+        // Drilled into an account: list that account's users only.
+        UUID accId = accountService.resolveAccountScope(user, account_id);
+        if (accId != null) userFilter.setAccId(accId);
 
         return userService.getAllUsers(user, userFilter);
     }
@@ -38,9 +47,35 @@ public class UserController {
     }
 
     @PostMapping
-    public StandardJsonResponse createUser(@RequestBody  UserDto userDto, HttpServletRequest request) {
+    public StandardJsonResponse createUser(@RequestBody  UserDto userDto, HttpServletRequest request,
+                                           @RequestParam(required = false) String reseller_id,
+                                           @RequestParam(required = false) String account_id) {
         User authed = userService.getCurrentUser(request);
-        return userService.saveUser(userDto, authed);
+        return userService.saveUser(userDto, authed, resolveTargetScope(authed, reseller_id, account_id));
+    }
+
+    /**
+     * The tenant a user created from this screen belongs to: the reseller/account the caller is
+     * drilled into, not the caller's own. A TOP user drilled into an account creates an ACCOUNT
+     * user of that account and its reseller. RESELLER users may only drill into their own accounts
+     * (resolveAccountScope throws otherwise); ACCOUNT users are pinned to their own account.
+     */
+    private UserService.UserScope resolveTargetScope(User authed, String resellerId, String accountId) {
+        if (authed.getLayer() == Layers.ACCOUNT) {
+            return new UserService.UserScope(Layers.ACCOUNT, authed.getUsrResellerId(), authed.getUsrAccId());
+        }
+        UUID accId = accountService.resolveAccountScope(authed, accountId);
+        if (accId != null) {
+            Account acc = accountService.findByAccId(accId);
+            return new UserService.UserScope(Layers.ACCOUNT, acc.getAccResellerId(), accId);
+        }
+        if (authed.getLayer() == Layers.RESELLER) {
+            return new UserService.UserScope(Layers.RESELLER, authed.getUsrResellerId(), null);
+        }
+        if (!TextUtils.isEmpty(resellerId)) {
+            return new UserService.UserScope(Layers.RESELLER, UUID.fromString(resellerId), null);
+        }
+        return new UserService.UserScope(Layers.TOP, null, null);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
@@ -117,9 +152,11 @@ public class UserController {
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping("roles")
-    public StandardJsonResponse getRoles(HttpServletRequest request) {
+    public StandardJsonResponse getRoles(HttpServletRequest request,
+                                         @RequestParam(required = false) String reseller_id,
+                                         @RequestParam(required = false) String account_id) {
         var user = userService.getCurrentUser(request);
-        return userService.getRoles(user);
+        return userService.getRoles(resolveTargetScope(user, reseller_id, account_id).layer());
     }
 
 
