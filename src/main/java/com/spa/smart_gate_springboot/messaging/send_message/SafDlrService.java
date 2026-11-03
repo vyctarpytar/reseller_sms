@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import com.spa.smart_gate_springboot.MQRes.MQConfig;
 import com.spa.smart_gate_springboot.account_setup.blacklist.BlackListService;
+import com.spa.smart_gate_springboot.messaging.send_message.airtel.AiretelService;
 import com.spa.smart_gate_springboot.messaging.send_message.dtos.SmsDlr;
 import com.spa.smart_gate_springboot.messaging.send_message.safaricom_sdp.safaricom.dto.Datum;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class SafDlrService {
     private final ObjectMapper objectMapper;
     private final MsgMessageQueueArcRepository msgRepo;
     private final BlackListService blackListService;
+    private final AiretelService airetelService;
 
 
     @RabbitListener(queues = {MQConfig.INCOMING_SMS_DLR}, containerFactory = "rabbitListenerContainerFactory")
@@ -103,8 +105,13 @@ public class SafDlrService {
         // msg_delivered_date straight back out into the downstream `done date:` receipt field.
         msgRepo.updateDeliverNote(msgStatus, msgRequestId, msisdn, msgCode, AppTime.now());
 
-        if (msgStatus.equalsIgnoreCase("SenderName Blacklisted")) {
+        if ("SenderName Blacklisted".equalsIgnoreCase(msgStatus)) {
             blackListService.addToBlacklist(msisdn);
+        }
+
+        // Safaricom can't reach this subscriber — from now on route them through Airtel.
+        if (AiretelService.DELIVERY_IMPOSSIBLE.equalsIgnoreCase(msgStatus)) {
+            airetelService.recordDeliveryImpossible(msisdn);
         }
     }
 }

@@ -79,8 +79,8 @@ public class SchedulingConfig {
 
     /**
      * Carrier I/O only — the retried flag is already persisted by {@link #markRetried}. The Airtel send
-     * records its own outcome (and registers the MSISDN as an Airtel number when it isn't known yet), so
-     * nothing here writes to the DB.
+     * records its own outcome, so nothing here writes to the DB. (The MSISDN was already recorded as an
+     * Airtel number when the DeliveryImpossible DLR arrived — see SafDlrService.)
      */
     private void sendViaAirtel(List<MsgMessageQueueArc> msgs) {
         for (MsgMessageQueueArc m : msgs) {

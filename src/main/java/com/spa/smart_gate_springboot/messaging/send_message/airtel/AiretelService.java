@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
@@ -36,9 +38,8 @@ public class AiretelService {
     private final ObjectProvider<AccountService> accountServiceProvider;
     private final ObjectProvider<ShortCodeService> shortCodeServiceProvider;
 
-    private static final Set<String> AIRTEL_PREFIXES = Set.of(
-            "25473" // adjust as needed
-    );
+    /** Safaricom DLR status that marks a recipient as unreachable on Safaricom. */
+    public static final String DELIVERY_IMPOSSIBLE = "DeliveryImpossible";
 
     /** Total tries at the Airtel gateway per send — the first attempt plus four retries. */
     private static final int AIRTEL_SEND_ATTEMPTS = 5;
@@ -51,21 +52,54 @@ public class AiretelService {
     private String defaultSenderId;
 
 
+    /**
+     * Whether this recipient should go out through Airtel. There is no prefix rule: a number is Airtel
+     * only once Safaricom has reported {@code DeliveryImpossible} for it (see
+     * {@link #recordDeliveryImpossible(String)}), or when {@code sms.airtel.allowForAll} is on.
+     */
     public boolean checkIsAirtel(String msisdn) {
         if (msisdn == null || msisdn.isBlank()) return false;
-        if(Boolean.parseBoolean(allowForAll))return true;
+        if (Boolean.parseBoolean(allowForAll)) return true;
 
+        return airtelNumberRepository.existsByAnNumber(normalizeMsisdn(msisdn));
+    }
+
+    /**
+     * Record a recipient in {@code msg.airtel_numbers} because Safaricom answered
+     * {@code DeliveryImpossible} for it. This is the only way a number gets into that table — sending
+     * through the Airtel gateway does not, because that gateway also carries Safaricom traffic.
+     * Never throws: a failure here must not break DLR processing.
+     */
+    public void recordDeliveryImpossible(String msisdn) {
+        if (msisdn == null || msisdn.isBlank()) return;
         String normalized = normalizeMsisdn(msisdn);
-
-        // Prefix check (fast)
-        for (String prefix : AIRTEL_PREFIXES) {
-            if (normalized.startsWith(prefix)) {
-                return true;
-            }
+        try {
+            if (airtelNumberRepository.existsByAnNumber(normalized)) return;
+            airtelNumberRepository.save(AirtelNumber.builder()
+                    .anNumber(normalized)
+                    .anReason(DELIVERY_IMPOSSIBLE)
+                    .anCreatedDate(AppTime.now())
+                    .build());
+            log.info("Recorded {} as an Airtel number — Safaricom reported DeliveryImpossible", normalized);
+        } catch (Exception e) {
+            log.error("Failed to record Airtel number {}: {}", normalized, e.getMessage(), e);
         }
+    }
 
-        // DB check (fallback)
-        return airtelNumberRepository.existsByAnNumber(normalized);
+    /**
+     * Clear rows learned under the old rule (every recipient of an Airtel send, which swept in Safaricom
+     * numbers). Idempotent — only rows without {@code an_reason} go — and never blocks startup.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void purgeLegacyAirtelNumbers() {
+        try {
+            int deleted = airtelNumberRepository.deleteLegacyRows();
+            if (deleted > 0) {
+                log.info("[AIRTEL] removed {} airtel_numbers row(s) learned under the old routing rule", deleted);
+            }
+        } catch (Exception e) {
+            log.error("[AIRTEL] legacy airtel_numbers purge failed — old rows may still route to Airtel", e);
+        }
     }
 
     private String normalizeMsisdn(String msisdn) {
@@ -189,8 +223,6 @@ public class AiretelService {
             msgMessageQueueArc.setMsgSenderLevel("switchport".toUpperCase());
             arcRepository.save(msgMessageQueueArc);
 
-            rememberAirtelNumber(msgMessageQueueArc.getMsgSubMobileNo());
-
             log.info("Sent to AirTel : {}", responsee);
         } catch (Exception e) {
             log.error("Error sending Airtel message . {}", e.getMessage(), e);
@@ -265,85 +297,6 @@ public class AiretelService {
         }
         return false;
     }
-
-    /**
-     * Learn a recipient into {@code msg.airtel_numbers}, which {@link #checkIsAirtel(String)} later uses
-     * to route sends whose prefix isn't a known Airtel one.
-     *
-     * <p>Reaching this method only means the send went out through the Airtel gateway — not that the
-     * number lives on Airtel. The gateway also carries Safaricom traffic (the retry cron falls back to
-     * it when a Safaricom send fails), so recording every recipient was filling the table with
-     * Safaricom numbers and then permanently routing them to Airtel, with an Airtel sender ID.
-     *
-     * <p>So before recording, check the arc for a {@code DeliveredToTerminal} against this number: if a
-     * carrier has ever confirmed terminal delivery to it, we already have a working route and must not
-     * claim it for Airtel. A genuine Airtel number has no such history — Safaricom cannot deliver to
-     * it — so it is still learned on its first successful Airtel send.
-     */
-    private void rememberAirtelNumber(String msisdn) {
-        if (msisdn == null || msisdn.isBlank()) return;
-
-        if (airtelNumberRepository.existsByAnNumber(msisdn)) return;
-
-        if (arcRepository.existsDeliveredToTerminal(msisdnVariants(msisdn))) {
-            log.info("Not recording {} as an Airtel number — it has been DeliveredToTerminal before", msisdn);
-            return;
-        }
-
-        saveAirtelNumberWithRetry(msisdn);
-    }
-
-    /**
-     * Every form the same subscriber number can be stored as on the arc — recipients are persisted
-     * exactly as they were submitted (0722…, 254722…, +254722…), so a lookup by one form alone would
-     * miss the history written under another.
-     */
-    private Set<String> msisdnVariants(String msisdn) {
-        String normalized = normalizeMsisdn(msisdn);
-        Set<String> variants = new LinkedHashSet<>();
-        variants.add(msisdn);
-        variants.add(normalized);
-        variants.add("+" + normalized);
-        if (normalized.startsWith("254") && normalized.length() > 3) {
-            variants.add("0" + normalized.substring(3));
-        }
-        return variants;
-    }
-
-    public void saveAirtelNumberWithRetry(String msisdn) {
-        final int maxAttempts = 100;
-        long backoffMs = 25L;
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                airtelNumberRepository.save(
-                        AirtelNumber.builder()
-                                .anNumber(msisdn)
-                                .anCreatedDate(AppTime.now())
-                                .build()
-                );
-                return;
-            } catch (Exception e) {
-                if (attempt == maxAttempts) {
-                    log.error("Error saving airtel number after {} attempts. msisdn={}", attempt, msisdn, e);
-                    return;
-                }
-
-                log.warn("Error saving airtel number (attempt {}/{}). msisdn={}. Retrying...", attempt, maxAttempts, msisdn, e);
-
-                try {
-                    Thread.sleep(backoffMs);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    log.error("Interrupted while retrying airtel number save. msisdn={}", msisdn, ie);
-                    return;
-                }
-
-                backoffMs = Math.min(backoffMs * 2, 500L);
-            }
-        }
-    }
-
 
     private int getNoOfMessage(MsgMessageQueueArc msgQueue) {
         int MSG_LENGTH = msgQueue.getMsgMessage().length();
